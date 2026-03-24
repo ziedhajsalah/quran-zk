@@ -1,13 +1,24 @@
-@import 'tailwindcss';
 @import '@mantine/core/styles.css';
 
-@layer base {
-  html,
-  body {
-    @apply text-gray-900 bg-gray-50 dark:bg-gray-950 dark:text-gray-200;
-  }
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background-color: var(--mantine-color-body);
+  color: var(--mantine-color-text);
+  font-family: var(--mantine-font-family);
+}
 
-  .using-mouse * {
-    outline: none !important;
-  }
+body {
+  min-width: 320px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+.using-mouse * {
+  outline: none !important;
 }
