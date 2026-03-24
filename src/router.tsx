@@ -2,9 +2,10 @@ import { createRouter } from '@tanstack/react-router'
 import { QueryClient } from '@tanstack/react-query'
 import { routerWithQueryClient } from '@tanstack/react-router-with-query'
 import { ConvexQueryClient } from '@convex-dev/react-query'
-import { MantineProvider } from '@mantine/core'
+import { DirectionProvider, MantineProvider } from '@mantine/core'
 import { ConvexProvider } from 'convex/react'
 import { routeTree } from './routeTree.gen'
+import { appTheme } from './theme'
 
 export function getRouter() {
   const CONVEX_URL = (import.meta as any).env.VITE_CONVEX_URL!
@@ -32,12 +33,14 @@ export function getRouter() {
       scrollRestoration: true,
       defaultPreloadStaleTime: 0, // Let React Query handle all caching
       defaultErrorComponent: (err) => <p>{err.error.stack}</p>,
-      defaultNotFoundComponent: () => <p>not found</p>,
+      defaultNotFoundComponent: () => <p>الصفحة غير موجودة</p>,
       Wrap: ({ children }) => (
         <ConvexProvider client={convexQueryClient.convexClient}>
-          <MantineProvider defaultColorScheme="auto">
-            {children}
-          </MantineProvider>
+          <DirectionProvider initialDirection="rtl">
+            <MantineProvider theme={appTheme} defaultColorScheme="auto">
+              {children}
+            </MantineProvider>
+          </DirectionProvider>
         </ConvexProvider>
       ),
     }),

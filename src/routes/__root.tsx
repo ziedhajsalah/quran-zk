@@ -22,7 +22,7 @@ export const Route = createRootRouteWithContext<{
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'المكتبة المباركة',
       },
     ],
     links: [
@@ -48,7 +48,7 @@ export const Route = createRootRouteWithContext<{
       { rel: 'icon', href: '/favicon.ico' },
     ],
   }),
-  notFoundComponent: () => <div>Route not found</div>,
+  notFoundComponent: () => <div>الصفحة غير موجودة</div>,
   component: RootComponent,
 })
 
@@ -62,7 +62,7 @@ function RootComponent() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html {...mantineHtmlProps}>
+    <html {...mantineHtmlProps} lang="ar" dir="rtl">
       <head>
         <ColorSchemeScript defaultColorScheme="auto" />
         <HeadContent />
