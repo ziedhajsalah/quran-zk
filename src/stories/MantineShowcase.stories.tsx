@@ -34,14 +34,21 @@ import {
   ThemeIcon,
   Title,
 } from '@mantine/core'
+import {
+  IconAlertCircle,
+  IconBook2,
+  IconBookmark,
+  IconCheck,
+  IconPlayerPlay,
+} from '@tabler/icons-react'
 import { themeTokens } from '../theme'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
 function MantineShowcase() {
   const lessonRows = [
-    { surah: 'Al-Fatihah', ayat: '7 ayat', progress: 'Complete' },
-    { surah: 'Al-Baqarah', ayat: '286 ayat', progress: 'In progress' },
-    { surah: 'Yasin', ayat: '83 ayat', progress: 'Planned' },
+    { surah: 'الفاتحة', ayat: '٧ آيات', progress: 'مكتمل' },
+    { surah: 'البقرة', ayat: '٢٨٦ آية', progress: 'قيد التنفيذ' },
+    { surah: 'يس', ayat: '٨٣ آية', progress: 'مخطط له' },
   ]
 
   return (
@@ -65,40 +72,48 @@ function MantineShowcase() {
             <Group justify="space-between" align="flex-start">
               <div>
                 <Badge variant="light" color="primary" mb="sm">
-                  Theme Overview
+                  نظرة على السمة
                 </Badge>
-                <Title order={1}>Mantine design-system showcase</Title>
+                <Title order={1}>معرض نظام التصميم</Title>
                 <Text c="dimmed" maw={720} mt="xs">
-                  A single story with common components rendered together so
-                  you can judge the palette, typography, spacing, surfaces, and
-                  interaction states in one place.
+                  قصة واحدة تعرض المكونات الشائعة معًا حتى تتمكن من تقييم
+                  الألوان والطباعة والمسافات والأسطح وحالات التفاعل في مكان
+                  واحد.
                 </Text>
               </div>
 
               <Group gap="sm">
                 <Badge variant="dot" color="primary">
-                  Primary
+                  أساسي
                 </Badge>
                 <Badge variant="dot" color="secondary">
-                  Secondary
+                  ثانوي
                 </Badge>
                 <Badge variant="dot" color="tertiary">
-                  Tertiary
+                  ثالثي
                 </Badge>
               </Group>
             </Group>
 
             <Group gap="sm">
-              <Button variant="gradient">Start lesson</Button>
-              <Button variant="default">Continue reading</Button>
-              <Button variant="light" color="secondary">
-                Review notes
+              <Button variant="gradient" leftSection={<IconPlayerPlay size={18} />}>
+                ابدأ الدرس
               </Button>
-              <Button variant="outline" color="tertiary">
-                Bookmark ayah
+              <Button variant="default" leftSection={<IconBook2 size={18} />}>
+                تابع القراءة
+              </Button>
+              <Button variant="light" color="secondary">
+                راجع الملاحظات
+              </Button>
+              <Button
+                variant="outline"
+                color="tertiary"
+                leftSection={<IconBookmark size={18} />}
+              >
+                احفظ الآية
               </Button>
               <ActionIcon variant="filled" color="primary" size="lg">
-                +
+                <IconBookmark size={18} />
               </ActionIcon>
             </Group>
           </Stack>
@@ -113,33 +128,33 @@ function MantineShowcase() {
             }}
           >
             <Stack gap="md">
-              <Title order={3}>Inputs</Title>
+              <Title order={3}>الحقول</Title>
               <TextInput
-                label="Lesson title"
-                description="Primary text input appearance"
-                placeholder="Memorize the first ten ayat"
-                defaultValue="Morning revision"
+                label="عنوان الدرس"
+                description="مظهر حقل الإدخال الأساسي"
+                placeholder="احفظ أول عشر آيات"
+                defaultValue="مراجعة الصباح"
               />
               <PasswordInput
-                label="Private note"
-                placeholder="Enter a secure study note"
-                defaultValue="light-and-clarity"
+                label="ملاحظة خاصة"
+                placeholder="أدخل ملاحظة دراسية خاصة"
+                defaultValue="نور وطمأنينة"
               />
               <Select
-                label="Teacher"
-                placeholder="Pick one"
+                label="المعلّم"
+                placeholder="اختر واحدًا"
                 defaultValue="ustadhah-amal"
                 data={[
-                  { label: 'Ustadhah Amal', value: 'ustadhah-amal' },
-                  { label: 'Ustadh Yusuf', value: 'ustadh-yusuf' },
-                  { label: 'Shaykh Ibrahim', value: 'shaykh-ibrahim' },
+                  { label: 'الأستاذة أمل', value: 'ustadhah-amal' },
+                  { label: 'الأستاذ يوسف', value: 'ustadh-yusuf' },
+                  { label: 'الشيخ إبراهيم', value: 'shaykh-ibrahim' },
                 ]}
               />
               <Textarea
-                label="Reflection"
+                label="تأمل"
                 minRows={4}
-                placeholder="Write your notes about today's reading"
-                defaultValue="The tone feels calm, spacious, and focused."
+                placeholder="اكتب ملاحظاتك حول قراءة اليوم"
+                defaultValue="الطابع العام هادئ وواسع ومركّز."
               />
             </Stack>
           </Card>
@@ -152,51 +167,51 @@ function MantineShowcase() {
             }}
           >
             <Stack gap="md">
-              <Title order={3}>Selection controls</Title>
+              <Title order={3}>عناصر الاختيار</Title>
               <SegmentedControl
                 fullWidth
                 data={[
-                  { label: 'Read', value: 'read' },
-                  { label: 'Memorize', value: 'memorize' },
-                  { label: 'Review', value: 'review' },
+                  { label: 'قراءة', value: 'read' },
+                  { label: 'حفظ', value: 'memorize' },
+                  { label: 'مراجعة', value: 'review' },
                 ]}
                 defaultValue="memorize"
               />
               <Radio.Group
-                label="Recitation mode"
+                label="نمط التلاوة"
                 defaultValue="teacher"
                 name="recitation-mode"
               >
                 <Group mt="xs">
-                  <Radio value="solo" label="Solo" />
-                  <Radio value="teacher" label="With teacher" />
-                  <Radio value="group" label="Group" />
+                  <Radio value="solo" label="فردي" />
+                  <Radio value="teacher" label="مع المعلّم" />
+                  <Radio value="group" label="جماعي" />
                 </Group>
               </Radio.Group>
               <Checkbox.Group
-                label="Daily checklist"
+                label="قائمة اليوم"
                 defaultValue={['wird', 'tafseer']}
               >
                 <Stack gap="xs" mt="xs">
-                  <Checkbox value="wird" label="Finish wird" />
-                  <Checkbox value="tafseer" label="Read tafseer notes" />
-                  <Checkbox value="audio" label="Listen to recitation" />
+                  <Checkbox value="wird" label="إتمام الورد" />
+                  <Checkbox value="tafseer" label="قراءة ملاحظات التفسير" />
+                  <Checkbox value="audio" label="الاستماع إلى التلاوة" />
                 </Stack>
               </Checkbox.Group>
               <Group justify="space-between">
-                <Switch label="Prayer reminders" defaultChecked />
-                <Switch label="Compact layout" />
+                <Switch label="تذكيرات الصلاة" defaultChecked />
+                <Switch label="تخطيط مضغوط" />
               </Group>
               <Chip.Group multiple defaultValue={['arabic', 'translation']}>
                 <Group gap="xs">
-                  <Chip value="arabic">Arabic</Chip>
-                  <Chip value="translation">Translation</Chip>
-                  <Chip value="tafsir">Tafsir</Chip>
+                  <Chip value="arabic">العربية</Chip>
+                  <Chip value="translation">الترجمة</Chip>
+                  <Chip value="tafsir">التفسير</Chip>
                 </Group>
               </Chip.Group>
               <div>
                 <Text size="sm" fw={500} mb="xs">
-                  Session focus
+                  تركيز الجلسة
                 </Text>
                 <Slider
                   color="primary"
@@ -217,16 +232,23 @@ function MantineShowcase() {
             }}
           >
             <Stack gap="md">
-              <Title order={3}>Feedback</Title>
-              <Alert color="primary" title="Lesson unlocked">
-                You completed the previous module and the next study path is
-                now available.
+              <Title order={3}>التنبيهات</Title>
+              <Alert
+                color="primary"
+                title="تم فتح الدرس"
+                icon={<IconCheck size={18} />}
+              >
+                أكملت الوحدة السابقة وأصبح مسار الدراسة التالي متاحًا الآن.
               </Alert>
-              <Notification color="tertiary" title="Gentle reminder">
-                Review your memorized verses before Maghrib.
+              <Notification
+                color="tertiary"
+                title="تذكير لطيف"
+                icon={<IconAlertCircle size={18} />}
+              >
+                راجع الآيات المحفوظة قبل المغرب.
               </Notification>
-              <Blockquote color="primary" cite="Surah Al-Alaq">
-                Read in the name of your Lord who created.
+              <Blockquote color="primary" cite="سورة العلق">
+                اقرأ باسم ربك الذي خلق.
               </Blockquote>
             </Stack>
           </Card>
@@ -239,17 +261,17 @@ function MantineShowcase() {
             }}
           >
             <Stack gap="md">
-              <Title order={3}>Indicators</Title>
+              <Title order={3}>المؤشرات</Title>
               <Group>
                 <ThemeIcon color="primary" radius="xl" size="lg">
-                  نور
+                  <IconBook2 size={18} />
                 </ThemeIcon>
-                <Badge color="primary">Ready</Badge>
+                <Badge color="primary">جاهز</Badge>
                 <Badge color="secondary" variant="light">
-                  Reviewing
+                  قيد المراجعة
                 </Badge>
                 <Badge color="tertiary" variant="outline">
-                  Needs focus
+                  يحتاج تركيزًا
                 </Badge>
               </Group>
               <Progress value={72} color="primary" size="lg" radius="xl" />
@@ -279,26 +301,26 @@ function MantineShowcase() {
             }}
           >
             <Stack gap="md">
-              <Title order={3}>Identity</Title>
+              <Title order={3}>الهوية</Title>
               <Group>
                 <Avatar color="primary" radius="xl">
-                  ZA
+                  زأ
                 </Avatar>
                 <div>
-                  <Text fw={600}>Zied A.</Text>
+                  <Text fw={600}>زيد أ.</Text>
                   <Text size="sm" c="dimmed">
-                    Memorization cohort
+                    مجموعة الحفظ
                   </Text>
                 </div>
               </Group>
               <Divider />
               <Text size="sm">
-                Current token pair:{' '}
-                <Code>{themeTokens.semanticColors.background}</Code> on{' '}
+                زوج الرموز الحالي:{' '}
+                <Code>{themeTokens.semanticColors.background}</Code> على{' '}
                 <Code>{themeTokens.semanticColors.onSurface}</Code>
               </Text>
               <Anchor href="https://mantine.dev" target="_blank">
-                Mantine documentation
+                وثائق Mantine
               </Anchor>
             </Stack>
           </Card>
@@ -313,46 +335,43 @@ function MantineShowcase() {
             }}
           >
             <Stack gap="md">
-              <Title order={3}>Navigation patterns</Title>
+              <Title order={3}>أنماط التنقل</Title>
               <Tabs defaultValue="overview">
                 <Tabs.List>
-                  <Tabs.Tab value="overview">Overview</Tabs.Tab>
-                  <Tabs.Tab value="schedule">Schedule</Tabs.Tab>
-                  <Tabs.Tab value="progress">Progress</Tabs.Tab>
+                  <Tabs.Tab value="overview">نظرة عامة</Tabs.Tab>
+                  <Tabs.Tab value="schedule">الجدول</Tabs.Tab>
+                  <Tabs.Tab value="progress">التقدم</Tabs.Tab>
                 </Tabs.List>
                 <Tabs.Panel value="overview" pt="md">
                   <Text size="sm" c="dimmed">
-                    Use this area to judge active tab color, type scale, and
-                    spacing between navigation and content.
+                    استخدم هذه المنطقة لتقييم لون التبويب النشط ومقياس الخط
+                    والمسافات بين التنقل والمحتوى.
                   </Text>
                 </Tabs.Panel>
                 <Tabs.Panel value="schedule" pt="md">
                   <Text size="sm" c="dimmed">
-                    Prayer times, lesson blocks, and revision reminders would
-                    live here.
+                    هنا يمكن عرض أوقات الصلاة وكتل الدروس وتذكيرات المراجعة.
                   </Text>
                 </Tabs.Panel>
                 <Tabs.Panel value="progress" pt="md">
                   <Text size="sm" c="dimmed">
-                    Visual progress components should feel calm rather than
-                    dashboard-heavy.
+                    يجب أن تبدو مؤشرات التقدم هادئة لا مزدحمة مثل لوحات التحكم.
                   </Text>
                 </Tabs.Panel>
               </Tabs>
 
               <Accordion defaultValue="panel-1" variant="separated" radius="lg">
                 <Accordion.Item value="panel-1">
-                  <Accordion.Control>How do surfaces separate?</Accordion.Control>
+                  <Accordion.Control>كيف تنفصل الأسطح؟</Accordion.Control>
                   <Accordion.Panel>
-                    Via tonal layering and background shifts, not hard divider
-                    lines.
+                    عبر التدرج اللوني وتغيّر الخلفيات، لا عبر خطوط فاصلة حادة.
                   </Accordion.Panel>
                 </Accordion.Item>
                 <Accordion.Item value="panel-2">
-                  <Accordion.Control>What should stand out?</Accordion.Control>
+                  <Accordion.Control>ما الذي يجب أن يبرز؟</Accordion.Control>
                   <Accordion.Panel>
-                    Titles, active calls to action, sacred text snippets, and
-                    progress markers.
+                    العناوين والدعوات إلى الإجراء والمقتطفات النصية المقدسة
+                    ومؤشرات التقدم.
                   </Accordion.Panel>
                 </Accordion.Item>
               </Accordion>
@@ -367,13 +386,13 @@ function MantineShowcase() {
             }}
           >
             <Stack gap="md">
-              <Title order={3}>Data display</Title>
+              <Title order={3}>عرض البيانات</Title>
               <Table highlightOnHover withTableBorder={false}>
                 <Table.Thead>
                   <Table.Tr>
-                    <Table.Th>Surah</Table.Th>
-                    <Table.Th>Length</Table.Th>
-                    <Table.Th>Status</Table.Th>
+                    <Table.Th>السورة</Table.Th>
+                    <Table.Th>الطول</Table.Th>
+                    <Table.Th>الحالة</Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -387,8 +406,8 @@ function MantineShowcase() {
                 </Table.Tbody>
               </Table>
               <Text size="sm" c="dimmed">
-                Tables are included here mainly to inspect typography, hover
-                treatment, and spacing density.
+                أُدرجت الجداول هنا أساسًا لتقييم الطباعة ومعالجة التحويم وكثافة
+                المسافات.
               </Text>
             </Stack>
           </Card>
@@ -399,7 +418,7 @@ function MantineShowcase() {
 }
 
 const meta = {
-  title: 'Mantine/Theme Showcase',
+  title: 'Mantine/معرض السمة',
   component: MantineShowcase,
   parameters: {
     layout: 'fullscreen',
@@ -410,4 +429,6 @@ export default meta
 
 type Story = StoryObj<typeof meta>
 
-export const Overview: Story = {}
+export const Overview: Story = {
+  name: 'نظرة عامة',
+}
