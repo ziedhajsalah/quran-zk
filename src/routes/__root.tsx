@@ -4,6 +4,7 @@ import {
   Scripts,
   createRootRouteWithContext,
 } from '@tanstack/react-router'
+import { ColorSchemeScript, mantineHtmlProps } from '@mantine/core'
 import * as React from 'react'
 import type { QueryClient } from '@tanstack/react-query'
 import appCss from '~/styles/app.css?url'
@@ -61,8 +62,9 @@ function RootComponent() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html>
+    <html {...mantineHtmlProps}>
       <head>
+        <ColorSchemeScript defaultColorScheme="auto" />
         <HeadContent />
       </head>
       <body>

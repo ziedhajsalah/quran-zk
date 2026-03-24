@@ -1,4 +1,18 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
+import {
+  Anchor,
+  Badge,
+  Button,
+  Card,
+  Code,
+  Container,
+  Group,
+  Paper,
+  SimpleGrid,
+  Stack,
+  Text,
+  Title,
+} from '@mantine/core'
 import { useMutation } from 'convex/react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
@@ -14,89 +28,128 @@ function Home() {
   } = useSuspenseQuery(convexQuery(api.myFunctions.listNumbers, { count: 10 }))
 
   const addNumber = useMutation(api.myFunctions.addNumber)
+  const hasNumbers = numbers.length > 0
 
   return (
-    <main className="p-8 flex flex-col gap-16">
-      <h1 className="text-4xl font-bold text-center">
-        Convex + Tanstack Start
-      </h1>
-      <div className="flex flex-col gap-8 max-w-lg mx-auto">
-        <p>Welcome {viewer ?? 'Anonymous'}!</p>
-        <p>
-          Click the button below and open this page in another window - this
-          data is persisted in the Convex cloud database!
-        </p>
-        <p>
-          <button
-            className="bg-dark dark:bg-light text-light dark:text-dark text-sm px-4 py-2 rounded-md border-2"
-            onClick={() => {
-              void addNumber({ value: Math.floor(Math.random() * 10) })
-            }}
-          >
-            Add a random number
-          </button>
-        </p>
-        <p>
-          Numbers:{' '}
-          {numbers.length === 0 ? 'Click the button!' : numbers.join(', ')}
-        </p>
-        <p>
-          Edit{' '}
-          <code className="text-sm font-bold font-mono bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded-md">
-            convex/myFunctions.ts
-          </code>{' '}
-          to change your backend
-        </p>
-        <p>
-          Edit{' '}
-          <code className="text-sm font-bold font-mono bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded-md">
-            src/routes/index.tsx
-          </code>{' '}
-          to change your frontend
-        </p>
-        <p>
-          Open{' '}
-          <Link
-            to="/anotherPage"
-            className="text-blue-600 underline hover:no-underline"
-          >
-            another page
-          </Link>{' '}
-          to send an action.
-        </p>
-        <div className="flex flex-col">
-          <p className="text-lg font-bold">Useful resources:</p>
-          <div className="flex gap-2">
-            <div className="flex flex-col gap-2 w-1/2">
-              <ResourceCard
-                title="Convex docs"
-                description="Read comprehensive documentation for all Convex features."
-                href="https://docs.convex.dev/home"
-              />
-              <ResourceCard
-                title="Stack articles"
-                description="Learn about best practices, use cases, and more from a growing
-            collection of articles, videos, and walkthroughs."
-                href="https://www.typescriptlang.org/docs/handbook/2/basic-types.html"
-              />
-            </div>
-            <div className="flex flex-col gap-2 w-1/2">
-              <ResourceCard
-                title="Templates"
-                description="Browse our collection of templates to get started quickly."
-                href="https://www.convex.dev/templates"
-              />
-              <ResourceCard
-                title="Discord"
-                description="Join our developer community to ask questions, trade tips & tricks,
-            and show off your projects."
-                href="https://www.convex.dev/community"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
+    <Container size="lg" py="xl">
+      <Stack gap="xl">
+        <Paper withBorder radius="xl" p={{ base: 'lg', sm: 'xl' }} shadow="sm">
+          <Stack gap="lg">
+            <Group justify="space-between" align="flex-start" gap="md">
+              <Stack gap="xs">
+                <Badge variant="light" size="lg" radius="sm">
+                  Live Convex starter
+                </Badge>
+                <Title order={1}>Convex + Mantine + TanStack Start</Title>
+                <Text c="dimmed" maw={640}>
+                  This page now uses Mantine primitives for layout, actions, and
+                  status. The numbers below still come from Convex and update in
+                  real time across tabs.
+                </Text>
+              </Stack>
+              <Badge color={hasNumbers ? 'teal' : 'gray'} variant="dot">
+                {numbers.length} stored values
+              </Badge>
+            </Group>
+
+            <Group gap="sm">
+              <Badge size="lg" variant="default">
+                Viewer: {viewer ?? 'Anonymous'}
+              </Badge>
+              <Badge size="lg" variant="light" color="blue">
+                Backend: convex/myFunctions.ts
+              </Badge>
+            </Group>
+
+            <Group gap="sm">
+              <Button
+                onClick={() => {
+                  void addNumber({ value: Math.floor(Math.random() * 10) })
+                }}
+              >
+                Add a random number
+              </Button>
+              <Button
+                component={Link}
+                to="/anotherPage"
+                variant="default"
+              >
+                Open action page
+              </Button>
+            </Group>
+          </Stack>
+        </Paper>
+
+        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
+          <Card withBorder radius="xl" padding="lg" shadow="sm">
+            <Stack gap="md">
+              <Group justify="space-between" align="center">
+                <Title order={3}>Realtime numbers</Title>
+                <Badge color={hasNumbers ? 'teal' : 'orange'} variant="light">
+                  {hasNumbers ? 'Synced' : 'Empty'}
+                </Badge>
+              </Group>
+              <Text c="dimmed">
+                Open this page in another window and add values from either tab
+                to see the list stay in sync.
+              </Text>
+              <Paper withBorder radius="lg" p="md">
+                <Text ff="monospace" size="sm">
+                  {hasNumbers ? numbers.join(', ') : 'Click the button to seed the list.'}
+                </Text>
+              </Paper>
+            </Stack>
+          </Card>
+
+          <Card withBorder radius="xl" padding="lg" shadow="sm">
+            <Stack gap="md">
+              <Title order={3}>Files to edit</Title>
+              <Text c="dimmed">
+                The demo is still driven by the same route and Convex function,
+                just with Mantine components instead of plain HTML.
+              </Text>
+              <Group gap="xs">
+                <Code>src/routes/index.tsx</Code>
+                <Code>convex/myFunctions.ts</Code>
+              </Group>
+              <Text size="sm">
+                Want to test an action instead of a mutation? Continue to the
+                action page.
+              </Text>
+              <Anchor component={Link} to="/anotherPage">
+                Go to another page
+              </Anchor>
+            </Stack>
+          </Card>
+        </SimpleGrid>
+
+        <Stack gap="md">
+          <Title order={2}>Useful resources</Title>
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+            <ResourceCard
+              title="Convex docs"
+              description="Read comprehensive documentation for queries, mutations, actions, and realtime data."
+              href="https://docs.convex.dev/home"
+            />
+            <ResourceCard
+              title="TypeScript handbook"
+              description="Use the TypeScript handbook when you need a quick reference for types, narrowing, and utility patterns."
+              href="https://www.typescriptlang.org/docs/handbook/2/basic-types.html"
+            />
+            <ResourceCard
+              title="Templates"
+              description="Browse prebuilt Convex templates when you want to move past the starter and into a fuller app structure."
+              href="https://www.convex.dev/templates"
+            />
+            <ResourceCard
+              title="Discord"
+              description="Join the community for implementation questions, architecture tradeoffs, and product updates."
+              href="https://www.convex.dev/community"
+            />
+          </SimpleGrid>
+        </Stack>
+      </Stack>
+    </Container>
   )
 }
 
@@ -110,11 +163,18 @@ function ResourceCard({
   href: string
 }) {
   return (
-    <div className="flex flex-col gap-2 bg-slate-200 dark:bg-slate-800 p-4 rounded-md h-28 overflow-auto">
-      <a href={href} className="text-sm underline hover:no-underline">
-        {title}
-      </a>
-      <p className="text-xs">{description}</p>
-    </div>
+    <Card withBorder radius="xl" padding="lg" h="100%">
+      <Stack gap="sm" h="100%" justify="space-between">
+        <div>
+          <Text fw={600}>{title}</Text>
+          <Text size="sm" c="dimmed" mt="xs">
+            {description}
+          </Text>
+        </div>
+        <Anchor href={href} target="_blank" rel="noreferrer">
+          Open resource
+        </Anchor>
+      </Stack>
+    </Card>
   )
 }
