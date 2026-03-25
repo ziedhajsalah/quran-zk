@@ -159,20 +159,6 @@ export const adminUpdate = action({
       }
     }
 
-    if (
-      targetUser.isAdmin &&
-      targetUser.status === 'active' &&
-      !normalizedRoles.includes('admin')
-    ) {
-      const activeAdminCount = await ctx.runQuery(
-        internal.auth.users.getActiveAdminCount,
-        {},
-      )
-      if (activeAdminCount <= 1) {
-        throw new Error('At least one active admin must remain.')
-      }
-    }
-
     const clerkUser = await clerkClient.users.getUser(targetUser.clerkUserId)
 
     await clerkClient.users.updateUser(targetUser.clerkUserId, {
@@ -261,20 +247,6 @@ export const adminSetStatus = action({
     })
     if (!targetUser) {
       throw new Error('User not found.')
-    }
-
-    if (
-      targetUser.isAdmin &&
-      targetUser.status === 'active' &&
-      args.status === 'disabled'
-    ) {
-      const activeAdminCount = await ctx.runQuery(
-        internal.auth.users.getActiveAdminCount,
-        {},
-      )
-      if (activeAdminCount <= 1) {
-        throw new Error('At least one active admin must remain.')
-      }
     }
 
     if (args.status === 'disabled') {

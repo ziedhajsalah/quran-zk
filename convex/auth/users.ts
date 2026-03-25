@@ -110,6 +110,23 @@ async function ensureUniqueIdentityFields(
   }
 }
 
+async function ensureAnotherActiveAdminExists(
+  ctx: MutationCtx,
+  excludedUserId: Id<'users'>,
+) {
+  for await (const user of ctx.db
+    .query('users')
+    .withIndex('by_isAdmin_and_status', (q) =>
+      q.eq('isAdmin', true).eq('status', 'active'),
+    )) {
+    if (user._id !== excludedUserId) {
+      return
+    }
+  }
+
+  throw new Error('At least one active admin must remain.')
+}
+
 export const current = query({
   args: {},
   handler: async (ctx) => {
@@ -355,6 +372,14 @@ export const upsertMirroredUser = internalMutation({
     })
 
     if (existing) {
+      if (
+        existing.isAdmin &&
+        existing.status === 'active' &&
+        (!record.isAdmin || record.status !== 'active')
+      ) {
+        await ensureAnotherActiveAdminExists(ctx, existing._id)
+      }
+
       await ctx.db.patch('users', existing._id, {
         ...record,
         disabledAt: record.status === 'disabled' ? existing.disabledAt : null,
@@ -393,6 +418,14 @@ export const updateUserStatus = internalMutation({
     const user = await ctx.db.get('users', args.userId)
     if (!user) {
       throw new Error('User not found.')
+    }
+
+    if (
+      user.isAdmin &&
+      user.status === 'active' &&
+      args.status === 'disabled'
+    ) {
+      await ensureAnotherActiveAdminExists(ctx, args.userId)
     }
 
     const timestamp = args.status === 'disabled' ? Date.now() : null
