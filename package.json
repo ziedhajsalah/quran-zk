@@ -14,7 +14,10 @@
     "lint": "tsc && eslint .  --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "bootstrap:admin": "node scripts/bootstrap-admin.mjs"
+    "bootstrap:admin": "node scripts/bootstrap-admin.mjs",
+    "deploy": "npm run build && wrangler deploy",
+    "preview": "npm run build && wrangler dev",
+    "cf-typegen": "wrangler types"
   },
   "dependencies": {
     "@clerk/backend": "^3.2.2",
@@ -32,6 +35,7 @@
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.30.1",
     "@convex-dev/eslint-plugin": "^1.2.0",
     "@storybook/addon-a11y": "^10.3.3",
     "@storybook/addon-docs": "^10.3.3",
@@ -47,6 +51,7 @@
     "storybook": "^10.3.3",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
-    "vite-tsconfig-paths": "^6.1.1"
+    "vite-tsconfig-paths": "^6.1.1",
+    "wrangler": "^4.77.0"
   }
 }
