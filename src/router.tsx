@@ -2,17 +2,18 @@ import { createRouter } from '@tanstack/react-router'
 import { QueryClient } from '@tanstack/react-query'
 import { routerWithQueryClient } from '@tanstack/react-router-with-query'
 import { ConvexQueryClient } from '@convex-dev/react-query'
-import { DirectionProvider, MantineProvider } from '@mantine/core'
-import { ConvexProvider } from 'convex/react'
+import { ConvexReactClient } from 'convex/react'
 import { routeTree } from './routeTree.gen'
-import { appTheme } from './theme'
 
 export function getRouter() {
   const CONVEX_URL = (import.meta as any).env.VITE_CONVEX_URL!
   if (!CONVEX_URL) {
     console.error('missing envar CONVEX_URL')
   }
-  const convexQueryClient = new ConvexQueryClient(CONVEX_URL)
+  const convexClient = new ConvexReactClient(CONVEX_URL, {
+    unsavedChangesWarning: false,
+  })
+  const convexQueryClient = new ConvexQueryClient(convexClient)
 
   const queryClient: QueryClient = new QueryClient({
     defaultOptions: {
@@ -29,20 +30,11 @@ export function getRouter() {
     createRouter({
       routeTree,
       defaultPreload: 'intent',
-      context: { queryClient },
+      context: { queryClient, convexClient, convexQueryClient },
       scrollRestoration: true,
       defaultPreloadStaleTime: 0, // Let React Query handle all caching
       defaultErrorComponent: (err) => <p>{err.error.stack}</p>,
       defaultNotFoundComponent: () => <p>الصفحة غير موجودة</p>,
-      Wrap: ({ children }) => (
-        <ConvexProvider client={convexQueryClient.convexClient}>
-          <DirectionProvider initialDirection="rtl">
-            <MantineProvider theme={appTheme} defaultColorScheme="auto">
-              {children}
-            </MantineProvider>
-          </DirectionProvider>
-        </ConvexProvider>
-      ),
     }),
     queryClient,
   )

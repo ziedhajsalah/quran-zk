@@ -17,12 +17,17 @@ import { useMutation } from 'convex/react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
 import { api } from '../../convex/_generated/api'
+import { requireProtectedAppUser } from '~/lib/auth'
 
 export const Route = createFileRoute('/')({
+  beforeLoad: async ({ location }) => {
+    await requireProtectedAppUser(location.href)
+  },
   component: Home,
 })
 
 function Home() {
+  const { data: currentUser } = useSuspenseQuery(convexQuery(api.auth.users.current, {}))
   const {
     data: { viewer, numbers },
   } = useSuspenseQuery(convexQuery(api.myFunctions.listNumbers, { count: 10 }))
@@ -54,10 +59,10 @@ function Home() {
 
             <Group gap="sm">
               <Badge size="lg" variant="default">
-                Viewer: {viewer ?? 'Anonymous'}
+                المستخدم: {viewer}
               </Badge>
-              <Badge size="lg" variant="light" color="blue">
-                Backend: convex/myFunctions.ts
+              <Badge size="lg" variant="light" color={currentUser.isAdmin ? 'primary' : 'secondary'}>
+                الأدوار: {currentUser.roles.join('، ')}
               </Badge>
             </Group>
 

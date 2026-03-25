@@ -13,9 +13,12 @@
     "format": "prettier --write .",
     "lint": "tsc && eslint .  --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "bootstrap:admin": "node scripts/bootstrap-admin.mjs"
   },
   "dependencies": {
+    "@clerk/backend": "^3.2.2",
+    "@clerk/tanstack-react-start": "^1.0.6",
     "@convex-dev/react-query": "^0.1.0",
     "@mantine/core": "^8.3.18",
     "@mantine/hooks": "^8.3.18",
@@ -34,6 +37,7 @@
     "@storybook/addon-docs": "^10.3.3",
     "@storybook/react-vite": "^10.3.3",
     "@tanstack/eslint-config": "^0.4.0",
+    "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.2.0",

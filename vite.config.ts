@@ -6,12 +6,22 @@ import viteReact from '@vitejs/plugin-react'
 export default defineConfig({
   server: {
     port: 3000,
+    watch: {
+      ignored: ['**/src/routeTree.gen.ts'],
+    },
   },
   plugins: [
     tsConfigPaths({
       projects: ['./tsconfig.json'],
     }),
-    tanstackStart(),
+    tanstackStart({
+      start: {
+        entry: './app-start',
+      },
+      router: {
+        entry: './router',
+      },
+    }),
     viteReact(),
   ],
 })

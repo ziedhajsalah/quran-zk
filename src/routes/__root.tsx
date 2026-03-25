@@ -3,15 +3,35 @@ import {
   Outlet,
   Scripts,
   createRootRouteWithContext,
+  useRouteContext,
 } from '@tanstack/react-router'
-import { ColorSchemeScript, mantineHtmlProps } from '@mantine/core'
+import {
+  ClerkProvider,
+  UserButton,
+  useAuth,
+} from '@clerk/tanstack-react-start'
+import { ColorSchemeScript, DirectionProvider, MantineProvider, mantineHtmlProps } from '@mantine/core'
+import { ConvexProviderWithClerk } from 'convex/react-clerk'
 import * as React from 'react'
 import type { QueryClient } from '@tanstack/react-query'
+import type { ConvexQueryClient } from '@convex-dev/react-query'
+import type { ConvexReactClient } from 'convex/react'
 import appCss from '~/styles/app.css?url'
+import { fetchClerkSession } from '~/lib/auth'
+import { appTheme } from '~/theme'
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
+  convexClient: ConvexReactClient
+  convexQueryClient: ConvexQueryClient
 }>()({
+  beforeLoad: async ({ context }) => {
+    const session = await fetchClerkSession()
+    if (session.token) {
+      context.convexQueryClient.serverHttpClient?.setAuth(session.token)
+    }
+    return session
+  },
   head: () => ({
     meta: [
       {
@@ -53,10 +73,25 @@ export const Route = createRootRouteWithContext<{
 })
 
 function RootComponent() {
+  const context = useRouteContext({ from: Route.id })
+  const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
+
+  if (!publishableKey) {
+    throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY environment variable.')
+  }
+
   return (
-    <RootDocument>
-      <Outlet />
-    </RootDocument>
+    <ClerkProvider publishableKey={publishableKey} signInUrl="/login">
+      <ConvexProviderWithClerk client={context.convexClient} useAuth={useAuth}>
+        <DirectionProvider initialDirection="rtl">
+          <MantineProvider theme={appTheme} defaultColorScheme="auto">
+            <RootDocument>
+              <Outlet />
+            </RootDocument>
+          </MantineProvider>
+        </DirectionProvider>
+      </ConvexProviderWithClerk>
+    </ClerkProvider>
   )
 }
 
@@ -68,9 +103,22 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        <header style={{ display: 'flex', justifyContent: 'flex-start', padding: '1rem 1rem 0' }}>
+          <AuthControls />
+        </header>
         {children}
         <Scripts />
       </body>
     </html>
   )
+}
+
+function AuthControls() {
+  const { isSignedIn } = useAuth()
+
+  if (!isSignedIn) {
+    return <div />
+  }
+
+  return <UserButton />
 }

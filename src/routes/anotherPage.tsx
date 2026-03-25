@@ -17,8 +17,12 @@ import * as React from 'react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
 import { api } from '../../convex/_generated/api'
+import { requireProtectedAppUser } from '~/lib/auth'
 
 export const Route = createFileRoute('/anotherPage')({
+  beforeLoad: async ({ location }) => {
+    await requireProtectedAppUser(location.href)
+  },
   component: AnotherPage,
 })
 
