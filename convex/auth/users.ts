@@ -200,7 +200,7 @@ export const adminList = query({
   },
 })
 
-export const bootstrapAdmin = mutation({
+export const bootstrapAdmin = internalMutation({
   args: {
     clerkUserId: v.string(),
     username: v.string(),
