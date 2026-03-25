@@ -28,3 +28,9 @@ app.config.timestamp_*.js
 
 *storybook.log
 storybook-static
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
