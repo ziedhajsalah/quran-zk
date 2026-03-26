@@ -1,0 +1,1 @@
+export { RecentLessonsSection } from './RecentLessonsSection'

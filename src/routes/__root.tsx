@@ -7,7 +7,6 @@ import {
 } from '@tanstack/react-router'
 import {
   ClerkProvider,
-  UserButton,
   useAuth,
 } from '@clerk/tanstack-react-start'
 import { ColorSchemeScript, DirectionProvider, MantineProvider, mantineHtmlProps } from '@mantine/core'
@@ -103,22 +102,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <header style={{ display: 'flex', justifyContent: 'flex-start', padding: '1rem 1rem 0' }}>
-          <AuthControls />
-        </header>
         {children}
         <Scripts />
       </body>
     </html>
   )
-}
-
-function AuthControls() {
-  const { isSignedIn } = useAuth()
-
-  if (!isSignedIn) {
-    return <div />
-  }
-
-  return <UserButton />
 }

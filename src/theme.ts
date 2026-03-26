@@ -166,6 +166,16 @@ export const componentTokens = {
     complete: '#004d27',
     incomplete: '#9ef6b6',
   },
+  home: {
+    heroRadius: '2.5rem',
+    cardRadius: '2rem',
+    navRadius: '2rem',
+    iconRadius: '1.25rem',
+    bottomNavMaxWidth: '26rem',
+    floatingActionOffset: '1.5rem',
+    floatingActionBottom: '7.5rem',
+    floatingActionSize: '3.5rem',
+  },
 } as const
 
 export const themeTokens = {
