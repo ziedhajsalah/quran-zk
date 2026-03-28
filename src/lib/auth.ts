@@ -1,46 +1,16 @@
 import { redirect } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
-import { auth } from '@clerk/tanstack-react-start/server'
-import { ConvexHttpClient } from 'convex/browser'
 import { api } from '../../convex/_generated/api'
+import { fetchAuthQuery, getToken } from '~/lib/auth-server'
 
-function getConvexUrl() {
-  const url = process.env.VITE_CONVEX_URL ?? process.env.CONVEX_URL
-  if (!url) {
-    throw new Error('Missing VITE_CONVEX_URL environment variable.')
-  }
-  return url
-}
-
-async function getConvexToken(authState: Awaited<ReturnType<typeof auth>>) {
-  if (!authState.userId) {
-    return null
-  }
-
-  if (authState.sessionClaims.aud === 'convex') {
-    return await authState.getToken()
-  }
-
-  return await authState.getToken({ template: 'convex' })
-}
-
-export const fetchClerkSession = createServerFn({ method: 'GET' }).handler(
-  async () => {
-    const authState = await auth()
-    const token = await getConvexToken(authState)
-
-    return {
-      userId: authState.userId ?? null,
-      token,
-    }
-  },
-)
+export const fetchAuthToken = createServerFn({ method: 'GET' }).handler(async () => {
+  return await getToken()
+})
 
 export const fetchAppSession = createServerFn({ method: 'GET' }).handler(
   async () => {
-    const authState = await auth()
-
-    if (!authState.userId) {
+    const token = await getToken()
+    if (!token) {
       return {
         userId: null,
         token: null,
@@ -48,30 +18,16 @@ export const fetchAppSession = createServerFn({ method: 'GET' }).handler(
       }
     }
 
-    const token = await getConvexToken(authState)
-    if (!token) {
-      return {
-        userId: authState.userId,
-        token: null,
-        currentUser: null,
-      }
-    }
-
-    const client = new ConvexHttpClient(getConvexUrl(), {
-      auth: token,
-      logger: false,
-    })
-
     try {
-      const currentUser = await client.mutation(api.auth.users.syncSessionUser, {})
+      const currentUser = await fetchAuthQuery(api.auth.users.current, {})
       return {
-        userId: authState.userId,
+        userId: currentUser.id,
         token,
         currentUser,
       }
     } catch {
       return {
-        userId: authState.userId,
+        userId: '__session__',
         token,
         currentUser: null,
       }

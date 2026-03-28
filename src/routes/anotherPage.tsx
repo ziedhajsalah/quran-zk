@@ -23,6 +23,11 @@ export const Route = createFileRoute('/anotherPage')({
   beforeLoad: async ({ location }) => {
     await requireProtectedAppUser(location.href)
   },
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData(
+      convexQuery(api.myFunctions.listNumbers, { count: 10 }),
+    )
+  },
   component: AnotherPage,
 })
 

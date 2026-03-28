@@ -9,6 +9,9 @@ export const Route = createFileRoute('/')({
   beforeLoad: async ({ location }) => {
     await requireProtectedAppUser(location.href)
   },
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData(convexQuery(api.auth.users.current, {}))
+  },
   component: Home,
 })
 

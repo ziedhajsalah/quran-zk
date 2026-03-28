@@ -1,6 +1,7 @@
-import type { AppRole, UserStatus } from './validators'
+import type { AppRole } from './validators'
 
 const USERNAME_PATTERN = /^[A-Za-z0-9._-]{3,32}$/
+const PLACEHOLDER_EMAIL_DOMAIN = 'auth.local.invalid'
 
 export function normalizeUsername(username: string) {
   const value = username.trim()
@@ -9,9 +10,10 @@ export function normalizeUsername(username: string) {
       'Username must be 3-32 characters and use only Latin letters, numbers, dots, underscores, or hyphens.',
     )
   }
+  const usernameCanonical = value.toLowerCase()
   return {
-    username: value,
-    usernameCanonical: value.toLowerCase(),
+    username: usernameCanonical,
+    usernameCanonical,
   }
 }
 
@@ -37,6 +39,16 @@ export function normalizeEmail(email: string | null | undefined) {
   }
 }
 
+export function buildStoredEmail(username: string, email: string | null | undefined) {
+  const normalizedEmail = normalizeEmail(email)
+  if (normalizedEmail.email) {
+    return normalizedEmail.emailLower
+  }
+
+  const normalizedUsername = normalizeUsername(username)
+  return `${normalizedUsername.usernameCanonical}@${PLACEHOLDER_EMAIL_DOMAIN}`
+}
+
 export function normalizeRoles(roleValues: Array<AppRole>) {
   const deduped = [...new Set(roleValues)].sort()
   if (deduped.length === 0) {
@@ -56,45 +68,23 @@ export function buildRoleFlags(roleValues: Array<AppRole>) {
   }
 }
 
-export function buildSearchText(input: {
-  username: string
-  displayName: string
-  email: string | null
-}) {
-  return [input.username, input.displayName, input.email ?? '']
-    .join(' ')
-    .trim()
+export function parseStoredRoles(rawRoles: string | null | undefined) {
+  if (!rawRoles) {
+    return [] satisfies Array<AppRole>
+  }
+
+  return rawRoles
+    .split(',')
+    .map((value) => value.trim())
+    .filter((value): value is AppRole =>
+      value === 'admin' || value === 'teacher' || value === 'student',
+    )
 }
 
-export function buildUserRecord(input: {
-  clerkUserId: string
-  tokenIdentifier: string | null
-  username: string
-  displayName: string
-  email: string | null
-  roles: Array<AppRole>
-  status: UserStatus
-}) {
-  const normalizedUsername = normalizeUsername(input.username)
-  const normalizedDisplayName = normalizeDisplayName(input.displayName)
-  const normalizedEmail = normalizeEmail(input.email)
-  const normalizedRoles = normalizeRoles(input.roles)
-
-  return {
-    clerkUserId: input.clerkUserId,
-    tokenIdentifier: input.tokenIdentifier,
-    username: normalizedUsername.username,
-    usernameCanonical: normalizedUsername.usernameCanonical,
-    displayName: normalizedDisplayName,
-    email: normalizedEmail.email,
-    emailLower: normalizedEmail.emailLower,
-    roles: normalizedRoles,
-    status: input.status,
-    searchText: buildSearchText({
-      username: normalizedUsername.usernameCanonical,
-      displayName: normalizedDisplayName,
-      email: normalizedEmail.emailLower,
-    }),
-    ...buildRoleFlags(normalizedRoles),
+export function displayAuthEmail(email: string | null | undefined) {
+  if (!email) {
+    return null
   }
+
+  return email.endsWith(`@${PLACEHOLDER_EMAIL_DOMAIN}`) ? null : email
 }

@@ -1,57 +1,58 @@
-"use node";
-
-import process from 'node:process'
-import { createClerkClient } from '@clerk/backend'
 import { v } from 'convex/values'
-import { internal } from '../_generated/api'
-import { action } from '../_generated/server'
-import { normalizeEmail, normalizeRoles, normalizeUsername } from './utils'
+import { action, internalAction } from '../_generated/server'
+import { components } from '../_generated/api'
+import { authComponent, createAuth } from '../auth'
+import { requireAdminAuthUser, serializeAuthUser } from './helpers'
+import {
+  buildStoredEmail,
+  normalizeDisplayName,
+  normalizeRoles,
+  normalizeUsername,
+  parseStoredRoles,
+} from './utils'
 import { roleValidator, userStatusValidator } from './validators'
-import type { Doc } from '../_generated/dataModel'
-import type { ActionCtx } from '../_generated/server'
 
-type PublicUser = Pick<
-  Doc<'users'>,
-  | '_id'
-  | 'clerkUserId'
-  | 'username'
-  | 'displayName'
-  | 'email'
-  | 'roles'
-  | 'status'
-  | 'isAdmin'
-  | 'isTeacher'
-  | 'isStudent'
->
+async function listAllUsers(
+  auth: ReturnType<typeof createAuth>,
+  headers: Headers,
+) {
+  const users: Array<Awaited<ReturnType<typeof auth.api.getUser>>> = []
+  let offset = 0
+  let total = 0
 
-function getClerkClient() {
-  const secretKey = process.env.CLERK_SECRET_KEY
-  if (!secretKey) {
-    throw new Error('Missing CLERK_SECRET_KEY environment variable.')
-  }
-  return createClerkClient({ secretKey })
+  do {
+    const result = await auth.api.listUsers({
+      query: {
+        limit: 100,
+        offset,
+      },
+      headers,
+    })
+    users.push(...result.users)
+    total = result.total
+    offset += result.users.length
+  } while (offset < total)
+
+  return users
 }
 
-async function requireAdminActor(ctx: ActionCtx): Promise<Doc<'users'>> {
-  const identity = await ctx.auth.getUserIdentity()
-  if (!identity) {
-    throw new Error('Not authenticated')
-  }
+async function ensureAnotherActiveAdminExists(
+  auth: ReturnType<typeof createAuth>,
+  headers: Headers,
+  excludedUserId: string,
+) {
+  const users = await listAllUsers(auth, headers)
+  const hasAnotherAdmin = users.some((user) => {
+    if (user.id === excludedUserId || user.banned) {
+      return false
+    }
 
-  const byToken = await ctx.runQuery(internal.auth.users.getByTokenIdentifier, {
-    tokenIdentifier: identity.tokenIdentifier,
+    return parseStoredRoles(user.role).includes('admin')
   })
 
-  const currentUser =
-    byToken ??
-    (await ctx.runQuery(internal.auth.users.getByClerkUserId, {
-      clerkUserId: identity.subject,
-    }))
-
-  if (!currentUser || currentUser.status !== 'active' || !currentUser.isAdmin) {
-    throw new Error('Unauthorized')
+  if (!hasAnotherAdmin) {
+    throw new Error('At least one active admin must remain.')
   }
-  return currentUser
 }
 
 export const adminCreate = action({
@@ -62,172 +63,116 @@ export const adminCreate = action({
     password: v.string(),
     roles: v.array(roleValidator),
   },
-  handler: async (ctx, args): Promise<PublicUser> => {
-    const actor = await requireAdminActor(ctx)
-    const clerkClient = getClerkClient()
+  handler: async (ctx, args) => {
+    await requireAdminAuthUser(ctx)
+    const { auth, headers } = await authComponent.getAuth(createAuth, ctx)
 
     const normalizedUsername = normalizeUsername(args.username)
+    const normalizedDisplayName = normalizeDisplayName(args.displayName)
     const normalizedRoles = normalizeRoles(args.roles)
-    const normalizedEmail = normalizeEmail(args.email)
+    const email = buildStoredEmail(normalizedUsername.username, args.email)
 
-    const existingUsername = await ctx.runQuery(
-      internal.auth.users.getByUsernameCanonical,
-      {
-        usernameCanonical: normalizedUsername.usernameCanonical,
+    const created = await auth.api.createUser({
+      body: {
+        email,
+        password: args.password,
+        name: normalizedDisplayName,
+        role: normalizedRoles,
+        data: {
+          username: normalizedUsername.username,
+        },
       },
-    )
-    if (existingUsername) {
-      throw new Error('Username is already in use.')
-    }
-
-    if (normalizedEmail.emailLower) {
-      const existingEmail = await ctx.runQuery(internal.auth.users.getByEmailLower, {
-        emailLower: normalizedEmail.emailLower,
-      })
-      if (existingEmail) {
-        throw new Error('Email is already in use.')
-      }
-    }
-
-    const clerkUser = await clerkClient.users.createUser({
-      username: normalizedUsername.username,
-      password: args.password,
-      firstName: args.displayName,
-      emailAddress: normalizedEmail.email ? [normalizedEmail.email] : undefined,
+      headers,
     })
 
-    try {
-      return await ctx.runMutation(internal.auth.users.upsertMirroredUser, {
-        clerkUserId: clerkUser.id,
-        tokenIdentifier: null,
-        username: normalizedUsername.username,
-        displayName: args.displayName,
-        email: normalizedEmail.email,
-        roles: normalizedRoles,
-        status: 'active',
-        createdBy: actor._id,
-      })
-    } catch (error) {
-      await clerkClient.users.deleteUser(clerkUser.id)
-      throw error
-    }
+    return serializeAuthUser(created.user)
   },
 })
 
 export const adminUpdate = action({
   args: {
-    userId: v.id('users'),
+    userId: v.string(),
     username: v.string(),
     displayName: v.string(),
     email: v.union(v.string(), v.null()),
     roles: v.array(roleValidator),
   },
-  handler: async (ctx, args): Promise<PublicUser> => {
-    await requireAdminActor(ctx)
-    const clerkClient = getClerkClient()
+  handler: async (ctx, args) => {
+    await requireAdminAuthUser(ctx)
+    const { auth, headers } = await authComponent.getAuth(createAuth, ctx)
 
-    const targetUser: Doc<'users'> | null = await ctx.runQuery(
-      internal.auth.users.getById,
-      {
-      userId: args.userId,
+    const existing = await auth.api.getUser({
+      query: {
+        id: args.userId,
       },
-    )
-    if (!targetUser) {
-      throw new Error('User not found.')
-    }
+      headers,
+    })
 
     const normalizedUsername = normalizeUsername(args.username)
+    const normalizedDisplayName = normalizeDisplayName(args.displayName)
     const normalizedRoles = normalizeRoles(args.roles)
-    const normalizedEmail = normalizeEmail(args.email)
+    const email = buildStoredEmail(normalizedUsername.username, args.email)
 
-    const conflictingUsername = await ctx.runQuery(
-      internal.auth.users.getByUsernameCanonical,
-      {
-        usernameCanonical: normalizedUsername.usernameCanonical,
-      },
-    )
-    if (conflictingUsername && conflictingUsername._id !== targetUser._id) {
-      throw new Error('Username is already in use.')
-    }
-
-    if (normalizedEmail.emailLower) {
-      const conflictingEmail = await ctx.runQuery(internal.auth.users.getByEmailLower, {
-        emailLower: normalizedEmail.emailLower,
-      })
-      if (conflictingEmail && conflictingEmail._id !== targetUser._id) {
-        throw new Error('Email is already in use.')
-      }
-    }
-
-    const clerkUser = await clerkClient.users.getUser(targetUser.clerkUserId)
-
-    await clerkClient.users.updateUser(targetUser.clerkUserId, {
-      username: normalizedUsername.username,
-      firstName: args.displayName,
-    })
-
-    const currentEmails = clerkUser.emailAddresses
-
-    if (!normalizedEmail.email && currentEmails.length > 0) {
-      for (const emailAddress of currentEmails) {
-        await clerkClient.emailAddresses.deleteEmailAddress(emailAddress.id)
-      }
-    }
-
+    const existingRoles = parseStoredRoles(existing.role)
     if (
-      normalizedEmail.email &&
-      !currentEmails.some(
-        (emailAddress) =>
-          emailAddress.emailAddress.toLowerCase() === normalizedEmail.emailLower,
-      )
+      !existing.banned &&
+      existingRoles.includes('admin') &&
+      !normalizedRoles.includes('admin')
     ) {
-      const createdEmail = await clerkClient.emailAddresses.createEmailAddress({
-        userId: targetUser.clerkUserId,
-        emailAddress: normalizedEmail.email,
-      })
-      await clerkClient.emailAddresses.updateEmailAddress(createdEmail.id, {
-        verified: true,
-        primary: true,
-      })
-
-      for (const emailAddress of currentEmails) {
-        await clerkClient.emailAddresses.deleteEmailAddress(emailAddress.id)
-      }
+      await ensureAnotherActiveAdminExists(auth, headers, existing.id)
     }
 
-    return await ctx.runMutation(internal.auth.users.upsertMirroredUser, {
-      clerkUserId: targetUser.clerkUserId,
-      tokenIdentifier: targetUser.tokenIdentifier,
-      username: normalizedUsername.username,
-      displayName: args.displayName,
-      email: normalizedEmail.email,
-      roles: normalizedRoles,
-      status: targetUser.status,
-      createdBy: targetUser.createdBy,
+    await auth.api.adminUpdateUser({
+      body: {
+        userId: args.userId,
+        data: {
+          email,
+          name: normalizedDisplayName,
+          username: normalizedUsername.username,
+        },
+      },
+      headers,
     })
+
+    await auth.api.setRole({
+      body: {
+        userId: args.userId,
+        role: normalizedRoles,
+      },
+      headers,
+    })
+
+    const updated = await auth.api.getUser({
+      query: {
+        id: args.userId,
+      },
+      headers,
+    })
+
+    return serializeAuthUser(updated)
   },
 })
 
 export const adminResetPassword = action({
   args: {
-    userId: v.id('users'),
+    userId: v.string(),
     password: v.string(),
   },
   handler: async (ctx, args): Promise<{ success: true }> => {
-    await requireAdminActor(ctx)
-    const clerkClient = getClerkClient()
+    await requireAdminAuthUser(ctx)
+    const { auth, headers } = await authComponent.getAuth(createAuth, ctx)
 
-    const targetUser = await ctx.runQuery(internal.auth.users.getById, {
-      userId: args.userId,
+    const result = await auth.api.setUserPassword({
+      body: {
+        userId: args.userId,
+        newPassword: args.password,
+      },
+      headers,
     })
-    if (!targetUser) {
-      throw new Error('User not found.')
+
+    if (!result.status) {
+      throw new Error('Failed to reset password.')
     }
-
-    await clerkClient.users.updateUser(targetUser.clerkUserId, {
-      password: args.password,
-      signOutOfOtherSessions: true,
-    })
 
     return { success: true }
   },
@@ -235,30 +180,124 @@ export const adminResetPassword = action({
 
 export const adminSetStatus = action({
   args: {
-    userId: v.id('users'),
+    userId: v.string(),
     status: userStatusValidator,
   },
-  handler: async (ctx, args): Promise<PublicUser> => {
-    const actor = await requireAdminActor(ctx)
-    const clerkClient = getClerkClient()
+  handler: async (ctx, args) => {
+    await requireAdminAuthUser(ctx)
+    const { auth, headers } = await authComponent.getAuth(createAuth, ctx)
 
-    const targetUser = await ctx.runQuery(internal.auth.users.getById, {
-      userId: args.userId,
+    const existing = await auth.api.getUser({
+      query: {
+        id: args.userId,
+      },
+      headers,
     })
-    if (!targetUser) {
-      throw new Error('User not found.')
+
+    if (
+      args.status === 'disabled' &&
+      !existing.banned &&
+      parseStoredRoles(existing.role).includes('admin')
+    ) {
+      await ensureAnotherActiveAdminExists(auth, headers, existing.id)
     }
 
     if (args.status === 'disabled') {
-      await clerkClient.users.banUser(targetUser.clerkUserId)
+      await auth.api.banUser({
+        body: {
+          userId: args.userId,
+          banReason: 'Account disabled',
+        },
+        headers,
+      })
+      await auth.api.revokeUserSessions({
+        body: {
+          userId: args.userId,
+        },
+        headers,
+      })
     } else {
-      await clerkClient.users.unbanUser(targetUser.clerkUserId)
+      await auth.api.unbanUser({
+        body: {
+          userId: args.userId,
+        },
+        headers,
+      })
     }
 
-    return await ctx.runMutation(internal.auth.users.updateUserStatus, {
-      userId: args.userId,
-      status: args.status,
-      actorUserId: actor._id,
+    const updated = await auth.api.getUser({
+      query: {
+        id: args.userId,
+      },
+      headers,
     })
+
+    return serializeAuthUser(updated)
+  },
+})
+
+export const bootstrapAdmin = internalAction({
+  args: {
+    username: v.string(),
+    password: v.string(),
+    displayName: v.string(),
+    email: v.union(v.string(), v.null()),
+  },
+  handler: async (ctx, args) => {
+    const existingUsers = await ctx.runQuery(components.betterAuth.adapter.findMany, {
+      model: 'user',
+      where: [],
+      paginationOpts: {
+        numItems: 1,
+        cursor: null,
+      },
+    })
+
+    if (existingUsers.page.length > 0) {
+      throw new Error('Bootstrap is only available before any user exists.')
+    }
+
+    const normalizedUsername = normalizeUsername(args.username)
+    const normalizedDisplayName = normalizeDisplayName(args.displayName)
+    const email = buildStoredEmail(normalizedUsername.username, args.email)
+    const auth = createAuth(ctx, { disableSignUp: false })
+
+    const created = await auth.api.signUpEmail({
+      body: {
+        email,
+        password: args.password,
+        name: normalizedDisplayName,
+        username: normalizedUsername.username,
+      },
+    })
+
+    if (!created.user) {
+      throw new Error('Failed to create bootstrap admin.')
+    }
+
+    await ctx.runMutation(components.betterAuth.adapter.updateOne, {
+      input: {
+        model: 'user',
+        where: [
+          {
+            field: '_id',
+            value: created.user.id,
+          },
+        ],
+        update: {
+          role: 'admin',
+          banned: false,
+          banReason: null,
+          banExpires: null,
+        },
+      },
+    })
+
+    const user = await authComponent.getAnyUserById(ctx, created.user.id)
+    if (!user) {
+      throw new Error('Failed to load bootstrap admin.')
+    }
+
+    return serializeAuthUser(user)
   },
 })

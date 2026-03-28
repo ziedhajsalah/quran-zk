@@ -11,6 +11,7 @@ export function getRouter() {
     console.error('missing envar CONVEX_URL')
   }
   const convexClient = new ConvexReactClient(CONVEX_URL, {
+    expectAuth: true,
     unsavedChangesWarning: false,
   })
   const convexQueryClient = new ConvexQueryClient(convexClient)

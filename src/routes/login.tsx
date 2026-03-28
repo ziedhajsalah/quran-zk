@@ -11,9 +11,8 @@ import {
   TextInput,
   Title,
 } from '@mantine/core'
-import { useClerk } from '@clerk/tanstack-react-start'
-import { useSignIn } from '@clerk/tanstack-react-start/legacy'
 import * as React from 'react'
+import { authClient } from '~/lib/auth-client'
 import { fetchAppSession } from '~/lib/auth'
 
 type LoginSearch = {
@@ -45,8 +44,6 @@ export const Route = createFileRoute('/login')({
 
 function LoginPage() {
   const search = Route.useSearch()
-  const { isLoaded, signIn, setActive } = useSignIn()
-  const clerk = useClerk()
   const [identifier, setIdentifier] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [loading, setLoading] = React.useState(false)
@@ -54,43 +51,30 @@ function LoginPage() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!isLoaded) {
-      return
-    }
 
     setLoading(true)
     setErrorMessage(null)
 
     try {
-      const result = await signIn.create({
-        identifier,
-        password,
-      })
+      const normalizedIdentifier = identifier.trim()
+      const result = normalizedIdentifier.includes('@')
+        ? await authClient.signIn.email({
+            email: normalizedIdentifier,
+            password,
+          })
+        : await authClient.signIn.username({
+            username: normalizedIdentifier,
+            password,
+          })
 
-      if (result.status !== 'complete' || !result.createdSessionId) {
-        setErrorMessage('تعذر إكمال عملية تسجيل الدخول. حاول مرة أخرى.')
+      if (result.error) {
+        setErrorMessage(result.error.message ?? 'فشل تسجيل الدخول. تحقق من البيانات.')
         return
       }
 
-      await setActive({
-        session: result.createdSessionId,
-      })
-
       window.location.assign(search.redirect ?? '/')
     } catch (error) {
-      if (
-        typeof error === 'object' &&
-        error &&
-        'errors' in error &&
-        Array.isArray((error as { errors?: Array<{ message?: string }> }).errors)
-      ) {
-        const firstError = (
-          error as { errors: Array<{ message?: string }> }
-        ).errors[0]?.message
-        setErrorMessage(firstError ?? 'فشل تسجيل الدخول. تحقق من البيانات.')
-      } else {
-        setErrorMessage('فشل تسجيل الدخول. تحقق من البيانات.')
-      }
+      setErrorMessage(error instanceof Error ? error.message : 'فشل تسجيل الدخول. تحقق من البيانات.')
     } finally {
       setLoading(false)
     }
@@ -110,7 +94,7 @@ function LoginPage() {
 
           {search.reason === 'unauthorized' ? (
             <Alert color="orange" title="هذا الحساب غير مفعّل داخل التطبيق">
-              تم تسجيل دخولك لدى Clerk، لكن هذا الحساب لا يملك وصولًا نشطًا داخل
+              تم التعرّف على جلستك، لكن هذا الحساب لا يملك وصولًا نشطًا داخل
               التطبيق. تواصل مع الإدارة أو سجّل الخروج ثم جرّب حسابًا آخر.
             </Alert>
           ) : null}
@@ -154,7 +138,9 @@ function LoginPage() {
           <Anchor
             component="button"
             type="button"
-            onClick={() => clerk.signOut()}
+            onClick={async () => {
+              await authClient.signOut()
+            }}
             size="sm"
           >
             تسجيل الخروج من الجلسة الحالية

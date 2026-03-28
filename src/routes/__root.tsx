@@ -5,18 +5,15 @@ import {
   createRootRouteWithContext,
   useRouteContext,
 } from '@tanstack/react-router'
-import {
-  ClerkProvider,
-  useAuth,
-} from '@clerk/tanstack-react-start'
+import { ConvexBetterAuthProvider } from '@convex-dev/better-auth/react'
 import { ColorSchemeScript, DirectionProvider, MantineProvider, mantineHtmlProps } from '@mantine/core'
-import { ConvexProviderWithClerk } from 'convex/react-clerk'
 import * as React from 'react'
 import type { QueryClient } from '@tanstack/react-query'
 import type { ConvexQueryClient } from '@convex-dev/react-query'
 import type { ConvexReactClient } from 'convex/react'
 import appCss from '~/styles/app.css?url'
-import { fetchClerkSession } from '~/lib/auth'
+import { authClient } from '~/lib/auth-client'
+import { fetchAuthToken } from '~/lib/auth'
 import { appTheme } from '~/theme'
 
 export const Route = createRootRouteWithContext<{
@@ -25,11 +22,14 @@ export const Route = createRootRouteWithContext<{
   convexQueryClient: ConvexQueryClient
 }>()({
   beforeLoad: async ({ context }) => {
-    const session = await fetchClerkSession()
-    if (session.token) {
-      context.convexQueryClient.serverHttpClient?.setAuth(session.token)
+    const token = await fetchAuthToken()
+    if (token) {
+      context.convexQueryClient.serverHttpClient?.setAuth(token)
     }
-    return session
+    return {
+      token,
+      isAuthenticated: Boolean(token),
+    }
   },
   head: () => ({
     meta: [
@@ -73,24 +73,21 @@ export const Route = createRootRouteWithContext<{
 
 function RootComponent() {
   const context = useRouteContext({ from: Route.id })
-  const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
-
-  if (!publishableKey) {
-    throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY environment variable.')
-  }
 
   return (
-    <ClerkProvider publishableKey={publishableKey} signInUrl="/login">
-      <ConvexProviderWithClerk client={context.convexClient} useAuth={useAuth}>
-        <DirectionProvider initialDirection="rtl">
-          <MantineProvider theme={appTheme} defaultColorScheme="auto">
-            <RootDocument>
-              <Outlet />
-            </RootDocument>
-          </MantineProvider>
-        </DirectionProvider>
-      </ConvexProviderWithClerk>
-    </ClerkProvider>
+    <ConvexBetterAuthProvider
+      client={context.convexClient}
+      authClient={authClient}
+      initialToken={context.token ?? undefined}
+    >
+      <DirectionProvider initialDirection="rtl">
+        <MantineProvider theme={appTheme} defaultColorScheme="auto">
+          <RootDocument>
+            <Outlet />
+          </RootDocument>
+        </MantineProvider>
+      </DirectionProvider>
+    </ConvexBetterAuthProvider>
   )
 }
 

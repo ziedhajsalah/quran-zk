@@ -1,6 +1,6 @@
 /* eslint-disable */
 /**
- * Generated `api` utility.
+ * Generated `ComponentApi` utility.
  *
  * THIS CODE IS AUTOMATICALLY GENERATED.
  *
@@ -8,60 +8,21 @@
  * @module
  */
 
-import type * as auth from "../auth.js";
-import type * as auth_admin from "../auth/admin.js";
-import type * as auth_helpers from "../auth/helpers.js";
-import type * as auth_users from "../auth/users.js";
-import type * as auth_utils from "../auth/utils.js";
-import type * as auth_validators from "../auth/validators.js";
-import type * as http from "../http.js";
-import type * as myFunctions from "../myFunctions.js";
-
-import type {
-  ApiFromModules,
-  FilterApi,
-  FunctionReference,
-} from "convex/server";
-
-declare const fullApi: ApiFromModules<{
-  auth: typeof auth;
-  "auth/admin": typeof auth_admin;
-  "auth/helpers": typeof auth_helpers;
-  "auth/users": typeof auth_users;
-  "auth/utils": typeof auth_utils;
-  "auth/validators": typeof auth_validators;
-  http: typeof http;
-  myFunctions: typeof myFunctions;
-}>;
+import type { FunctionReference } from "convex/server";
 
 /**
- * A utility for referencing Convex functions in your app's public API.
+ * A utility for referencing a Convex component's exposed API.
  *
+ * Useful when expecting a parameter like `components.myComponent`.
  * Usage:
- * ```js
- * const myFunctionReference = api.myModule.myFunction;
+ * ```ts
+ * async function myFunction(ctx: QueryCtx, component: ComponentApi) {
+ *   return ctx.runQuery(component.someFile.someQuery, { ...args });
+ * }
  * ```
  */
-export declare const api: FilterApi<
-  typeof fullApi,
-  FunctionReference<any, "public">
->;
-
-/**
- * A utility for referencing Convex functions in your app's internal API.
- *
- * Usage:
- * ```js
- * const myFunctionReference = internal.myModule.myFunction;
- * ```
- */
-export declare const internal: FilterApi<
-  typeof fullApi,
-  FunctionReference<any, "internal">
->;
-
-export declare const components: {
-  betterAuth: {
+export type ComponentApi<Name extends string | undefined = string | undefined> =
+  {
     adapter: {
       create: FunctionReference<
         "mutation",
@@ -191,7 +152,8 @@ export declare const components: {
           onCreateHandle?: string;
           select?: Array<string>;
         },
-        any
+        any,
+        Name
       >;
       deleteMany: FunctionReference<
         "mutation",
@@ -548,7 +510,8 @@ export declare const components: {
             numItems: number;
           };
         },
-        any
+        any,
+        Name
       >;
       deleteOne: FunctionReference<
         "mutation",
@@ -897,7 +860,8 @@ export declare const components: {
               };
           onDeleteHandle?: string;
         },
-        any
+        any,
+        Name
       >;
       findMany: FunctionReference<
         "query",
@@ -951,7 +915,8 @@ export declare const components: {
               | null;
           }>;
         },
-        any
+        any,
+        Name
       >;
       findOne: FunctionReference<
         "query",
@@ -994,7 +959,8 @@ export declare const components: {
               | null;
           }>;
         },
-        any
+        any,
+        Name
       >;
       updateMany: FunctionReference<
         "mutation",
@@ -1445,7 +1411,8 @@ export declare const components: {
             numItems: number;
           };
         },
-        any
+        any,
+        Name
       >;
       updateOne: FunctionReference<
         "mutation",
@@ -1888,8 +1855,8 @@ export declare const components: {
               };
           onUpdateHandle?: string;
         },
-        any
+        any,
+        Name
       >;
     };
   };
-};

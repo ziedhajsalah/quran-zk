@@ -1,67 +1,59 @@
-# Clerk + Convex auth setup
+# Better Auth + Convex auth setup
 
-## 1. Clerk application
+## 1. Required Convex env vars
 
-1. Create a Clerk application in the Clerk dashboard.
-2. Enable username + password and email + password sign-in.
-3. Disable public sign-up in Clerk.
-4. Open the Clerk Convex integration page and activate the Convex integration.
-5. Copy:
-   - Publishable key
-   - Secret key
-   - Clerk JWT issuer domain / Frontend API URL for Convex
+Set these on the Convex deployment before you bootstrap the first admin:
 
-If you plan to bootstrap admins with both `--username` and `--email`, those
-identifier types must both be enabled in Clerk's "User & authentication"
-settings. Clerk returns `422 Unprocessable Entity` if you submit an identifier
-that is not enabled or omit one that is configured as required.
+```bash
+npx convex env set BETTER_AUTH_SECRET "$(openssl rand -base64 32)"
+npx convex env set SITE_URL http://localhost:3000
+```
 
-## 2. Environment variables
+For production, set `SITE_URL` to the real app origin.
 
-Set the following values locally and in production:
+## 2. Local app env vars
 
-- `VITE_CLERK_PUBLISHABLE_KEY`
-- `CLERK_SECRET_KEY`
-- `CLERK_JWT_ISSUER_DOMAIN`
-- `CONVEX_DEPLOYMENT`
-- `VITE_CONVEX_URL`
-- `VITE_CONVEX_SITE_URL`
+`.env.local` should contain:
 
-See `.env.example` for the expected names.
+```dotenv
+CONVEX_DEPLOYMENT=
+VITE_CONVEX_URL=
+VITE_CONVEX_SITE_URL=
+VITE_SITE_URL=http://localhost:3000
+```
 
-## 3. Push the Convex auth config
+`VITE_CONVEX_SITE_URL` must end in `.convex.site`.
 
-After setting the environment variables, run:
+## 3. Push the Convex config
+
+Run:
 
 ```bash
 npx convex dev --once
 ```
 
-This updates generated files and pushes the new auth/schema configuration.
+This updates generated files and pushes the Better Auth component/auth config.
 
 ## 4. Bootstrap the first admin
 
-Run the repo command with explicit arguments:
+Run:
 
 ```bash
-npm run bootstrap:admin -- \
-  --username admin \
-  --password 'change-me-now' \
-  --display-name 'المشرف العام' \
-  --email admin@example.com
+npm run bootstrap:admin -- --username admin --password 'strong-password' --display-name 'Admin Name' [--email admin@example.com]
 ```
 
-The command:
+The bootstrap command:
 
-1. Creates the Clerk user
-2. Mirrors the user into Convex with the `admin` role
+1. Verifies the Better Auth user store is empty.
+2. Creates the first user.
+3. Promotes that user to the `admin` role.
 
-Bootstrap only works before any app user exists.
+After the first admin exists, bootstrap is blocked and all further account creation must go through the app's admin APIs.
 
-## 5. Validation checklist
+## 5. Auth model
 
-- Sign in at `/login` with email
-- Sign in at `/login` with username
-- Confirm protected pages redirect to `/login` when signed out
-- Confirm a disabled user is blocked from app access
-- Confirm an admin can call the user-management backend functions
+- Public sign-up is disabled.
+- Login supports email/password and username/password.
+- Password resets are admin-only.
+- User roles are `admin`, `teacher`, and `student`.
+- Disabled users are implemented with Better Auth bans plus session revocation.

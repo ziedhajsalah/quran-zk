@@ -4,7 +4,6 @@ import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
-import { createClerkClient } from '@clerk/backend'
 
 function loadEnvFile(filePath) {
   if (!existsSync(filePath)) {
@@ -68,37 +67,6 @@ function parseArgs(argv) {
   return args
 }
 
-function formatClerkError(error) {
-  if (
-    typeof error === 'object' &&
-    error &&
-    'errors' in error &&
-    Array.isArray(error.errors)
-  ) {
-    return error.errors
-      .map((entry) => {
-        const code =
-          typeof entry === 'object' && entry && 'code' in entry
-            ? entry.code
-            : 'unknown'
-        const message =
-          typeof entry === 'object' && entry && 'message' in entry
-            ? entry.message
-            : 'Unknown Clerk validation error'
-        const meta =
-          typeof entry === 'object' && entry && 'meta' in entry ? entry.meta : null
-        return `${code}: ${message}${meta ? ` (${JSON.stringify(meta)})` : ''}`
-      })
-      .join('\n')
-  }
-
-  if (error instanceof Error) {
-    return error.message
-  }
-
-  return String(error)
-}
-
 async function main() {
   loadLocalEnv()
 
@@ -112,54 +80,27 @@ async function main() {
     )
   }
 
-  const secretKey = process.env.CLERK_SECRET_KEY
-  if (!secretKey) {
-    throw new Error('Missing CLERK_SECRET_KEY environment variable.')
-  }
+  const args = JSON.stringify({
+    username,
+    password,
+    displayName,
+    email: email ?? null,
+  })
 
-  const clerkClient = createClerkClient({ secretKey })
-  let clerkUser = null
-  try {
-    clerkUser = await clerkClient.users.createUser({
-      username,
-      password,
-      firstName: displayName,
-      emailAddress: email ? [email] : undefined,
-    })
+  const result = spawnSync(
+    'npx',
+    ['convex', 'run', '--push', 'auth/admin:bootstrapAdmin', args],
+    {
+      stdio: 'inherit',
+      shell: false,
+    },
+  )
 
-    const args = JSON.stringify({
-      clerkUserId: clerkUser.id,
-      username,
-      displayName,
-      email: email ?? null,
-    })
-
-    const result = spawnSync(
-      'npx',
-      ['convex', 'run', '--push', 'auth/users:bootstrapAdmin', args],
-      {
-        stdio: 'inherit',
-        shell: false,
-      },
-    )
-
-    if (result.status !== 0) {
-      await clerkClient.users.deleteUser(clerkUser.id)
-      throw new Error('Convex bootstrap mutation failed.')
-    }
-  } catch (error) {
-    if (clerkUser) {
-      await clerkClient.users.deleteUser(clerkUser.id)
-    }
-
+  if (result.status !== 0) {
     throw new Error(
       [
         'Failed to bootstrap the first admin.',
-        formatClerkError(error),
-        'Check Clerk Dashboard > User & authentication and ensure:',
-        '- Username is enabled if you pass --username',
-        '- Password authentication is enabled',
-        '- Email is enabled if you pass --email',
+        'Check that BETTER_AUTH_SECRET and SITE_URL are set on the Convex deployment.',
       ].join('\n'),
     )
   }
