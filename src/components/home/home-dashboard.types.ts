@@ -1,6 +1,7 @@
 export type LessonKind = 'reading' | 'recitation'
 export type CourseArtworkTone = 'primary' | 'tertiary'
 export type BottomNavIcon = 'home' | 'lessons' | 'profile'
+export type BottomNavRoute = '/' | '/profile'
 
 export interface DailyProgressData {
   title: string
@@ -35,6 +36,7 @@ export interface BottomNavItem {
   id: 'home' | 'lessons' | 'profile'
   label: string
   icon: BottomNavIcon
+  to?: BottomNavRoute
 }
 
 export interface HomeDashboardData {
