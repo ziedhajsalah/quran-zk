@@ -14,6 +14,7 @@ import {
   useMantineTheme,
 } from '@mantine/core'
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
 import { BottomNav, HomeTopBar, createHomeDashboardData } from '~/components/home'
 import { currentUserQuery } from '~/lib/auth-queries'
 
@@ -24,7 +25,10 @@ export const Route = createFileRoute('/_protected/profile')({
 function ProfilePage() {
   const theme = useMantineTheme()
   const { data: currentUser } = useSuspenseQuery(currentUserQuery)
-  const homeDashboardData = createHomeDashboardData(currentUser.displayName)
+  const homeDashboardData = useMemo(
+    () => createHomeDashboardData(currentUser.displayName),
+    [currentUser.displayName],
+  )
   const roleLabels =
     currentUser.roles.length > 0
       ? currentUser.roles.map(getRoleLabel)
@@ -90,9 +94,11 @@ function ProfilePage() {
                   {getInitials(currentUser.displayName)}
                 </Avatar>
 
-                <Stack gap={6}>
-                  <Group gap="sm">
-                    <Title order={2}>{currentUser.displayName}</Title>
+                <Stack gap={6} style={{ minWidth: 0, flex: 1 }}>
+                  <Group gap="sm" wrap="wrap">
+                    <Title order={2} lineClamp={2} style={{ wordBreak: 'break-word' }}>
+                      {currentUser.displayName || 'بدون اسم'}
+                    </Title>
                     <Badge
                       color={currentUser.status === 'active' ? 'teal' : 'red'}
                       radius="xl"
@@ -144,13 +150,14 @@ function ProfilePage() {
 }
 
 function getInitials(name: string) {
-  return name
+  const initials = name
     .trim()
     .split(/\s+/)
     .slice(0, 2)
     .map((part) => part.charAt(0))
     .join('')
     .toUpperCase()
+  return initials || '؟'
 }
 
 function getRoleLabel(role: string) {

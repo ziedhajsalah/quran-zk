@@ -47,7 +47,8 @@ function AnotherPage() {
         first: Math.round(Math.random() * 100),
       })
       setStatus('success')
-    } catch {
+    } catch (error) {
+      console.error('myAction failed', error)
       setStatus('error')
     } finally {
       setPending(false)

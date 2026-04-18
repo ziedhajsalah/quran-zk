@@ -15,7 +15,15 @@ export const Route = createFileRoute('/_protected')({
 
     try {
       await context.queryClient.ensureQueryData(currentUserQuery)
-    } catch {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : ''
+      const isAuthFailure =
+        message === 'Not authenticated' ||
+        message === 'Account disabled' ||
+        message === 'Unauthorized'
+      if (!isAuthFailure) {
+        throw error
+      }
       throw redirect({
         to: '/login',
         search: {

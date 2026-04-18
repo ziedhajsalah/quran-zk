@@ -57,7 +57,7 @@ export function BottomNav({
             <Stack align="center" gap={2}>
               <Icon size={20} />
               <Text
-                c={isActive ? theme.white : theme.colors.gray[8]}
+                c={isActive ? 'white' : 'gray.8'}
                 fw={isActive ? 700 : 500}
                 size="xs"
               >
@@ -78,7 +78,6 @@ export function BottomNav({
                 minWidth: 84,
                 height: 62,
                 backgroundColor: isActive ? theme.colors.primary[6] : 'transparent',
-                color: isActive ? theme.white : theme.colors.gray[8],
               },
             },
             variant: 'transparent' as const,
@@ -98,7 +97,12 @@ export function BottomNav({
           }
 
           return (
-            <ActionIcon {...sharedProps} key={item.id}>
+            <ActionIcon
+              {...sharedProps}
+              key={item.id}
+              disabled
+              aria-disabled="true"
+            >
               {content}
             </ActionIcon>
           )
