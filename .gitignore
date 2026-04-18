@@ -10,6 +10,9 @@ node_modules
 .nitro
 .tanstack
 
+# local agent session files (must not be committed)
+.claude/scheduled_tasks.lock
+
 /build/
 /api/
 /server/build
