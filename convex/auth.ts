@@ -1,12 +1,14 @@
-import { createClient, type GenericCtx } from '@convex-dev/better-auth'
+import { createClient } from '@convex-dev/better-auth'
 import { convex } from '@convex-dev/better-auth/plugins'
 import { adminAc, userAc } from 'better-auth/plugins/admin/access'
 import { admin } from 'better-auth/plugins/admin'
 import { username } from 'better-auth/plugins/username'
-import { betterAuth, type BetterAuthOptions } from 'better-auth/minimal'
+import { betterAuth } from 'better-auth/minimal'
 import authSchema from './betterAuth/schema'
 import authConfig from './auth.config'
 import { components } from './_generated/api'
+import type { BetterAuthOptions } from 'better-auth/minimal'
+import type { GenericCtx } from '@convex-dev/better-auth'
 import type { DataModel } from './_generated/dataModel'
 
 const USERNAME_PATTERN = /^[A-Za-z0-9._-]{3,32}$/

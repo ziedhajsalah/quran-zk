@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import { ActionIcon, Group, Paper, Stack, Text, useMantineTheme } from '@mantine/core'
 import { IconBook2, IconHome2, IconUserCircle } from '@tabler/icons-react'
 import { getHomeThemeTokens } from '../home-theme'
@@ -51,35 +52,58 @@ export function BottomNav({
         {items.map((item) => {
           const isActive = item.id === activeItemId
           const Icon = bottomNavIcons[item.icon]
+          const ariaCurrent = isActive ? ('page' as const) : undefined
+          const content = (
+            <Stack align="center" gap={2}>
+              <Icon size={20} />
+              <Text
+                c={isActive ? 'white' : 'gray.8'}
+                fw={isActive ? 700 : 500}
+                size="xs"
+              >
+                {item.label}
+              </Text>
+            </Stack>
+          )
+
+          const sharedProps = {
+            'aria-current': ariaCurrent,
+            'aria-label': item.label,
+            color: isActive ? 'primary' : 'gray',
+            p: 'xs' as const,
+            radius: homeTokens.iconRadius,
+            size: 'auto' as const,
+            styles: {
+              root: {
+                minWidth: 84,
+                height: 62,
+                backgroundColor: isActive ? theme.colors.primary[6] : 'transparent',
+              },
+            },
+            variant: 'transparent' as const,
+          }
+
+          if (item.to) {
+            return (
+              <ActionIcon
+                {...sharedProps}
+                key={item.id}
+                component={Link}
+                to={item.to}
+              >
+                {content}
+              </ActionIcon>
+            )
+          }
 
           return (
             <ActionIcon
+              {...sharedProps}
               key={item.id}
-              aria-label={item.label}
-              color={isActive ? 'primary' : 'gray'}
-              p="xs"
-              radius={homeTokens.iconRadius}
-              size="auto"
-              styles={{
-                root: {
-                  minWidth: 84,
-                  height: 62,
-                  backgroundColor: isActive ? theme.colors.primary[6] : 'transparent',
-                  color: isActive ? theme.white : theme.colors.gray[8],
-                },
-              }}
-              variant="transparent"
+              disabled
+              aria-disabled="true"
             >
-              <Stack align="center" gap={2}>
-                <Icon size={20} />
-                <Text
-                  c={isActive ? theme.white : theme.colors.gray[8]}
-                  fw={isActive ? 700 : 500}
-                  size="xs"
-                >
-                  {item.label}
-                </Text>
-              </Stack>
+              {content}
             </ActionIcon>
           )
         })}

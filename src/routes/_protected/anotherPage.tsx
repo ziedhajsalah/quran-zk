@@ -16,13 +16,9 @@ import { useAction } from 'convex/react'
 import * as React from 'react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
-import { api } from '../../convex/_generated/api'
-import { requireProtectedAppUser } from '~/lib/auth'
+import { api } from '../../../convex/_generated/api'
 
-export const Route = createFileRoute('/anotherPage')({
-  beforeLoad: async ({ location }) => {
-    await requireProtectedAppUser(location.href)
-  },
+export const Route = createFileRoute('/_protected/anotherPage')({
   loader: async ({ context }) => {
     await context.queryClient.ensureQueryData(
       convexQuery(api.myFunctions.listNumbers, { count: 10 }),
@@ -51,7 +47,8 @@ function AnotherPage() {
         first: Math.round(Math.random() * 100),
       })
       setStatus('success')
-    } catch {
+    } catch (error) {
+      console.error('myAction failed', error)
       setStatus('error')
     } finally {
       setPending(false)

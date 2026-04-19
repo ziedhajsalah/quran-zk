@@ -1,6 +1,9 @@
+import type { FileRouteTypes } from '~/routeTree.gen'
+
 export type LessonKind = 'reading' | 'recitation'
 export type CourseArtworkTone = 'primary' | 'tertiary'
 export type BottomNavIcon = 'home' | 'lessons' | 'profile'
+export type BottomNavRoute = Extract<FileRouteTypes['to'], '/' | '/profile'>
 
 export interface DailyProgressData {
   title: string
@@ -32,9 +35,10 @@ export interface CourseSummary {
 }
 
 export interface BottomNavItem {
-  id: 'home' | 'lessons' | 'profile'
+  id: BottomNavIcon
   label: string
   icon: BottomNavIcon
+  to?: BottomNavRoute
 }
 
 export interface HomeDashboardData {

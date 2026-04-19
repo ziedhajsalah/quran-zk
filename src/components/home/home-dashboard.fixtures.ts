@@ -67,6 +67,7 @@ const baseHomeDashboardData: HomeDashboardData = {
       id: 'home',
       label: 'الرئيسية',
       icon: 'home',
+      to: '/',
     },
     {
       id: 'lessons',
@@ -77,6 +78,7 @@ const baseHomeDashboardData: HomeDashboardData = {
       id: 'profile',
       label: 'الملف الشخصي',
       icon: 'profile',
+      to: '/profile',
     },
   ],
   activeBottomNavId: 'home',
