@@ -86,11 +86,12 @@ export function createAuthOptions(
       requireEmailVerification: false,
       disableSignUp: options?.disableSignUp ?? true,
       resetPasswordTokenExpiresIn: 60 * 60,
-      sendResetPassword: async ({ user, token }) => {
+      sendResetPassword: ({ user, token }) => {
         options?.onResetPasswordSent?.({
           userId: user.id,
           token,
         })
+        return Promise.resolve()
       },
     },
     plugins: [

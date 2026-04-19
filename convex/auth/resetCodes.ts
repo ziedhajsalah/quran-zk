@@ -2,8 +2,8 @@ import { v } from 'convex/values'
 import { action, internalMutation } from '../_generated/server'
 import { components, internal } from '../_generated/api'
 import { authComponent, createAuth } from '../auth'
-import type { ResetPasswordCapture } from '../auth'
 import { requireAdminAuthUser } from './helpers'
+import type { ResetPasswordCapture } from '../auth'
 import type { ActionCtx } from '../_generated/server'
 import type { Doc } from '../_generated/dataModel'
 
@@ -204,7 +204,7 @@ export const storeIssuedCode = internalMutation({
       .collect()
     for (const row of existing) {
       if (row.usedAt === null) {
-        await ctx.db.patch(row._id, { usedAt: now })
+        await ctx.db.patch('passwordResetCodes', row._id, { usedAt: now })
       }
     }
     await ctx.db.insert('passwordResetCodes', {
@@ -246,11 +246,13 @@ export const validateAndClaimCode = internalMutation({
       row.expiresAt < now ||
       row.attempts >= args.maxAttempts
     ) {
-      await ctx.db.patch(row._id, { attempts: row.attempts + 1 })
+      await ctx.db.patch('passwordResetCodes', row._id, {
+        attempts: row.attempts + 1,
+      })
       return { ok: false }
     }
 
-    await ctx.db.patch(row._id, {
+    await ctx.db.patch('passwordResetCodes', row._id, {
       usedAt: now,
       attempts: row.attempts + 1,
     })
