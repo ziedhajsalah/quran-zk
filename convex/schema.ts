@@ -8,7 +8,7 @@ export default defineSchema({
   passwordResetCodes: defineTable({
     userId: v.string(),
     codeHash: v.string(),
-    betterAuthToken: v.string(),
+    betterAuthToken: v.union(v.null(), v.string()),
     expiresAt: v.number(),
     usedAt: v.union(v.null(), v.number()),
     attempts: v.number(),

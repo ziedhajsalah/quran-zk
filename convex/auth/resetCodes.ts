@@ -3,9 +3,9 @@ import { action, internalMutation } from '../_generated/server'
 import { components, internal } from '../_generated/api'
 import { authComponent, createAuth } from '../auth'
 import { requireAdminAuthUser } from './helpers'
-import type { ResetPasswordCapture } from '../auth'
+import type { BetterAuthResetToken, ResetPasswordCapture } from '../auth'
 import type { ActionCtx } from '../_generated/server'
-import type { Doc } from '../_generated/dataModel'
+import type { Doc, Id } from '../_generated/dataModel'
 
 const DEFAULT_TTL_MINUTES = 30
 const DEFAULT_MAX_ATTEMPTS = 5
@@ -66,7 +66,6 @@ function normalizeIdentifier(input: string) {
 
 type BetterAuthUserRow = {
   _id: string
-  id?: string | null
   email: string
   username?: string | null
   banned?: boolean | null
@@ -93,7 +92,7 @@ async function captureResetToken(
 ): Promise<ResetPasswordCapture | null> {
   let captured: ResetPasswordCapture | undefined
   const auth = createAuth(ctx, {
-    onResetPasswordSent: (capture) => {
+    onResetPasswordTokenMinted: (capture) => {
       captured = capture
     },
   })
@@ -116,6 +115,10 @@ export const adminIssue = action({
       throw new Error('لم يتم العثور على هذا المستخدم.')
     }
 
+    if (user.banned) {
+      throw new Error('المستخدم معطل. ألغِ التعطيل قبل إصدار رمز.')
+    }
+
     const capture = await captureResetToken(ctx, user.email)
     if (!capture) {
       throw new Error('تعذر إصدار رمز إعادة التعيين.')
@@ -127,7 +130,7 @@ export const adminIssue = action({
     const adminId = String(admin._id)
 
     await ctx.runMutation(internal.auth.resetCodes.storeIssuedCode, {
-      userId: capture.userId,
+      userId: user._id,
       codeHash,
       betterAuthToken: capture.token,
       expiresAt,
@@ -156,9 +159,13 @@ export const redeem = action({
       throw new Error(GENERIC_ERROR)
     }
 
+    if (user.banned) {
+      throw new Error(GENERIC_ERROR)
+    }
+
     const codeHash = await sha256Hex(normalizedCode)
-    const result = await ctx.runMutation(
-      internal.auth.resetCodes.validateAndClaimCode,
+    const reservation = await ctx.runMutation(
+      internal.auth.resetCodes.validateAndReserveCode,
       {
         codeHash,
         userId: user._id,
@@ -166,22 +173,30 @@ export const redeem = action({
       },
     )
 
-    if (!result.ok) {
+    if (!reservation.ok) {
       throw new Error(GENERIC_ERROR)
     }
 
-    const { auth, headers } = await authComponent.getAuth(createAuth, ctx)
-    await auth.api.resetPassword({
-      body: {
-        token: result.betterAuthToken,
-        newPassword: args.newPassword,
-      },
-      headers: new Headers(),
-    })
+    const { auth } = await authComponent.getAuth(createAuth, ctx)
+    try {
+      await auth.api.resetPassword({
+        body: {
+          token: reservation.betterAuthToken,
+          newPassword: args.newPassword,
+        },
+        headers: new Headers(),
+      })
+    } catch (error) {
+      console.error('resetPassword failed after reservation', {
+        userId: user._id,
+        rowId: reservation.rowId,
+        error,
+      })
+      throw new Error(GENERIC_ERROR)
+    }
 
-    await auth.api.revokeUserSessions({
-      body: { userId: user._id },
-      headers,
+    await ctx.runMutation(internal.auth.resetCodes.markCodeUsed, {
+      rowId: reservation.rowId,
     })
 
     return { success: true }
@@ -204,7 +219,10 @@ export const storeIssuedCode = internalMutation({
       .collect()
     for (const row of existing) {
       if (row.usedAt === null) {
-        await ctx.db.patch('passwordResetCodes', row._id, { usedAt: now })
+        await ctx.db.patch('passwordResetCodes', row._id, {
+          usedAt: now,
+          betterAuthToken: null,
+        })
       }
     }
     await ctx.db.insert('passwordResetCodes', {
@@ -219,44 +237,97 @@ export const storeIssuedCode = internalMutation({
   },
 })
 
-type ValidateResult =
-  | { ok: true; betterAuthToken: string }
-  | { ok: false }
+type ReserveRejectReason =
+  | 'no_live_code'
+  | 'attempts_exceeded'
+  | 'hash_mismatch'
 
-export const validateAndClaimCode = internalMutation({
+type ReserveResult =
+  | { ok: true; rowId: Id<'passwordResetCodes'>; betterAuthToken: BetterAuthResetToken }
+  | { ok: false; reason: ReserveRejectReason }
+
+export const validateAndReserveCode = internalMutation({
   args: {
     codeHash: v.string(),
     userId: v.string(),
     maxAttempts: v.number(),
   },
-  handler: async (ctx, args): Promise<ValidateResult> => {
+  handler: async (ctx, args): Promise<ReserveResult> => {
     const now = Date.now()
-    const row: Doc<'passwordResetCodes'> | null = await ctx.db
+    const rows: Array<Doc<'passwordResetCodes'>> = await ctx.db
       .query('passwordResetCodes')
-      .withIndex('by_code_hash', (q) => q.eq('codeHash', args.codeHash))
-      .unique()
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
+      .collect()
+    const liveRow = rows.find(
+      (r) => r.usedAt === null && r.expiresAt >= now,
+    )
 
-    if (!row) {
-      return { ok: false }
-    }
-
-    if (
-      row.userId !== args.userId ||
-      row.usedAt !== null ||
-      row.expiresAt < now ||
-      row.attempts >= args.maxAttempts
-    ) {
-      await ctx.db.patch('passwordResetCodes', row._id, {
-        attempts: row.attempts + 1,
+    if (!liveRow) {
+      console.warn('reset reserve rejected', {
+        userId: args.userId,
+        reason: 'no_live_code',
       })
-      return { ok: false }
+      return { ok: false, reason: 'no_live_code' }
     }
 
-    await ctx.db.patch('passwordResetCodes', row._id, {
-      usedAt: now,
-      attempts: row.attempts + 1,
+    if (liveRow.attempts >= args.maxAttempts) {
+      await ctx.db.patch('passwordResetCodes', liveRow._id, {
+        usedAt: now,
+        betterAuthToken: null,
+      })
+      console.warn('reset reserve rejected', {
+        userId: args.userId,
+        reason: 'attempts_exceeded',
+      })
+      return { ok: false, reason: 'attempts_exceeded' }
+    }
+
+    const nextAttempts = liveRow.attempts + 1
+    const exhausted = nextAttempts >= args.maxAttempts
+
+    if (liveRow.codeHash !== args.codeHash) {
+      await ctx.db.patch('passwordResetCodes', liveRow._id, {
+        attempts: nextAttempts,
+        ...(exhausted ? { usedAt: now, betterAuthToken: null } : {}),
+      })
+      console.warn('reset reserve rejected', {
+        userId: args.userId,
+        reason: 'hash_mismatch',
+        attempts: nextAttempts,
+        exhausted,
+      })
+      return { ok: false, reason: 'hash_mismatch' }
+    }
+
+    await ctx.db.patch('passwordResetCodes', liveRow._id, {
+      attempts: nextAttempts,
     })
-    return { ok: true, betterAuthToken: row.betterAuthToken }
+
+    const token = liveRow.betterAuthToken
+    if (!token) {
+      console.error('reset reserve found live row with null token', {
+        userId: args.userId,
+        rowId: liveRow._id,
+      })
+      return { ok: false, reason: 'no_live_code' }
+    }
+
+    return {
+      ok: true,
+      rowId: liveRow._id,
+      betterAuthToken: token as BetterAuthResetToken,
+    }
   },
 })
 
+export const markCodeUsed = internalMutation({
+  args: {
+    rowId: v.id('passwordResetCodes'),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch('passwordResetCodes', args.rowId, {
+      usedAt: Date.now(),
+      betterAuthToken: null,
+    })
+  },
+})

@@ -60,14 +60,18 @@ export const authComponent = createClient<DataModel, typeof authSchema>(
   },
 )
 
+export type BetterAuthResetToken = string & {
+  readonly __betterAuthResetToken: unique symbol
+}
+
 export type ResetPasswordCapture = {
   userId: string
-  token: string
+  token: BetterAuthResetToken
 }
 
 export type CreateAuthOptions = {
   disableSignUp?: boolean
-  onResetPasswordSent?: (capture: ResetPasswordCapture) => void
+  onResetPasswordTokenMinted?: (capture: ResetPasswordCapture) => void
 }
 
 export function createAuthOptions(
@@ -86,10 +90,11 @@ export function createAuthOptions(
       requireEmailVerification: false,
       disableSignUp: options?.disableSignUp ?? true,
       resetPasswordTokenExpiresIn: 60 * 60,
+      revokeSessionsOnPasswordReset: true,
       sendResetPassword: ({ user, token }) => {
-        options?.onResetPasswordSent?.({
+        options?.onResetPasswordTokenMinted?.({
           userId: user.id,
-          token,
+          token: token as BetterAuthResetToken,
         })
         return Promise.resolve()
       },

@@ -47,6 +47,7 @@ function AdminResetPasswordPage() {
       const result = await issue({ identifier: identifier.trim() })
       setIssued({ code: result.code, expiresAt: result.expiresAt })
     } catch (error) {
+      console.error('admin reset code issue failed', error)
       setErrorMessage(extractActionErrorMessage(error, 'تعذر إصدار الرمز.'))
     } finally {
       setLoading(false)
