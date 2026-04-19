@@ -60,11 +60,19 @@ export const authComponent = createClient<DataModel, typeof authSchema>(
   },
 )
 
+export type ResetPasswordCapture = {
+  userId: string
+  token: string
+}
+
+export type CreateAuthOptions = {
+  disableSignUp?: boolean
+  onResetPasswordSent?: (capture: ResetPasswordCapture) => void
+}
+
 export function createAuthOptions(
   ctx: GenericCtx<DataModel>,
-  options?: {
-    disableSignUp?: boolean
-  },
+  options?: CreateAuthOptions,
 ) {
   const siteUrl = getSiteUrl(ctx)
 
@@ -77,6 +85,13 @@ export function createAuthOptions(
       enabled: true,
       requireEmailVerification: false,
       disableSignUp: options?.disableSignUp ?? true,
+      resetPasswordTokenExpiresIn: 60 * 60,
+      sendResetPassword: async ({ user, token }) => {
+        options?.onResetPasswordSent?.({
+          userId: user.id,
+          token,
+        })
+      },
     },
     plugins: [
       username({
@@ -99,9 +114,7 @@ export function createAuthOptions(
 
 export function createAuth(
   ctx: GenericCtx<DataModel>,
-  options?: {
-    disableSignUp?: boolean
-  },
+  options?: CreateAuthOptions,
 ) {
   return betterAuth(createAuthOptions(ctx, options))
 }
