@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat)",
+      "Read(//Users/zied/.claude/plans/**)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(lsof -i :3000 -sTCP:LISTEN)",
+      "Bash(npm run *)"
+    ]
+  }
+}
