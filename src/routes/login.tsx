@@ -1,9 +1,10 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 import {
   Alert,
   Anchor,
   Button,
   Container,
+  Group,
   Paper,
   PasswordInput,
   Stack,
@@ -17,7 +18,7 @@ import { fetchAppSession } from '~/lib/auth'
 
 type LoginSearch = {
   redirect?: string
-  reason?: 'auth' | 'unauthorized'
+  reason?: 'auth' | 'unauthorized' | 'passwordReset'
 }
 
 export const Route = createFileRoute('/login')({
@@ -27,7 +28,9 @@ export const Route = createFileRoute('/login')({
         ? search.redirect
         : undefined,
     reason:
-      search.reason === 'auth' || search.reason === 'unauthorized'
+      search.reason === 'auth' ||
+      search.reason === 'unauthorized' ||
+      search.reason === 'passwordReset'
         ? search.reason
         : undefined,
   }),
@@ -105,6 +108,12 @@ function LoginPage() {
             </Alert>
           ) : null}
 
+          {search.reason === 'passwordReset' ? (
+            <Alert color="teal" title="تم تحديث كلمة المرور">
+              تم تغيير كلمة المرور بنجاح. سجّل الدخول بكلمة المرور الجديدة.
+            </Alert>
+          ) : null}
+
           {errorMessage ? (
             <Alert color="red" title="تعذر تسجيل الدخول">
               {errorMessage}
@@ -135,16 +144,21 @@ function LoginPage() {
             </Stack>
           </form>
 
-          <Anchor
-            component="button"
-            type="button"
-            onClick={async () => {
-              await authClient.signOut()
-            }}
-            size="sm"
-          >
-            تسجيل الخروج من الجلسة الحالية
-          </Anchor>
+          <Group justify="space-between" gap="md" wrap="wrap">
+            <Anchor component={Link} to="/reset-password" size="sm">
+              نسيت كلمة المرور؟
+            </Anchor>
+            <Anchor
+              component="button"
+              type="button"
+              onClick={async () => {
+                await authClient.signOut()
+              }}
+              size="sm"
+            >
+              تسجيل الخروج من الجلسة الحالية
+            </Anchor>
+          </Group>
         </Stack>
       </Paper>
     </Container>
