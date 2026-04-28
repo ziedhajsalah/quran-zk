@@ -26,8 +26,21 @@ export function StudentsPicker({ students, emptyMessage, onSelect }: StudentsPic
   return (
     <Stack gap="sm">
       {students.map((student) => (
-        <UnstyledButton key={student.id} onClick={() => onSelect(student.id)}>
-          <Card withBorder radius="lg" p="md">
+        <UnstyledButton key={student.id} onClick={() => onSelect(student.id)} w="100%">
+          <Card
+            withBorder
+            radius="lg"
+            p="md"
+            styles={(theme) => ({
+              root: {
+                transition: 'border-color 120ms ease, background-color 120ms ease',
+                '&:hover': {
+                  borderColor: theme.colors.primary[4],
+                  backgroundColor: theme.colors.primary[0],
+                },
+              },
+            })}
+          >
             <Group wrap="nowrap">
               <Avatar color="primary" radius="xl">
                 {getInitials(student.displayName)}
