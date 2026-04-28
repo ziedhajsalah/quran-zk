@@ -70,9 +70,10 @@ const baseHomeDashboardData: HomeDashboardData = {
       to: '/',
     },
     {
-      id: 'lessons',
-      label: 'الدروس',
+      id: 'surahs',
+      label: 'حفظي',
       icon: 'lessons',
+      to: '/surahs',
     },
     {
       id: 'profile',

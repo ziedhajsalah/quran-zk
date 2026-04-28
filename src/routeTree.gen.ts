@@ -13,6 +13,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProtectedRouteRouteImport } from './routes/_protected/route'
 import { Route as ProtectedIndexRouteImport } from './routes/_protected/index'
+import { Route as ProtectedSurahsRouteImport } from './routes/_protected/surahs'
 import { Route as ProtectedProfileRouteImport } from './routes/_protected/profile'
 import { Route as ProtectedAnotherPageRouteImport } from './routes/_protected/anotherPage'
 import { Route as ProtectedAdminRouteRouteImport } from './routes/_protected/admin/route'
@@ -36,6 +37,11 @@ const ProtectedRouteRoute = ProtectedRouteRouteImport.update({
 const ProtectedIndexRoute = ProtectedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => ProtectedRouteRoute,
+} as any)
+const ProtectedSurahsRoute = ProtectedSurahsRouteImport.update({
+  id: '/surahs',
+  path: '/surahs',
   getParentRoute: () => ProtectedRouteRoute,
 } as any)
 const ProtectedProfileRoute = ProtectedProfileRouteImport.update({
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof ProtectedAdminRouteRouteWithChildren
   '/anotherPage': typeof ProtectedAnotherPageRoute
   '/profile': typeof ProtectedProfileRoute
+  '/surahs': typeof ProtectedSurahsRoute
   '/admin/reset-password': typeof ProtectedAdminResetPasswordRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/admin': typeof ProtectedAdminRouteRouteWithChildren
   '/anotherPage': typeof ProtectedAnotherPageRoute
   '/profile': typeof ProtectedProfileRoute
+  '/surahs': typeof ProtectedSurahsRoute
   '/': typeof ProtectedIndexRoute
   '/admin/reset-password': typeof ProtectedAdminResetPasswordRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/_protected/admin': typeof ProtectedAdminRouteRouteWithChildren
   '/_protected/anotherPage': typeof ProtectedAnotherPageRoute
   '/_protected/profile': typeof ProtectedProfileRoute
+  '/_protected/surahs': typeof ProtectedSurahsRoute
   '/_protected/': typeof ProtectedIndexRoute
   '/_protected/admin/reset-password': typeof ProtectedAdminResetPasswordRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/anotherPage'
     | '/profile'
+    | '/surahs'
     | '/admin/reset-password'
     | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
@@ -115,6 +125,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/anotherPage'
     | '/profile'
+    | '/surahs'
     | '/'
     | '/admin/reset-password'
     | '/api/auth/$'
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
     | '/_protected/admin'
     | '/_protected/anotherPage'
     | '/_protected/profile'
+    | '/_protected/surahs'
     | '/_protected/'
     | '/_protected/admin/reset-password'
     | '/api/auth/$'
@@ -166,6 +178,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof ProtectedIndexRouteImport
+      parentRoute: typeof ProtectedRouteRoute
+    }
+    '/_protected/surahs': {
+      id: '/_protected/surahs'
+      path: '/surahs'
+      fullPath: '/surahs'
+      preLoaderRoute: typeof ProtectedSurahsRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
     '/_protected/profile': {
@@ -221,6 +240,7 @@ interface ProtectedRouteRouteChildren {
   ProtectedAdminRouteRoute: typeof ProtectedAdminRouteRouteWithChildren
   ProtectedAnotherPageRoute: typeof ProtectedAnotherPageRoute
   ProtectedProfileRoute: typeof ProtectedProfileRoute
+  ProtectedSurahsRoute: typeof ProtectedSurahsRoute
   ProtectedIndexRoute: typeof ProtectedIndexRoute
 }
 
@@ -228,6 +248,7 @@ const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
   ProtectedAdminRouteRoute: ProtectedAdminRouteRouteWithChildren,
   ProtectedAnotherPageRoute: ProtectedAnotherPageRoute,
   ProtectedProfileRoute: ProtectedProfileRoute,
+  ProtectedSurahsRoute: ProtectedSurahsRoute,
   ProtectedIndexRoute: ProtectedIndexRoute,
 }
 

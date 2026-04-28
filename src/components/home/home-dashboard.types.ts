@@ -3,7 +3,11 @@ import type { FileRouteTypes } from '~/routeTree.gen'
 export type LessonKind = 'reading' | 'recitation'
 export type CourseArtworkTone = 'primary' | 'tertiary'
 export type BottomNavIcon = 'home' | 'lessons' | 'profile'
-export type BottomNavRoute = Extract<FileRouteTypes['to'], '/' | '/profile'>
+export type BottomNavId = 'home' | 'surahs' | 'profile'
+export type BottomNavRoute = Extract<
+  FileRouteTypes['to'],
+  '/' | '/surahs' | '/profile'
+>
 
 export interface DailyProgressData {
   title: string
@@ -35,7 +39,7 @@ export interface CourseSummary {
 }
 
 export interface BottomNavItem {
-  id: BottomNavIcon
+  id: BottomNavId
   label: string
   icon: BottomNavIcon
   to?: BottomNavRoute
