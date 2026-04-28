@@ -149,3 +149,28 @@ export const close = mutation({
     })
   },
 })
+
+export const cancel = mutation({
+  args: {
+    assignmentId: v.id('surahReviewAssignments'),
+  },
+  handler: async (ctx, args) => {
+    const staff = await requireStaffAuthUser(ctx)
+    const assignment = await ctx.db.get(
+      'surahReviewAssignments',
+      args.assignmentId,
+    )
+    if (!assignment) {
+      throw new ConvexError('Assignment not found.')
+    }
+    if (assignment.status !== 'open') {
+      throw new ConvexError('Assignment is not open.')
+    }
+
+    await ctx.db.patch('surahReviewAssignments', args.assignmentId, {
+      status: 'cancelled',
+      closedBy: String(staff._id),
+      closedAt: Date.now(),
+    })
+  },
+})
