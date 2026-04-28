@@ -83,3 +83,69 @@ export const assign = mutation({
     })
   },
 })
+
+const gradeValidator = v.union(
+  v.literal('good'),
+  v.literal('medium'),
+  v.literal('forgotten'),
+)
+
+export const close = mutation({
+  args: {
+    assignmentId: v.id('surahReviewAssignments'),
+    newGrade: v.optional(gradeValidator),
+  },
+  handler: async (ctx, args) => {
+    const staff = await requireStaffAuthUser(ctx)
+    const assignment = await ctx.db.get(
+      'surahReviewAssignments',
+      args.assignmentId,
+    )
+    if (!assignment) {
+      throw new ConvexError('Assignment not found.')
+    }
+    if (assignment.status !== 'open') {
+      throw new ConvexError('Assignment is not open.')
+    }
+
+    const existingGrade = await ctx.db
+      .query('studentSurahGrades')
+      .withIndex('by_student_surah', (q) =>
+        q
+          .eq('studentId', assignment.studentId)
+          .eq('surahNumber', assignment.surahNumber),
+      )
+      .unique()
+
+    const now = Date.now()
+    let closingGrade: 'good' | 'medium' | 'forgotten' | null
+
+    if (args.newGrade !== undefined) {
+      if (existingGrade) {
+        await ctx.db.patch('studentSurahGrades', existingGrade._id, {
+          grade: args.newGrade,
+          updatedAt: now,
+          updatedBy: String(staff._id),
+        })
+      } else {
+        await ctx.db.insert('studentSurahGrades', {
+          studentId: assignment.studentId,
+          surahNumber: assignment.surahNumber,
+          grade: args.newGrade,
+          updatedAt: now,
+          updatedBy: String(staff._id),
+        })
+      }
+      closingGrade = args.newGrade
+    } else {
+      closingGrade = existingGrade?.grade ?? null
+    }
+
+    await ctx.db.patch('surahReviewAssignments', args.assignmentId, {
+      status: 'closed',
+      closedBy: String(staff._id),
+      closedAt: now,
+      closingGrade,
+    })
+  },
+})
