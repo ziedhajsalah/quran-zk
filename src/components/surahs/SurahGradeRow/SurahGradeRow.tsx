@@ -40,6 +40,7 @@ export function SurahGradeRow({
           multiple={false}
           value={grade}
           onChange={(value) => {
+            if (!value) return
             if (
               value === 'good' ||
               value === 'medium' ||
