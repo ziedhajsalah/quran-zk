@@ -17,6 +17,7 @@ import { useMutation } from 'convex/react'
 import { useMemo, useState } from 'react'
 import { api } from '../../../../../convex/_generated/api'
 import { currentUserQuery } from '~/lib/auth-queries'
+import { extractActionErrorMessage } from '~/lib/convex-errors'
 import {
   BottomNav,
   HomeTopBar,
@@ -70,9 +71,7 @@ function StaffStudentGradingPage() {
     try {
       await setGrade({ studentId, surahNumber, grade })
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : 'تعذر حفظ التقييم.',
-      )
+      setErrorMessage(extractActionErrorMessage(error, 'تعذر حفظ التقييم.'))
     }
   }
 
@@ -84,9 +83,7 @@ function StaffStudentGradingPage() {
     try {
       await setGrade({ studentId, ...input })
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : 'تعذر إضافة السورة.',
-      )
+      setErrorMessage(extractActionErrorMessage(error, 'تعذر إضافة السورة.'))
     }
   }
 
@@ -159,7 +156,7 @@ function StaffStudentGradingPage() {
       />
 
       <BottomNav
-        activeItemId="profile"
+        activeItemId="home"
         items={homeDashboardData.bottomNavItems}
       />
     </Box>
