@@ -20,6 +20,7 @@ import { Route as ProtectedStaffRouteRouteImport } from './routes/_protected/sta
 import { Route as ProtectedAdminRouteRouteImport } from './routes/_protected/admin/route'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ProtectedAdminResetPasswordRouteImport } from './routes/_protected/admin/reset-password'
+import { Route as ProtectedStaffStudentsStudentIdRouteImport } from './routes/_protected/staff/students/$studentId'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -76,30 +77,38 @@ const ProtectedAdminResetPasswordRoute =
     path: '/reset-password',
     getParentRoute: () => ProtectedAdminRouteRoute,
   } as any)
+const ProtectedStaffStudentsStudentIdRoute =
+  ProtectedStaffStudentsStudentIdRouteImport.update({
+    id: '/students/$studentId',
+    path: '/students/$studentId',
+    getParentRoute: () => ProtectedStaffRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof ProtectedIndexRoute
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof ProtectedAdminRouteRouteWithChildren
-  '/staff': typeof ProtectedStaffRouteRoute
+  '/staff': typeof ProtectedStaffRouteRouteWithChildren
   '/anotherPage': typeof ProtectedAnotherPageRoute
   '/profile': typeof ProtectedProfileRoute
   '/surahs': typeof ProtectedSurahsRoute
   '/admin/reset-password': typeof ProtectedAdminResetPasswordRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/staff/students/$studentId': typeof ProtectedStaffStudentsStudentIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof ProtectedAdminRouteRouteWithChildren
-  '/staff': typeof ProtectedStaffRouteRoute
+  '/staff': typeof ProtectedStaffRouteRouteWithChildren
   '/anotherPage': typeof ProtectedAnotherPageRoute
   '/profile': typeof ProtectedProfileRoute
   '/surahs': typeof ProtectedSurahsRoute
   '/': typeof ProtectedIndexRoute
   '/admin/reset-password': typeof ProtectedAdminResetPasswordRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/staff/students/$studentId': typeof ProtectedStaffStudentsStudentIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -107,13 +116,14 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_protected/admin': typeof ProtectedAdminRouteRouteWithChildren
-  '/_protected/staff': typeof ProtectedStaffRouteRoute
+  '/_protected/staff': typeof ProtectedStaffRouteRouteWithChildren
   '/_protected/anotherPage': typeof ProtectedAnotherPageRoute
   '/_protected/profile': typeof ProtectedProfileRoute
   '/_protected/surahs': typeof ProtectedSurahsRoute
   '/_protected/': typeof ProtectedIndexRoute
   '/_protected/admin/reset-password': typeof ProtectedAdminResetPasswordRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_protected/staff/students/$studentId': typeof ProtectedStaffStudentsStudentIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/surahs'
     | '/admin/reset-password'
     | '/api/auth/$'
+    | '/staff/students/$studentId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin/reset-password'
     | '/api/auth/$'
+    | '/staff/students/$studentId'
   id:
     | '__root__'
     | '/_protected'
@@ -153,6 +165,7 @@ export interface FileRouteTypes {
     | '/_protected/'
     | '/_protected/admin/reset-password'
     | '/api/auth/$'
+    | '/_protected/staff/students/$studentId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -241,6 +254,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedAdminResetPasswordRouteImport
       parentRoute: typeof ProtectedAdminRouteRoute
     }
+    '/_protected/staff/students/$studentId': {
+      id: '/_protected/staff/students/$studentId'
+      path: '/students/$studentId'
+      fullPath: '/staff/students/$studentId'
+      preLoaderRoute: typeof ProtectedStaffStudentsStudentIdRouteImport
+      parentRoute: typeof ProtectedStaffRouteRoute
+    }
   }
 }
 
@@ -255,9 +275,20 @@ const ProtectedAdminRouteRouteChildren: ProtectedAdminRouteRouteChildren = {
 const ProtectedAdminRouteRouteWithChildren =
   ProtectedAdminRouteRoute._addFileChildren(ProtectedAdminRouteRouteChildren)
 
+interface ProtectedStaffRouteRouteChildren {
+  ProtectedStaffStudentsStudentIdRoute: typeof ProtectedStaffStudentsStudentIdRoute
+}
+
+const ProtectedStaffRouteRouteChildren: ProtectedStaffRouteRouteChildren = {
+  ProtectedStaffStudentsStudentIdRoute: ProtectedStaffStudentsStudentIdRoute,
+}
+
+const ProtectedStaffRouteRouteWithChildren =
+  ProtectedStaffRouteRoute._addFileChildren(ProtectedStaffRouteRouteChildren)
+
 interface ProtectedRouteRouteChildren {
   ProtectedAdminRouteRoute: typeof ProtectedAdminRouteRouteWithChildren
-  ProtectedStaffRouteRoute: typeof ProtectedStaffRouteRoute
+  ProtectedStaffRouteRoute: typeof ProtectedStaffRouteRouteWithChildren
   ProtectedAnotherPageRoute: typeof ProtectedAnotherPageRoute
   ProtectedProfileRoute: typeof ProtectedProfileRoute
   ProtectedSurahsRoute: typeof ProtectedSurahsRoute
@@ -266,7 +297,7 @@ interface ProtectedRouteRouteChildren {
 
 const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
   ProtectedAdminRouteRoute: ProtectedAdminRouteRouteWithChildren,
-  ProtectedStaffRouteRoute: ProtectedStaffRouteRoute,
+  ProtectedStaffRouteRoute: ProtectedStaffRouteRouteWithChildren,
   ProtectedAnotherPageRoute: ProtectedAnotherPageRoute,
   ProtectedProfileRoute: ProtectedProfileRoute,
   ProtectedSurahsRoute: ProtectedSurahsRoute,
