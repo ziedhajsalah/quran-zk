@@ -1,4 +1,4 @@
-import { SurahGradeRow } from './SurahGradeRow'
+import { SurahGradeRow } from '.'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { getSurah } from '~/data/surahs'
 
