@@ -32,3 +32,16 @@ export const Empty: Story = {
     rows: [],
   },
 }
+
+export const Editable: Story = {
+  args: {
+    emptyMessage: 'لم يبدأ هذا الطالب الحفظ بعد. أضف أول سورة.',
+    rows: [
+      { surahNumber: 1, grade: 'good', updatedAt: now - 1000 * 60 * 60 },
+      { surahNumber: 18, grade: 'medium', updatedAt: now - 1000 * 60 * 60 * 24 },
+    ],
+    editable: true,
+    onChangeGrade: (n, g) => console.log('grade changed', n, g),
+    onAddSurah: () => console.log('add surah clicked'),
+  },
+}
