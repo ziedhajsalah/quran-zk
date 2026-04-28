@@ -1,5 +1,5 @@
-import { v } from 'convex/values'
-import { query } from './_generated/server'
+import { ConvexError, v } from 'convex/values'
+import { mutation, query } from './_generated/server'
 import { authComponent, createAuth } from './auth'
 import {
   requireSelfOrStaffAuthUser,
@@ -47,5 +47,53 @@ export const listAllStudents = query({
       .sort((a, b) =>
         a.displayName.localeCompare(b.displayName, 'ar'),
       )
+  },
+})
+
+const gradeValidator = v.union(
+  v.literal('good'),
+  v.literal('medium'),
+  v.literal('forgotten'),
+)
+
+function assertSurahNumber(surahNumber: number) {
+  if (!Number.isInteger(surahNumber) || surahNumber < 1 || surahNumber > 114) {
+    throw new ConvexError('Invalid surah number.')
+  }
+}
+
+export const setGrade = mutation({
+  args: {
+    studentId: v.string(),
+    surahNumber: v.number(),
+    grade: gradeValidator,
+  },
+  handler: async (ctx, args) => {
+    const staff = await requireStaffAuthUser(ctx)
+    assertSurahNumber(args.surahNumber)
+
+    const existing = await ctx.db
+      .query('studentSurahGrades')
+      .withIndex('by_student_surah', (q) =>
+        q.eq('studentId', args.studentId).eq('surahNumber', args.surahNumber),
+      )
+      .unique()
+
+    const now = Date.now()
+    if (existing) {
+      await ctx.db.patch('studentSurahGrades', existing._id, {
+        grade: args.grade,
+        updatedAt: now,
+        updatedBy: String(staff._id),
+      })
+    } else {
+      await ctx.db.insert('studentSurahGrades', {
+        studentId: args.studentId,
+        surahNumber: args.surahNumber,
+        grade: args.grade,
+        updatedAt: now,
+        updatedBy: String(staff._id),
+      })
+    }
   },
 })
