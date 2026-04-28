@@ -29,4 +29,26 @@ export default defineSchema({
   })
     .index('by_student', ['studentId'])
     .index('by_student_surah', ['studentId', 'surahNumber']),
+  surahReviewAssignments: defineTable({
+    studentId: v.string(),
+    surahNumber: v.number(),
+    status: v.union(
+      v.literal('open'),
+      v.literal('closed'),
+      v.literal('cancelled'),
+    ),
+    dueAt: v.union(v.null(), v.number()),
+    assignedBy: v.string(),
+    assignedAt: v.number(),
+    closedBy: v.union(v.null(), v.string()),
+    closedAt: v.union(v.null(), v.number()),
+    closingGrade: v.union(
+      v.null(),
+      v.literal('good'),
+      v.literal('medium'),
+      v.literal('forgotten'),
+    ),
+  })
+    .index('by_student_status', ['studentId', 'status'])
+    .index('by_student_surah_status', ['studentId', 'surahNumber', 'status']),
 })
