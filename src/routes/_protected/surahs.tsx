@@ -11,13 +11,21 @@ import {
   createHomeDashboardData,
 } from '~/components/home'
 import { SurahGradeList } from '~/components/surahs/SurahGradeList'
+import { SurahReviewQueue } from '~/components/surahs/SurahReviewQueue'
 
 export const Route = createFileRoute('/_protected/surahs')({
   loader: async ({ context }) => {
     const me = await context.queryClient.ensureQueryData(currentUserQuery)
-    await context.queryClient.ensureQueryData(
-      convexQuery(api.surahGrades.listForStudent, { studentId: me.id }),
-    )
+    await Promise.all([
+      context.queryClient.ensureQueryData(
+        convexQuery(api.surahGrades.listForStudent, { studentId: me.id }),
+      ),
+      context.queryClient.ensureQueryData(
+        convexQuery(api.surahReviews.listOpenForStudent, {
+          studentId: me.id,
+        }),
+      ),
+    ])
   },
   component: StudentSurahsPage,
 })
@@ -27,6 +35,9 @@ function StudentSurahsPage() {
   const { data: me } = useSuspenseQuery(currentUserQuery)
   const { data: rows } = useSuspenseQuery(
     convexQuery(api.surahGrades.listForStudent, { studentId: me.id }),
+  )
+  const { data: openAssignments } = useSuspenseQuery(
+    convexQuery(api.surahReviews.listOpenForStudent, { studentId: me.id }),
   )
   const homeDashboardData = useMemo(
     () => createHomeDashboardData(me.displayName),
@@ -62,6 +73,15 @@ function StudentSurahsPage() {
               قائمة السور التي درستها مع آخر تقييم سجّله معلمك.
             </Text>
           </Stack>
+
+          <SurahReviewQueue
+            rows={openAssignments.map((a) => ({
+              assignmentId: String(a._id),
+              surahNumber: a.surahNumber,
+              assignedAt: a.assignedAt,
+              dueAt: a.dueAt,
+            }))}
+          />
 
           <SurahGradeList
             rows={rows.map((row) => ({
