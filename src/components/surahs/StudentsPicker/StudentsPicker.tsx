@@ -1,4 +1,5 @@
 import { Avatar, Card, Group, Stack, Text, UnstyledButton } from '@mantine/core'
+import { getInitials } from '~/utils/getInitials'
 
 export interface StudentSummary {
   id: string
@@ -61,13 +62,3 @@ export function StudentsPicker({ students, emptyMessage, onSelect }: StudentsPic
   )
 }
 
-function getInitials(name: string) {
-  const initials = name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part.charAt(0))
-    .join('')
-    .toUpperCase()
-  return initials || '؟'
-}

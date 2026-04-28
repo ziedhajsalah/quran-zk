@@ -18,6 +18,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { BottomNav, HomeTopBar, createHomeDashboardData } from '~/components/home'
 import { currentUserQuery } from '~/lib/auth-queries'
+import { getInitials } from '~/utils/getInitials'
 
 export const Route = createFileRoute('/_protected/profile')({
   component: ProfilePage,
@@ -154,17 +155,6 @@ function ProfilePage() {
       <BottomNav activeItemId="profile" items={homeDashboardData.bottomNavItems} />
     </Box>
   )
-}
-
-function getInitials(name: string) {
-  const initials = name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part.charAt(0))
-    .join('')
-    .toUpperCase()
-  return initials || '؟'
 }
 
 function getRoleLabel(role: string) {
