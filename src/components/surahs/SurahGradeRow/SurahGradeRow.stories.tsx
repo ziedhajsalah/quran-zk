@@ -36,3 +36,13 @@ export const Forgotten: Story = {
     updatedAt: Date.now() - 1000 * 60 * 60 * 24 * 14,
   },
 }
+
+export const Editable: Story = {
+  args: {
+    surah: getSurah(36),
+    grade: 'medium',
+    updatedAt: Date.now() - 1000 * 60 * 60 * 24,
+    editable: true,
+    onChange: (g) => console.log('grade changed to', g),
+  },
+}
