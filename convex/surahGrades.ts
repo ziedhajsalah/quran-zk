@@ -2,6 +2,7 @@ import { ConvexError, v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { authComponent, createAuth } from './auth'
 import {
+  requireAdminAuthUser,
   requireSelfOrStaffAuthUser,
   requireStaffAuthUser,
   serializeAuthUser,
@@ -94,6 +95,28 @@ export const setGrade = mutation({
         updatedAt: now,
         updatedBy: String(staff._id),
       })
+    }
+  },
+})
+
+export const removeFromList = mutation({
+  args: {
+    studentId: v.string(),
+    surahNumber: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await requireAdminAuthUser(ctx)
+    assertSurahNumber(args.surahNumber)
+
+    const existing = await ctx.db
+      .query('studentSurahGrades')
+      .withIndex('by_student_surah', (q) =>
+        q.eq('studentId', args.studentId).eq('surahNumber', args.surahNumber),
+      )
+      .unique()
+
+    if (existing) {
+      await ctx.db.delete('studentSurahGrades', existing._id)
     }
   },
 })
