@@ -22,6 +22,7 @@
     "@convex-dev/better-auth": "0.11.3",
     "@convex-dev/react-query": "^0.1.0",
     "@mantine/core": "^8.3.18",
+    "@mantine/dates": "^8.3.18",
     "@mantine/hooks": "^8.3.18",
     "@tabler/icons-react": "^3.40.0",
     "@tanstack/react-query": "^5.90.21",
@@ -30,6 +31,7 @@
     "@tanstack/react-start": "^1.166.14",
     "better-auth": "1.5.3",
     "convex": "1.34.1",
+    "dayjs": "^1.11.20",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
