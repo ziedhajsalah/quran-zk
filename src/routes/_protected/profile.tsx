@@ -161,9 +161,8 @@ function getInitials(name: string) {
 }
 
 function getRoleLabel(role: string) {
-  if (role === 'admin') {
-    return 'مشرف'
-  }
-
+  if (role === 'admin') return 'مشرف'
+  if (role === 'teacher') return 'معلم'
+  if (role === 'student') return 'طالب'
   return role
 }
