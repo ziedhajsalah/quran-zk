@@ -1,5 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import {
+  Anchor,
   Avatar,
   Badge,
   Box,
@@ -139,6 +140,12 @@ function ProfilePage() {
                   </Card>
                 ))}
               </SimpleGrid>
+
+              {(currentUser.isAdmin || currentUser.isTeacher) ? (
+                <Anchor component={Link} to="/staff/students" fw={700}>
+                  إدارة الطلاب
+                </Anchor>
+              ) : null}
             </Stack>
           </Paper>
         </Stack>
