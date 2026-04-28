@@ -8,6 +8,18 @@ import {
 } from './auth/helpers'
 import { parseStoredRoles } from './auth/utils'
 
+const gradeValidator = v.union(
+  v.literal('good'),
+  v.literal('medium'),
+  v.literal('forgotten'),
+)
+
+function assertSurahNumber(surahNumber: number) {
+  if (!Number.isInteger(surahNumber) || surahNumber < 1 || surahNumber > 114) {
+    throw new ConvexError('Invalid surah number.')
+  }
+}
+
 export const listForStudent = query({
   args: {
     studentId: v.string(),
@@ -49,18 +61,6 @@ export const listAllStudents = query({
       )
   },
 })
-
-const gradeValidator = v.union(
-  v.literal('good'),
-  v.literal('medium'),
-  v.literal('forgotten'),
-)
-
-function assertSurahNumber(surahNumber: number) {
-  if (!Number.isInteger(surahNumber) || surahNumber < 1 || surahNumber > 114) {
-    throw new ConvexError('Invalid surah number.')
-  }
-}
 
 export const setGrade = mutation({
   args: {
