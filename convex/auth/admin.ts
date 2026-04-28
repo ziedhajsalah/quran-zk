@@ -3,7 +3,11 @@ import { hashPassword } from 'better-auth/crypto'
 import { action, internalAction } from '../_generated/server'
 import { components } from '../_generated/api'
 import { authComponent, createAuth } from '../auth'
-import { requireAdminAuthUser, serializeAuthUser } from './helpers'
+import {
+  requireAdminAuthUser,
+  requireStaffAuthUser,
+  serializeAuthUser,
+} from './helpers'
 import {
   buildStoredEmail,
   normalizeDisplayName,
@@ -79,6 +83,38 @@ export const adminCreate = action({
         password: args.password,
         name: normalizedDisplayName,
         role: normalizedRoles,
+        data: {
+          username: normalizedUsername.username,
+        },
+      },
+      headers,
+    })
+
+    return serializeAuthUser(created.user)
+  },
+})
+
+export const staffCreateStudent = action({
+  args: {
+    username: v.string(),
+    displayName: v.string(),
+    email: v.union(v.string(), v.null()),
+    password: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requireStaffAuthUser(ctx)
+    const { auth, headers } = await authComponent.getAuth(createAuth, ctx)
+
+    const normalizedUsername = normalizeUsername(args.username)
+    const normalizedDisplayName = normalizeDisplayName(args.displayName)
+    const email = buildStoredEmail(normalizedUsername.username, args.email)
+
+    const created = await auth.api.createUser({
+      body: {
+        email,
+        password: args.password,
+        name: normalizedDisplayName,
+        role: ['student'],
         data: {
           username: normalizedUsername.username,
         },

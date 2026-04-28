@@ -1,13 +1,27 @@
 // src/routes/_protected/staff/students/index.tsx
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Box, Container, Stack, Text, Title, useMantineTheme } from '@mantine/core'
+import {
+  Box,
+  Button,
+  Container,
+  Group,
+  Notification,
+  Stack,
+  Text,
+  Title,
+  useMantineTheme,
+} from '@mantine/core'
+import { IconPlus } from '@tabler/icons-react'
 import { convexQuery } from '@convex-dev/react-query'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useAction } from 'convex/react'
+import { useMemo, useState } from 'react'
 import { api } from '../../../../../convex/_generated/api'
 import { currentUserQuery } from '~/lib/auth-queries'
+import { extractActionErrorMessage } from '~/lib/convex-errors'
 import { BottomNav, HomeTopBar, createHomeDashboardData } from '~/components/home'
 import { StudentsPicker } from '~/components/surahs/StudentsPicker'
+import { CreateStudentDrawer } from '~/components/staff/CreateStudentDrawer'
 
 export const Route = createFileRoute('/_protected/staff/students/')({
   loader: async ({ context }) => {
@@ -25,10 +39,30 @@ function StaffStudentsPage() {
   const { data: students } = useSuspenseQuery(
     convexQuery(api.surahGrades.listAllStudents, {}),
   )
+  const createStudent = useAction(api.auth.admin.staffCreateStudent)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
   const homeDashboardData = useMemo(
     () => createHomeDashboardData(me.displayName),
     [me.displayName],
   )
+
+  async function handleCreateStudent(input: {
+    username: string
+    displayName: string
+    email: string | null
+    password: string
+  }) {
+    setErrorMessage(null)
+    try {
+      await createStudent(input)
+    } catch (error) {
+      const message = extractActionErrorMessage(error, 'تعذر إنشاء الحساب.')
+      setErrorMessage(message)
+      throw error
+    }
+  }
 
   return (
     <Box
@@ -50,15 +84,33 @@ function StaffStudentsPage() {
         style={{ paddingBottom: '9rem' }}
       >
         <Stack gap="xl">
-          <Stack gap="xs">
-            <Text c="primary.6" fw={700} size="sm">
-              إدارة الطلاب
-            </Text>
-            <Title order={1}>طلابك</Title>
-            <Text c="dimmed">
-              اختر طالبًا لعرض السور التي حفظها وتقييمه.
-            </Text>
-          </Stack>
+          <Group justify="space-between" align="flex-end" wrap="nowrap">
+            <Stack gap="xs" style={{ minWidth: 0 }}>
+              <Text c="primary.6" fw={700} size="sm">
+                إدارة الطلاب
+              </Text>
+              <Title order={1}>طلابك</Title>
+              <Text c="dimmed">
+                اختر طالبًا لعرض السور التي حفظها وتقييمه.
+              </Text>
+            </Stack>
+            <Button
+              leftSection={<IconPlus size={16} />}
+              onClick={() => setDrawerOpen(true)}
+            >
+              طالب جديد
+            </Button>
+          </Group>
+
+          {errorMessage ? (
+            <Notification
+              color="red"
+              title="حدث خطأ"
+              onClose={() => setErrorMessage(null)}
+            >
+              {errorMessage}
+            </Notification>
+          ) : null}
 
           <StudentsPicker
             students={students.map((s) => ({
@@ -76,6 +128,12 @@ function StaffStudentsPage() {
           />
         </Stack>
       </Container>
+
+      <CreateStudentDrawer
+        opened={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        onSubmit={handleCreateStudent}
+      />
 
       <BottomNav
         activeItemId="home"
