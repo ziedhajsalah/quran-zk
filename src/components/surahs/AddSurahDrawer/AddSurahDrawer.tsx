@@ -1,5 +1,6 @@
 import {
   Button,
+  Card,
   Chip,
   Drawer,
   Group,
@@ -89,19 +90,28 @@ export function AddSurahDrawer({
                 </Text>
               ) : (
                 candidates.map((s) => (
-                  <UnstyledButton
-                    key={s.number}
-                    onClick={() => setSelected(s)}
-                    p="sm"
-                    w="100%"
-                    style={{ borderRadius: '0.5rem' }}
-                  >
-                    <Group justify="space-between">
-                      <Text fw={600}>{s.nameAr}</Text>
-                      <Text c="dimmed" size="sm">
-                        {`${formatArabicNumber(s.number)} • ${s.nameEn}`}
-                      </Text>
-                    </Group>
+                  <UnstyledButton key={s.number} onClick={() => setSelected(s)} w="100%">
+                    <Card
+                      withBorder
+                      radius="md"
+                      p="sm"
+                      styles={(theme) => ({
+                        root: {
+                          transition: 'border-color 120ms ease, background-color 120ms ease',
+                          '&:hover': {
+                            borderColor: theme.colors.primary[4],
+                            backgroundColor: theme.colors.primary[0],
+                          },
+                        },
+                      })}
+                    >
+                      <Group justify="space-between">
+                        <Text fw={600}>{s.nameAr}</Text>
+                        <Text c="dimmed" size="sm">
+                          {`${formatArabicNumber(s.number)} • ${s.nameEn}`}
+                        </Text>
+                      </Group>
+                    </Card>
                   </UnstyledButton>
                 ))
               )}
