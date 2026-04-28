@@ -1,0 +1,1 @@
+export { SurahGradeList } from './SurahGradeList'

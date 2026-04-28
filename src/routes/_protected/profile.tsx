@@ -1,5 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import {
+  Anchor,
   Avatar,
   Badge,
   Box,
@@ -17,6 +18,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { BottomNav, HomeTopBar, createHomeDashboardData } from '~/components/home'
 import { currentUserQuery } from '~/lib/auth-queries'
+import { getInitials } from '~/utils/getInitials'
 
 export const Route = createFileRoute('/_protected/profile')({
   component: ProfilePage,
@@ -139,6 +141,12 @@ function ProfilePage() {
                   </Card>
                 ))}
               </SimpleGrid>
+
+              {(currentUser.isAdmin || currentUser.isTeacher) ? (
+                <Anchor component={Link} to="/staff/students" fw={700}>
+                  إدارة الطلاب
+                </Anchor>
+              ) : null}
             </Stack>
           </Paper>
         </Stack>
@@ -149,21 +157,9 @@ function ProfilePage() {
   )
 }
 
-function getInitials(name: string) {
-  const initials = name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part.charAt(0))
-    .join('')
-    .toUpperCase()
-  return initials || '؟'
-}
-
 function getRoleLabel(role: string) {
-  if (role === 'admin') {
-    return 'مشرف'
-  }
-
+  if (role === 'admin') return 'مشرف'
+  if (role === 'teacher') return 'معلم'
+  if (role === 'student') return 'طالب'
   return role
 }

@@ -54,3 +54,27 @@ export async function requireAdminAuthUser(ctx: ReaderCtx) {
   }
   return user
 }
+
+export async function requireStaffAuthUser(ctx: ReaderCtx) {
+  const user = await requireCurrentAuthUser(ctx)
+  const roles = parseStoredRoles(user.role)
+  if (!roles.includes('admin') && !roles.includes('teacher')) {
+    throw new Error('Unauthorized')
+  }
+  return user
+}
+
+export async function requireSelfOrStaffAuthUser(
+  ctx: ReaderCtx,
+  studentId: string,
+) {
+  const user = await requireCurrentAuthUser(ctx)
+  if (String(user._id) === studentId) {
+    return user
+  }
+  const roles = parseStoredRoles(user.role)
+  if (!roles.includes('admin') && !roles.includes('teacher')) {
+    throw new Error('Unauthorized')
+  }
+  return user
+}
