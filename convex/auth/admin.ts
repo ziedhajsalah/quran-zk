@@ -1,4 +1,5 @@
 import { v } from 'convex/values'
+import { hashPassword } from 'better-auth/crypto'
 import { action, internalAction } from '../_generated/server'
 import { components } from '../_generated/api'
 import { authComponent, createAuth } from '../auth'
@@ -233,6 +234,63 @@ export const adminSetStatus = action({
     })
 
     return serializeAuthUser(updated)
+  },
+})
+
+export const rescueResetPassword = internalAction({
+  args: {
+    identifier: v.string(),
+    password: v.string(),
+  },
+  handler: async (ctx, args): Promise<{ success: true; userId: string }> => {
+    const trimmed = args.identifier.trim()
+    if (!trimmed) {
+      throw new Error('Identifier is required.')
+    }
+    if (!args.password || args.password.length < 8) {
+      throw new Error('Password must be at least 8 characters.')
+    }
+
+    const lower = trimmed.toLowerCase()
+    const isEmail = trimmed.includes('@')
+
+    const user = await ctx.runQuery(components.betterAuth.adapter.findOne, {
+      model: 'user',
+      where: [
+        isEmail
+          ? { field: 'email', value: lower }
+          : { field: 'username', value: lower },
+      ],
+    })
+
+    if (!user) {
+      throw new Error(`User not found for identifier: ${args.identifier}`)
+    }
+
+    const accounts = await ctx.runQuery(components.betterAuth.adapter.findMany, {
+      model: 'account',
+      where: [{ field: 'userId', value: user._id as string }],
+      paginationOpts: { numItems: 50, cursor: null },
+    })
+
+    const credentialAccount = accounts.page.find(
+      (entry: Record<string, unknown>) => entry.providerId === 'credential',
+    )
+    if (!credentialAccount) {
+      throw new Error('No credential account found for this user.')
+    }
+
+    const newHash = await hashPassword(args.password)
+
+    await ctx.runMutation(components.betterAuth.adapter.updateOne, {
+      input: {
+        model: 'account',
+        where: [{ field: '_id', value: credentialAccount._id as string }],
+        update: { password: newHash, updatedAt: Date.now() },
+      },
+    })
+
+    return { success: true, userId: user._id as string }
   },
 })
 

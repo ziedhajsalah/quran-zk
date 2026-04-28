@@ -50,7 +50,19 @@ The bootstrap command:
 
 After the first admin exists, bootstrap is blocked and all further account creation must go through the app's admin APIs.
 
-## 5. Auth model
+## 5. Rescue: reset a password from the deployment
+
+Use this when no admin can sign in (e.g. the only admin forgot their password and the in-app admin-mediated reset is unreachable). It bypasses the in-app admin session check, so it is restricted to whoever has Convex deployment access.
+
+```bash
+npx convex run --push 'auth/admin:rescueResetPassword' '{"identifier":"<email-or-username>","password":"<new-password>"}'
+```
+
+`identifier` accepts either the user's email (anything containing `@`) or their username. The action looks up the user, hashes the new password with Better Auth's default hasher, and writes it directly to the matching `account` row (`providerId='credential'`).
+
+Defined as an `internalAction` in `convex/auth/admin.ts`, so it cannot be called from the public API — only via `npx convex run` with deployment credentials.
+
+## 6. Auth model
 
 - Public sign-up is disabled.
 - Login supports email/password and username/password.
