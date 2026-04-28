@@ -4,8 +4,10 @@ import {
   Avatar,
   Badge,
   Box,
+  Button,
   Card,
   Container,
+  Divider,
   Group,
   Paper,
   SimpleGrid,
@@ -15,8 +17,10 @@ import {
   useMantineTheme,
 } from '@mantine/core'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { IconLogout } from '@tabler/icons-react'
 import { BottomNav, HomeTopBar, createHomeDashboardData } from '~/components/home'
+import { authClient } from '~/lib/auth-client'
 import { currentUserQuery } from '~/lib/auth-queries'
 import { getInitials } from '~/utils/getInitials'
 
@@ -27,6 +31,16 @@ export const Route = createFileRoute('/_protected/profile')({
 function ProfilePage() {
   const theme = useMantineTheme()
   const { data: currentUser } = useSuspenseQuery(currentUserQuery)
+  const [signingOut, setSigningOut] = useState(false)
+
+  async function handleSignOut() {
+    setSigningOut(true)
+    try {
+      await authClient.signOut()
+    } finally {
+      window.location.assign('/login')
+    }
+  }
   const homeDashboardData = useMemo(
     () => createHomeDashboardData(currentUser.displayName),
     [currentUser.displayName],
@@ -147,6 +161,18 @@ function ProfilePage() {
                   إدارة الطلاب
                 </Anchor>
               ) : null}
+
+              <Divider />
+
+              <Button
+                color="red"
+                variant="light"
+                leftSection={<IconLogout size={18} />}
+                loading={signingOut}
+                onClick={handleSignOut}
+              >
+                تسجيل الخروج
+              </Button>
             </Stack>
           </Paper>
         </Stack>

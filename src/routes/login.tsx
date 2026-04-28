@@ -4,7 +4,6 @@ import {
   Anchor,
   Button,
   Container,
-  Group,
   Paper,
   PasswordInput,
   Stack,
@@ -144,21 +143,9 @@ function LoginPage() {
             </Stack>
           </form>
 
-          <Group justify="space-between" gap="md" wrap="wrap">
-            <Anchor component={Link} to="/reset-password" size="sm">
-              نسيت كلمة المرور؟
-            </Anchor>
-            <Anchor
-              component="button"
-              type="button"
-              onClick={async () => {
-                await authClient.signOut()
-              }}
-              size="sm"
-            >
-              تسجيل الخروج من الجلسة الحالية
-            </Anchor>
-          </Group>
+          <Anchor component={Link} to="/reset-password" size="sm">
+            نسيت كلمة المرور؟
+          </Anchor>
         </Stack>
       </Paper>
     </Container>
