@@ -88,8 +88,8 @@ studentSurahGrades: defineTable({
 
 Add to `convex/auth/helpers.ts`:
 
-- `requireStaff(ctx)` — returns the current user if their role is `teacher` or `admin`. Pairs with the existing `requireAdmin`.
-- `requireSelfOrStaff(ctx, studentId)` — used by `listForStudent` so a student can read their own list and staff can read anyone's.
+- `requireStaffAuthUser(ctx)` — returns the current user if their role is `teacher` or `admin`. Pairs with the existing `requireAdminAuthUser`.
+- `requireSelfOrStaffAuthUser(ctx, studentId)` — used by `listForStudent` so a student can read their own list and staff can read anyone's.
 
 `surahNumber` validation lives in the mutation body, not in a custom validator: throws `ConvexError` if out of range.
 
