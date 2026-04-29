@@ -2,14 +2,20 @@ import { v } from 'convex/values'
 import { query } from './_generated/server'
 import { authComponent, createAuth } from './auth'
 import { requireStaffAuthUser } from './auth/helpers'
-import type { MutationCtx, QueryCtx } from './_generated/server'
+
+type AuthApi = Awaited<
+  ReturnType<typeof authComponent.getAuth<typeof createAuth>>
+>['auth']
+type AuthHeaders = Awaited<
+  ReturnType<typeof authComponent.getAuth<typeof createAuth>>
+>['headers']
 
 async function resolveAuthorDisplayName(
-  ctx: QueryCtx | MutationCtx,
+  auth: AuthApi,
+  headers: AuthHeaders,
   authorId: string,
 ): Promise<string> {
   try {
-    const { auth, headers } = await authComponent.getAuth(createAuth, ctx)
     const user = await auth.api.getUser({ query: { id: authorId }, headers })
     return user?.name ?? 'مستخدم محذوف'
   } catch {
@@ -21,6 +27,7 @@ export const listForStudent = query({
   args: { studentId: v.string() },
   handler: async (ctx, args) => {
     await requireStaffAuthUser(ctx)
+    const { auth, headers } = await authComponent.getAuth(createAuth, ctx)
     const rows = await ctx.db
       .query('studentNotes')
       .withIndex('by_student_created', (q) =>
@@ -31,7 +38,11 @@ export const listForStudent = query({
     return Promise.all(
       sorted.map(async (n) => ({
         ...n,
-        authorDisplayName: await resolveAuthorDisplayName(ctx, n.authorId),
+        authorDisplayName: await resolveAuthorDisplayName(
+          auth,
+          headers,
+          n.authorId,
+        ),
       })),
     )
   },
