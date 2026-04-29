@@ -74,3 +74,31 @@ export const add = mutation({
     })
   },
 })
+
+export const edit = mutation({
+  args: {
+    noteId: v.id('studentNotes'),
+    body: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const staff = await requireStaffAuthUser(ctx)
+    const note = await ctx.db.get('studentNotes', args.noteId)
+    if (!note) {
+      throw new ConvexError('Note not found.')
+    }
+    if (note.authorId !== String(staff._id)) {
+      throw new ConvexError('You can only edit your own notes.')
+    }
+    const trimmed = args.body.trim()
+    if (trimmed.length === 0) {
+      throw new ConvexError('Note body cannot be empty.')
+    }
+    if (trimmed.length > MAX_BODY_LENGTH) {
+      throw new ConvexError('Note body is too long.')
+    }
+    await ctx.db.patch('studentNotes', args.noteId, {
+      body: trimmed,
+      editedAt: Date.now(),
+    })
+  },
+})
