@@ -1,7 +1,9 @@
-import { v } from 'convex/values'
-import { query } from './_generated/server'
+import { ConvexError, v } from 'convex/values'
+import { mutation, query } from './_generated/server'
 import { authComponent, createAuth } from './auth'
 import { requireStaffAuthUser } from './auth/helpers'
+
+const MAX_BODY_LENGTH = 2000
 
 type AuthApi = Awaited<
   ReturnType<typeof authComponent.getAuth<typeof createAuth>>
@@ -45,5 +47,30 @@ export const listForStudent = query({
         ),
       })),
     )
+  },
+})
+
+export const add = mutation({
+  args: {
+    studentId: v.string(),
+    body: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const staff = await requireStaffAuthUser(ctx)
+    const trimmed = args.body.trim()
+    if (trimmed.length === 0) {
+      throw new ConvexError('Note body cannot be empty.')
+    }
+    if (trimmed.length > MAX_BODY_LENGTH) {
+      throw new ConvexError('Note body is too long.')
+    }
+    const now = Date.now()
+    await ctx.db.insert('studentNotes', {
+      studentId: args.studentId,
+      authorId: String(staff._id),
+      body: trimmed,
+      createdAt: now,
+      editedAt: null,
+    })
   },
 })
