@@ -32,7 +32,7 @@ export function AssignReviewDrawer({
 }: AssignReviewDrawerProps) {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Surah | null>(null)
-  const [dueDate, setDueDate] = useState<Date | null>(null)
+  const [dueDate, setDueDate] = useState<string | null>(null)
 
   const memorizedSet = useMemo(
     () => new Set(memorizedSurahNumbers),
@@ -70,6 +70,8 @@ export function AssignReviewDrawer({
     onSubmit({ surahNumber: selected.number, dueAt })
     handleClose()
   }
+
+  const minDate = todayIsoDate()
 
   return (
     <Drawer
@@ -144,10 +146,8 @@ export function AssignReviewDrawer({
               label="تاريخ الاستحقاق (اختياري)"
               placeholder="اختر تاريخًا"
               value={dueDate}
-              onChange={(value) => {
-                setDueDate(value ? new Date(value) : null)
-              }}
-              minDate={new Date()}
+              onChange={setDueDate}
+              minDate={minDate}
               clearable
             />
 
@@ -164,6 +164,15 @@ export function AssignReviewDrawer({
   )
 }
 
-function toUtcMidnightMs(date: Date) {
-  return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+function toUtcMidnightMs(isoDate: string) {
+  const [y, m, d] = isoDate.split('-').map(Number)
+  return Date.UTC(y, m - 1, d)
+}
+
+function todayIsoDate() {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
