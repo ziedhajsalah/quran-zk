@@ -102,3 +102,18 @@ export const edit = mutation({
     })
   },
 })
+
+export const remove = mutation({
+  args: { noteId: v.id('studentNotes') },
+  handler: async (ctx, args) => {
+    const staff = await requireStaffAuthUser(ctx)
+    const note = await ctx.db.get('studentNotes', args.noteId)
+    if (!note) {
+      throw new ConvexError('Note not found.')
+    }
+    if (note.authorId !== String(staff._id)) {
+      throw new ConvexError('You can only delete your own notes.')
+    }
+    await ctx.db.delete('studentNotes', args.noteId)
+  },
+})
