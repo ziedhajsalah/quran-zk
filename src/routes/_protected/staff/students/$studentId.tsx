@@ -8,6 +8,7 @@ import {
   Group,
   Notification,
   Stack,
+  Tabs,
   Text,
   Title,
   useMantineTheme,
@@ -211,43 +212,60 @@ function StaffStudentGradingPage() {
             </Notification>
           ) : null}
 
-          <Group justify="flex-end">
-            <Button
-              leftSection={<IconClipboardPlus size={16} />}
-              onClick={() => setAssignDrawerOpen(true)}
-              variant="light"
-            >
-              إسناد مراجعة
-            </Button>
-          </Group>
+          <Tabs defaultValue="reviews" keepMounted={false}>
+            <Tabs.List>
+              <Tabs.Tab value="reviews">المراجعات</Tabs.Tab>
+              <Tabs.Tab value="grades">السور</Tabs.Tab>
+              <Tabs.Tab value="notes">الملاحظات</Tabs.Tab>
+            </Tabs.List>
 
-          <SurahReviewQueue
-            rows={openAssignments.map((a) => ({
-              assignmentId: String(a._id),
-              surahNumber: a.surahNumber,
-              assignedAt: a.assignedAt,
-              dueAt: a.dueAt,
-            }))}
-            editable
-            onClose={(assignmentId) =>
-              setClosingAssignmentId(
-                assignmentId as Id<'surahReviewAssignments'>,
-              )
-            }
-            onCancel={handleCancelAssignment}
-          />
+            <Tabs.Panel value="reviews" pt="md">
+              <Stack gap="md">
+                <Group justify="flex-end">
+                  <Button
+                    leftSection={<IconClipboardPlus size={16} />}
+                    onClick={() => setAssignDrawerOpen(true)}
+                    variant="light"
+                  >
+                    إسناد مراجعة
+                  </Button>
+                </Group>
+                <SurahReviewQueue
+                  rows={openAssignments.map((a) => ({
+                    assignmentId: String(a._id),
+                    surahNumber: a.surahNumber,
+                    assignedAt: a.assignedAt,
+                    dueAt: a.dueAt,
+                  }))}
+                  editable
+                  onClose={(assignmentId) =>
+                    setClosingAssignmentId(
+                      assignmentId as Id<'surahReviewAssignments'>,
+                    )
+                  }
+                  onCancel={handleCancelAssignment}
+                />
+              </Stack>
+            </Tabs.Panel>
 
-          <SurahGradeList
-            rows={rows.map((r) => ({
-              surahNumber: r.surahNumber,
-              grade: r.grade,
-              updatedAt: r.updatedAt,
-            }))}
-            emptyMessage="لم يبدأ هذا الطالب الحفظ بعد. أضف أول سورة."
-            editable
-            onChangeGrade={handleChangeGrade}
-            onAddSurah={() => setAddSurahOpen(true)}
-          />
+            <Tabs.Panel value="grades" pt="md">
+              <SurahGradeList
+                rows={rows.map((r) => ({
+                  surahNumber: r.surahNumber,
+                  grade: r.grade,
+                  updatedAt: r.updatedAt,
+                }))}
+                emptyMessage="لم يبدأ هذا الطالب الحفظ بعد. أضف أول سورة."
+                editable
+                onChangeGrade={handleChangeGrade}
+                onAddSurah={() => setAddSurahOpen(true)}
+              />
+            </Tabs.Panel>
+
+            <Tabs.Panel value="notes" pt="md">
+              {null}
+            </Tabs.Panel>
+          </Tabs>
         </Stack>
       </Container>
 
