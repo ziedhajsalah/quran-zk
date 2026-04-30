@@ -17,6 +17,7 @@ import type * as auth_utils from "../auth/utils.js";
 import type * as auth_validators from "../auth/validators.js";
 import type * as http from "../http.js";
 import type * as myFunctions from "../myFunctions.js";
+import type * as studentNotes from "../studentNotes.js";
 import type * as surahGrades from "../surahGrades.js";
 import type * as surahReviews from "../surahReviews.js";
 
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   "auth/validators": typeof auth_validators;
   http: typeof http;
   myFunctions: typeof myFunctions;
+  studentNotes: typeof studentNotes;
   surahGrades: typeof surahGrades;
   surahReviews: typeof surahReviews;
 }>;

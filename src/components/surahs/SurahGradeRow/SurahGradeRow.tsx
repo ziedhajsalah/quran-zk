@@ -3,6 +3,7 @@ import type { SurahGrade } from '~/data/grades'
 import type { Surah } from '~/data/surahs'
 import { GRADE_COLORS, GRADE_LABELS, GRADE_ORDER } from '~/data/grades'
 import { formatArabicNumber } from '~/components/home/home-formatters'
+import { formatArabicRelative } from '~/lib/arabic-time'
 
 export interface SurahGradeRowProps {
   surah: Surah
@@ -63,17 +64,7 @@ export function SurahGradeRow({
   )
 }
 
-const relativeFormatter = new Intl.RelativeTimeFormat('ar', { numeric: 'auto' })
-
 function formatRelative(timestamp: number) {
-  const diffMs = timestamp - Date.now()
-  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
-  if (Math.abs(diffDays) >= 1) {
-    return `آخر تقييم ${relativeFormatter.format(diffDays, 'day')}`
-  }
-  const diffHours = Math.round(diffMs / (1000 * 60 * 60))
-  if (Math.abs(diffHours) >= 1) {
-    return `آخر تقييم ${relativeFormatter.format(diffHours, 'hour')}`
-  }
-  return 'آخر تقييم الآن'
+  const relative = formatArabicRelative(timestamp, 'الآن')
+  return relative === 'الآن' ? 'آخر تقييم الآن' : `آخر تقييم ${relative}`
 }

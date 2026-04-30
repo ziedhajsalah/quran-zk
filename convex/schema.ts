@@ -51,4 +51,11 @@ export default defineSchema({
   })
     .index('by_student_status', ['studentId', 'status'])
     .index('by_student_surah_status', ['studentId', 'surahNumber', 'status']),
+  studentNotes: defineTable({
+    studentId: v.string(),
+    authorId: v.string(),
+    body: v.string(),
+    createdAt: v.number(),
+    editedAt: v.union(v.null(), v.number()),
+  }).index('by_student_created', ['studentId', 'createdAt']),
 })
