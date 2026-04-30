@@ -1,52 +1,46 @@
 import { ConvexError, v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import { authComponent, createAuth } from './auth'
+import { authComponent } from './auth'
 import { requireStaffAuthUser } from './auth/helpers'
+import type { MutationCtx, QueryCtx } from './_generated/server'
 
 const MAX_BODY_LENGTH = 2000
-
-type AuthApi = Awaited<
-  ReturnType<typeof authComponent.getAuth<typeof createAuth>>
->['auth']
-type AuthHeaders = Awaited<
-  ReturnType<typeof authComponent.getAuth<typeof createAuth>>
->['headers']
+const MAX_NOTES_PER_STUDENT = 100
 
 async function resolveAuthorDisplayName(
-  auth: AuthApi,
-  headers: AuthHeaders,
+  ctx: QueryCtx | MutationCtx,
   authorId: string,
 ): Promise<string> {
-  try {
-    const user = await auth.api.getUser({ query: { id: authorId }, headers })
-    return user?.name ?? 'مستخدم محذوف'
-  } catch {
-    return 'مستخدم محذوف'
-  }
+  const user = await authComponent.getAnyUserById(ctx, authorId)
+  return user?.name ?? 'مستخدم محذوف'
 }
 
 export const listForStudent = query({
   args: { studentId: v.string() },
   handler: async (ctx, args) => {
     await requireStaffAuthUser(ctx)
-    const { auth, headers } = await authComponent.getAuth(createAuth, ctx)
     const rows = await ctx.db
       .query('studentNotes')
       .withIndex('by_student_created', (q) =>
         q.eq('studentId', args.studentId),
       )
-      .collect()
-    const sorted = [...rows].sort((a, b) => b.createdAt - a.createdAt)
-    return Promise.all(
-      sorted.map(async (n) => ({
-        ...n,
-        authorDisplayName: await resolveAuthorDisplayName(
-          auth,
-          headers,
-          n.authorId,
-        ),
-      })),
+      .order('desc')
+      .take(MAX_NOTES_PER_STUDENT)
+
+    // Resolve unique author ids once so a student with N notes from M
+    // distinct teachers issues M lookups, not N.
+    const uniqueAuthorIds = [...new Set(rows.map((r) => r.authorId))]
+    const nameByAuthor = new Map<string, string>()
+    await Promise.all(
+      uniqueAuthorIds.map(async (id) => {
+        nameByAuthor.set(id, await resolveAuthorDisplayName(ctx, id))
+      }),
     )
+
+    return rows.map((n) => ({
+      ...n,
+      authorDisplayName: nameByAuthor.get(n.authorId) ?? 'مستخدم محذوف',
+    }))
   },
 })
 

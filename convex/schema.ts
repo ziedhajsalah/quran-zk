@@ -57,7 +57,5 @@ export default defineSchema({
     body: v.string(),
     createdAt: v.number(),
     editedAt: v.union(v.null(), v.number()),
-  })
-    .index('by_student', ['studentId'])
-    .index('by_student_created', ['studentId', 'createdAt']),
+  }).index('by_student_created', ['studentId', 'createdAt']),
 })

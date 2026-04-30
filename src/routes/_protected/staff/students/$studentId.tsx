@@ -218,6 +218,7 @@ function StaffStudentGradingPage() {
       await removeNote({ noteId: deletingNoteId })
     } catch (error) {
       setErrorMessage(extractActionErrorMessage(error, 'تعذر حذف الملاحظة.'))
+      throw error
     }
   }
 
