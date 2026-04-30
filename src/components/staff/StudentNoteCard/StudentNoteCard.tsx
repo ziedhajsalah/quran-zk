@@ -1,5 +1,6 @@
 import { ActionIcon, Badge, Card, Group, Menu, Stack, Text } from '@mantine/core'
 import { IconDots, IconPencil, IconTrash } from '@tabler/icons-react'
+import { formatArabicRelative } from '~/lib/arabic-time'
 
 export interface StudentNoteCardProps {
   authorDisplayName: string
@@ -27,7 +28,7 @@ export function StudentNoteCard({
           <Text fw={600}>{authorDisplayName}</Text>
           <Group gap="xs">
             <Text size="xs" c="dimmed">
-              {formatRelativeTime(createdAt)}
+              {formatArabicRelative(createdAt)}
             </Text>
             {editedAt !== null ? (
               <Badge size="xs" variant="light" color="gray">
@@ -59,23 +60,4 @@ export function StudentNoteCard({
       <Text style={{ whiteSpace: 'pre-wrap' }}>{body}</Text>
     </Card>
   )
-}
-
-const relativeFormatter = new Intl.RelativeTimeFormat('ar', { numeric: 'auto' })
-
-function formatRelativeTime(timestamp: number): string {
-  const diffMs = timestamp - Date.now()
-  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
-  if (Math.abs(diffDays) >= 1) {
-    return relativeFormatter.format(diffDays, 'day')
-  }
-  const diffHours = Math.round(diffMs / (1000 * 60 * 60))
-  if (Math.abs(diffHours) >= 1) {
-    return relativeFormatter.format(diffHours, 'hour')
-  }
-  const diffMinutes = Math.round(diffMs / (1000 * 60))
-  if (Math.abs(diffMinutes) >= 1) {
-    return relativeFormatter.format(diffMinutes, 'minute')
-  }
-  return 'الآن'
 }

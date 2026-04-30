@@ -2,6 +2,7 @@ import { ActionIcon, Badge, Group, Stack, Text, Tooltip } from '@mantine/core'
 import { IconCheck, IconX } from '@tabler/icons-react'
 import type { Surah } from '~/data/surahs'
 import { formatArabicNumber } from '~/components/home/home-formatters'
+import { formatArabicRelative } from '~/lib/arabic-time'
 
 export interface SurahReviewRowProps {
   surah: Surah
@@ -88,17 +89,7 @@ function formatDueDate(ms: number) {
   return `الاستحقاق: ${dateFormatter.format(new Date(ms))}`
 }
 
-const relativeFormatter = new Intl.RelativeTimeFormat('ar', { numeric: 'auto' })
-
 function formatAssignedAt(timestamp: number) {
-  const diffMs = timestamp - Date.now()
-  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
-  if (Math.abs(diffDays) >= 1) {
-    return `أُسند ${relativeFormatter.format(diffDays, 'day')}`
-  }
-  const diffHours = Math.round(diffMs / (1000 * 60 * 60))
-  if (Math.abs(diffHours) >= 1) {
-    return `أُسند ${relativeFormatter.format(diffHours, 'hour')}`
-  }
-  return 'أُسند الآن'
+  const relative = formatArabicRelative(timestamp, 'الآن')
+  return relative === 'الآن' ? 'أُسند الآن' : `أُسند ${relative}`
 }

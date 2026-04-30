@@ -4,15 +4,17 @@ import { authComponent } from './auth'
 import { requireStaffAuthUser } from './auth/helpers'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 
+// Keep in sync with the client-side counter in AddNoteDrawer.tsx.
 const MAX_BODY_LENGTH = 2000
 const MAX_NOTES_PER_STUDENT = 100
+const DELETED_USER_NAME = 'مستخدم محذوف'
 
 async function resolveAuthorDisplayName(
   ctx: QueryCtx | MutationCtx,
   authorId: string,
 ): Promise<string> {
   const user = await authComponent.getAnyUserById(ctx, authorId)
-  return user?.name ?? 'مستخدم محذوف'
+  return user?.name ?? DELETED_USER_NAME
 }
 
 export const listForStudent = query({
@@ -39,7 +41,7 @@ export const listForStudent = query({
 
     return rows.map((n) => ({
       ...n,
-      authorDisplayName: nameByAuthor.get(n.authorId) ?? 'مستخدم محذوف',
+      authorDisplayName: nameByAuthor.get(n.authorId) ?? DELETED_USER_NAME,
     }))
   },
 })

@@ -1,6 +1,9 @@
 import { Button, Drawer, Group, Stack, Text, Textarea } from '@mantine/core'
 import { useEffect, useState } from 'react'
 
+// Must match MAX_BODY_LENGTH in convex/studentNotes.ts.
+const MAX_BODY_LENGTH = 2000
+
 export interface AddNoteDrawerProps {
   opened: boolean
   onClose: () => void
@@ -22,7 +25,8 @@ export function AddNoteDrawer({
   }, [opened, initialBody])
 
   function handleClose() {
-    setBody(initialBody ?? '')
+    // The open-effect resets `body` next time the drawer reopens; we
+    // only need to reset `submitting` so the next open isn't disabled.
     setSubmitting(false)
     onClose()
   }
@@ -52,14 +56,14 @@ export function AddNoteDrawer({
           autosize
           minRows={4}
           maxRows={12}
-          maxLength={2000}
+          maxLength={MAX_BODY_LENGTH}
           value={body}
           onChange={(event) => setBody(event.currentTarget.value)}
           placeholder="اكتب ملاحظة..."
         />
-        <Group justify="flex-end">
-          <Text size="xs" c="dimmed">{`${body.length} / 2000`}</Text>
-        </Group>
+        <Text size="xs" c="dimmed" ta="end">
+          {`${body.length} / ${MAX_BODY_LENGTH}`}
+        </Text>
         <Group justify="flex-end" gap="sm">
           <Button variant="default" onClick={handleClose}>
             إلغاء
