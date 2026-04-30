@@ -80,3 +80,38 @@ export const OneEdited: Story = {
     onDelete: (id) => console.log('delete', id),
   },
 }
+
+const studentUserId = 'student-1'
+
+export const ReadOnlyStudentView: Story = {
+  args: {
+    rows: [
+      {
+        noteId: 'n1',
+        authorDisplayName: 'الأستاذ أحمد',
+        authorId: 'teacher-1',
+        createdAt: now - 2 * hour,
+        editedAt: null,
+        body: 'يحفظ بسرعة بعد المغرب.',
+      },
+      {
+        noteId: 'n2',
+        authorDisplayName: 'الأستاذة فاطمة',
+        authorId: 'teacher-2',
+        createdAt: now - 3 * day,
+        editedAt: now - 2 * day,
+        body: 'تحسن كبير في المراجعة.',
+      },
+    ],
+    currentUserId: studentUserId,
+    emptyMessage: 'لا توجد ملاحظات من معلمك بعد',
+  },
+}
+
+export const ReadOnlyStudentEmpty: Story = {
+  args: {
+    rows: [],
+    currentUserId: studentUserId,
+    emptyMessage: 'لا توجد ملاحظات من معلمك بعد',
+  },
+}

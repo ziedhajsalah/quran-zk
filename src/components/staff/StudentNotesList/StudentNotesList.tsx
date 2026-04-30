@@ -14,10 +14,13 @@ export interface StudentNoteRow {
 export interface StudentNotesListProps {
   rows: ReadonlyArray<StudentNoteRow>
   currentUserId: string
-  onAdd: () => void
-  onEdit: (noteId: string) => void
-  onDelete: (noteId: string) => void
+  onAdd?: () => void
+  onEdit?: (noteId: string) => void
+  onDelete?: (noteId: string) => void
+  emptyMessage?: string
 }
+
+const DEFAULT_EMPTY_MESSAGE = 'لا توجد ملاحظات بعد'
 
 export function StudentNotesList({
   rows,
@@ -25,23 +28,26 @@ export function StudentNotesList({
   onAdd,
   onEdit,
   onDelete,
+  emptyMessage = DEFAULT_EMPTY_MESSAGE,
 }: StudentNotesListProps) {
   return (
     <Stack gap="md">
       <Group justify="space-between" align="center">
         <Title order={3}>الملاحظات</Title>
-        <Button
-          leftSection={<IconPlus size={16} />}
-          onClick={onAdd}
-          variant="light"
-        >
-          إضافة ملاحظة
-        </Button>
+        {onAdd ? (
+          <Button
+            leftSection={<IconPlus size={16} />}
+            onClick={onAdd}
+            variant="light"
+          >
+            إضافة ملاحظة
+          </Button>
+        ) : null}
       </Group>
 
       {rows.length === 0 ? (
         <Text c="dimmed" ta="center" py="xl">
-          لا توجد ملاحظات بعد
+          {emptyMessage}
         </Text>
       ) : (
         <Stack gap="md">
@@ -55,8 +61,10 @@ export function StudentNotesList({
                 editedAt={row.editedAt}
                 body={row.body}
                 isAuthor={isAuthor}
-                onEdit={isAuthor ? () => onEdit(row.noteId) : undefined}
-                onDelete={isAuthor ? () => onDelete(row.noteId) : undefined}
+                onEdit={isAuthor && onEdit ? () => onEdit(row.noteId) : undefined}
+                onDelete={
+                  isAuthor && onDelete ? () => onDelete(row.noteId) : undefined
+                }
               />
             )
           })}

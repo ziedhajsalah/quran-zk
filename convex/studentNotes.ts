@@ -1,7 +1,7 @@
 import { ConvexError, v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { authComponent } from './auth'
-import { requireStaffAuthUser } from './auth/helpers'
+import { requireSelfOrStaffAuthUser, requireStaffAuthUser } from './auth/helpers'
 import type { MutationCtx, QueryCtx } from './_generated/server'
 
 // Keep in sync with the client-side counter in AddNoteDrawer.tsx.
@@ -20,7 +20,7 @@ async function resolveAuthorDisplayName(
 export const listForStudent = query({
   args: { studentId: v.string() },
   handler: async (ctx, args) => {
-    await requireStaffAuthUser(ctx)
+    await requireSelfOrStaffAuthUser(ctx, args.studentId)
     const rows = await ctx.db
       .query('studentNotes')
       .withIndex('by_student_created', (q) =>

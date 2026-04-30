@@ -1,5 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Box, Container, Stack, Text, Title, useMantineTheme } from '@mantine/core'
+import {
+  Box,
+  Container,
+  Stack,
+  Tabs,
+  Text,
+  Title,
+  useMantineTheme,
+} from '@mantine/core'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
 import { useMemo } from 'react'
@@ -12,6 +20,7 @@ import {
 } from '~/components/home'
 import { SurahGradeList } from '~/components/surahs/SurahGradeList'
 import { SurahReviewQueue } from '~/components/surahs/SurahReviewQueue'
+import { StudentNotesList } from '~/components/staff/StudentNotesList'
 
 export const Route = createFileRoute('/_protected/surahs')({
   loader: async ({ context }) => {
@@ -24,6 +33,9 @@ export const Route = createFileRoute('/_protected/surahs')({
         convexQuery(api.surahReviews.listOpenForStudent, {
           studentId: me.id,
         }),
+      ),
+      context.queryClient.ensureQueryData(
+        convexQuery(api.studentNotes.listForStudent, { studentId: me.id }),
       ),
     ])
   },
@@ -38,6 +50,9 @@ function StudentSurahsPage() {
   )
   const { data: openAssignments } = useSuspenseQuery(
     convexQuery(api.surahReviews.listOpenForStudent, { studentId: me.id }),
+  )
+  const { data: notes } = useSuspenseQuery(
+    convexQuery(api.studentNotes.listForStudent, { studentId: me.id }),
   )
   const homeDashboardData = useMemo(
     () => createHomeDashboardData(me.displayName),
@@ -74,23 +89,50 @@ function StudentSurahsPage() {
             </Text>
           </Stack>
 
-          <SurahReviewQueue
-            rows={openAssignments.map((a) => ({
-              assignmentId: String(a._id),
-              surahNumber: a.surahNumber,
-              assignedAt: a.assignedAt,
-              dueAt: a.dueAt,
-            }))}
-          />
+          <Tabs defaultValue="reviews">
+            <Tabs.List>
+              <Tabs.Tab value="reviews">المراجعات</Tabs.Tab>
+              <Tabs.Tab value="grades">السور</Tabs.Tab>
+              <Tabs.Tab value="notes">الملاحظات</Tabs.Tab>
+            </Tabs.List>
 
-          <SurahGradeList
-            rows={rows.map((row) => ({
-              surahNumber: row.surahNumber,
-              grade: row.grade,
-              updatedAt: row.updatedAt,
-            }))}
-            emptyMessage="لم تبدأ في حفظ أي سورة بعد. تواصل مع معلمك."
-          />
+            <Tabs.Panel value="reviews" pt="md">
+              <SurahReviewQueue
+                rows={openAssignments.map((a) => ({
+                  assignmentId: String(a._id),
+                  surahNumber: a.surahNumber,
+                  assignedAt: a.assignedAt,
+                  dueAt: a.dueAt,
+                }))}
+              />
+            </Tabs.Panel>
+
+            <Tabs.Panel value="grades" pt="md">
+              <SurahGradeList
+                rows={rows.map((row) => ({
+                  surahNumber: row.surahNumber,
+                  grade: row.grade,
+                  updatedAt: row.updatedAt,
+                }))}
+                emptyMessage="لم تبدأ في حفظ أي سورة بعد. تواصل مع معلمك."
+              />
+            </Tabs.Panel>
+
+            <Tabs.Panel value="notes" pt="md">
+              <StudentNotesList
+                rows={notes.map((n) => ({
+                  noteId: String(n._id),
+                  authorDisplayName: n.authorDisplayName,
+                  authorId: n.authorId,
+                  createdAt: n.createdAt,
+                  editedAt: n.editedAt,
+                  body: n.body,
+                }))}
+                currentUserId={String(me.id)}
+                emptyMessage="لا توجد ملاحظات من معلمك بعد"
+              />
+            </Tabs.Panel>
+          </Tabs>
         </Stack>
       </Container>
 

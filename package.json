@@ -8,6 +8,7 @@
     "dev:web": "vite dev",
     "dev:ts": "tsc -b -w",
     "dev:convex": "npx convex dev",
+    "convex:push": "npx convex dev --once",
     "build": "vite build && tsc --noEmit",
     "preview": "npm run build && wrangler dev",
     "deploy": "npm run build && wrangler deploy",
