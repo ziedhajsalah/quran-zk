@@ -32,6 +32,9 @@ import { AddSurahDrawer } from '~/components/surahs/AddSurahDrawer'
 import { SurahReviewQueue } from '~/components/surahs/SurahReviewQueue'
 import { AssignReviewDrawer } from '~/components/surahs/AssignReviewDrawer'
 import { CloseAssignmentDialog } from '~/components/surahs/CloseAssignmentDialog'
+import { StudentNotesList } from '~/components/staff/StudentNotesList'
+import { AddNoteDrawer } from '~/components/staff/AddNoteDrawer'
+import { DeleteNoteDialog } from '~/components/staff/DeleteNoteDialog'
 import { getSurah } from '~/data/surahs'
 
 export const Route = createFileRoute('/_protected/staff/students/$studentId')({
@@ -47,6 +50,11 @@ export const Route = createFileRoute('/_protected/staff/students/$studentId')({
       ),
       context.queryClient.ensureQueryData(
         convexQuery(api.surahReviews.listOpenForStudent, {
+          studentId: params.studentId,
+        }),
+      ),
+      context.queryClient.ensureQueryData(
+        convexQuery(api.studentNotes.listForStudent, {
           studentId: params.studentId,
         }),
       ),
@@ -68,16 +76,27 @@ function StaffStudentGradingPage() {
   const { data: openAssignments } = useSuspenseQuery(
     convexQuery(api.surahReviews.listOpenForStudent, { studentId }),
   )
+  const { data: notes } = useSuspenseQuery(
+    convexQuery(api.studentNotes.listForStudent, { studentId }),
+  )
 
   const setGrade = useMutation(api.surahGrades.setGrade)
   const assignReview = useMutation(api.surahReviews.assign)
   const closeReview = useMutation(api.surahReviews.close)
   const cancelReview = useMutation(api.surahReviews.cancel)
+  const addNote = useMutation(api.studentNotes.add)
+  const editNote = useMutation(api.studentNotes.edit)
+  const removeNote = useMutation(api.studentNotes.remove)
 
   const [addSurahOpen, setAddSurahOpen] = useState(false)
   const [assignDrawerOpen, setAssignDrawerOpen] = useState(false)
   const [closingAssignmentId, setClosingAssignmentId] =
     useState<Id<'surahReviewAssignments'> | null>(null)
+  const [noteDrawerOpen, setNoteDrawerOpen] = useState(false)
+  const [editingNoteId, setEditingNoteId] =
+    useState<Id<'studentNotes'> | null>(null)
+  const [deletingNoteId, setDeletingNoteId] =
+    useState<Id<'studentNotes'> | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const homeDashboardData = useMemo(
@@ -101,6 +120,14 @@ function StaffStudentGradingPage() {
     ? rows.find((r) => r.surahNumber === closingAssignment.surahNumber)?.grade ??
       null
     : null
+
+  const editingNote = useMemo(
+    () =>
+      editingNoteId
+        ? notes.find((n) => n._id === editingNoteId) ?? null
+        : null,
+    [editingNoteId, notes],
+  )
 
   async function handleChangeGrade(
     surahNumber: number,
@@ -162,6 +189,35 @@ function StaffStudentGradingPage() {
       })
     } catch (error) {
       setErrorMessage(extractActionErrorMessage(error, 'تعذر إلغاء المراجعة.'))
+    }
+  }
+
+  async function handleSubmitNote(body: string) {
+    setErrorMessage(null)
+    try {
+      if (editingNoteId) {
+        await editNote({ noteId: editingNoteId, body })
+      } else {
+        await addNote({ studentId, body })
+      }
+    } catch (error) {
+      setErrorMessage(
+        extractActionErrorMessage(
+          error,
+          editingNoteId ? 'تعذر تعديل الملاحظة.' : 'تعذر إضافة الملاحظة.',
+        ),
+      )
+      throw error
+    }
+  }
+
+  async function handleDeleteNote() {
+    if (!deletingNoteId) return
+    setErrorMessage(null)
+    try {
+      await removeNote({ noteId: deletingNoteId })
+    } catch (error) {
+      setErrorMessage(extractActionErrorMessage(error, 'تعذر حذف الملاحظة.'))
     }
   }
 
@@ -263,7 +319,28 @@ function StaffStudentGradingPage() {
             </Tabs.Panel>
 
             <Tabs.Panel value="notes" pt="md">
-              {null}
+              <StudentNotesList
+                rows={notes.map((n) => ({
+                  noteId: String(n._id),
+                  authorDisplayName: n.authorDisplayName,
+                  authorId: n.authorId,
+                  createdAt: n.createdAt,
+                  editedAt: n.editedAt,
+                  body: n.body,
+                }))}
+                currentUserId={String(me.id)}
+                onAdd={() => {
+                  setEditingNoteId(null)
+                  setNoteDrawerOpen(true)
+                }}
+                onEdit={(noteId) => {
+                  setEditingNoteId(noteId as Id<'studentNotes'>)
+                  setNoteDrawerOpen(true)
+                }}
+                onDelete={(noteId) =>
+                  setDeletingNoteId(noteId as Id<'studentNotes'>)
+                }
+              />
             </Tabs.Panel>
           </Tabs>
         </Stack>
@@ -290,6 +367,22 @@ function StaffStudentGradingPage() {
         surah={closingSurah}
         currentGrade={closingCurrentGrade}
         onSubmit={handleCloseAssignment}
+      />
+
+      <AddNoteDrawer
+        opened={noteDrawerOpen}
+        onClose={() => {
+          setNoteDrawerOpen(false)
+          setEditingNoteId(null)
+        }}
+        initialBody={editingNote?.body}
+        onSubmit={handleSubmitNote}
+      />
+
+      <DeleteNoteDialog
+        opened={deletingNoteId !== null}
+        onClose={() => setDeletingNoteId(null)}
+        onConfirm={handleDeleteNote}
       />
 
       <BottomNav
