@@ -103,26 +103,46 @@ export const staffCreateStudent = action({
   },
   handler: async (ctx, args) => {
     await requireStaffAuthUser(ctx)
-    const { auth, headers } = await authComponent.getAuth(createAuth, ctx)
 
     const normalizedUsername = normalizeUsername(args.username)
     const normalizedDisplayName = normalizeDisplayName(args.displayName)
     const email = buildStoredEmail(normalizedUsername.username, args.email)
 
-    const created = await auth.api.createUser({
+    // `createUser` is a Better Auth admin API (admin-only). Teachers are staff
+    // here, so create the account through sign-up then pin the student role.
+    const auth = createAuth(ctx, { disableSignUp: false })
+    const created = await auth.api.signUpEmail({
       body: {
         email,
         password: args.password,
         name: normalizedDisplayName,
-        role: ['student'],
-        data: {
-          username: normalizedUsername.username,
-        },
+        username: normalizedUsername.username,
       },
-      headers,
     })
 
-    return serializeAuthUser(created.user)
+    if (!created.user) {
+      throw new Error('Failed to create student account.')
+    }
+
+    await ctx.runMutation(components.betterAuth.adapter.updateOne, {
+      input: {
+        model: 'user',
+        where: [{ field: '_id', value: created.user.id }],
+        update: {
+          role: 'student',
+          banned: false,
+          banReason: null,
+          banExpires: null,
+        },
+      },
+    })
+
+    const user = await authComponent.getAnyUserById(ctx, created.user.id)
+    if (!user) {
+      throw new Error('Failed to load created student.')
+    }
+
+    return serializeAuthUser(user)
   },
 })
 

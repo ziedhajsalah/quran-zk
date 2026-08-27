@@ -1,6 +1,6 @@
 import { ConvexError, v } from 'convex/values'
 import { mutation, query } from './_generated/server'
-import { authComponent, createAuth } from './auth'
+import { components } from './_generated/api'
 import {
   requireAdminAuthUser,
   requireSelfOrStaffAuthUser,
@@ -38,28 +38,44 @@ export const listAllStudents = query({
   args: {},
   handler: async (ctx) => {
     await requireStaffAuthUser(ctx)
-    const { auth, headers } = await authComponent.getAuth(createAuth, ctx)
 
-    const all: Array<Awaited<ReturnType<typeof auth.api.getUser>>> = []
-    let offset = 0
-    let total = 0
+    // Better Auth's `listUsers` admin API is admin-only. Teachers are staff
+    // for this product, so read users through the component adapter instead.
+    const all: Array<Record<string, unknown>> = []
+    let cursor: string | null = null
+    let isDone = false
     do {
-      const result = await auth.api.listUsers({
-        query: { limit: 100, offset },
-        headers,
+      const result: {
+        page: Array<Record<string, unknown>>
+        isDone: boolean
+        continueCursor: string
+      } = await ctx.runQuery(components.betterAuth.adapter.findMany, {
+        model: 'user',
+        paginationOpts: { numItems: 100, cursor },
       })
-      all.push(...result.users)
-      total = result.total
-      offset += result.users.length
-    } while (offset < total)
+      all.push(...result.page)
+      isDone = result.isDone
+      cursor = result.continueCursor
+    } while (!isDone)
 
     return all
-      .filter((u) => parseStoredRoles(u.role).includes('student'))
-      .filter((u) => !u.banned)
-      .map(serializeAuthUser)
-      .sort((a, b) =>
-        a.displayName.localeCompare(b.displayName, 'ar'),
+      .filter((user) =>
+        parseStoredRoles(
+          typeof user.role === 'string' ? user.role : null,
+        ).includes('student'),
       )
+      .filter((user) => user.banned !== true)
+      .map((user) =>
+        serializeAuthUser({
+          _id: typeof user._id === 'string' ? user._id : null,
+          name: typeof user.name === 'string' ? user.name : '',
+          email: typeof user.email === 'string' ? user.email : null,
+          username: typeof user.username === 'string' ? user.username : null,
+          role: typeof user.role === 'string' ? user.role : null,
+          banned: user.banned === true,
+        }),
+      )
+      .sort((a, b) => a.displayName.localeCompare(b.displayName, 'ar'))
   },
 })
 
