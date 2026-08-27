@@ -51,6 +51,21 @@ function getAuthSecret(ctx?: unknown) {
   throw new Error('Missing BETTER_AUTH_SECRET environment variable.')
 }
 
+function getTrustedOrigins(siteUrl: string) {
+  const origins = new Set<string>([siteUrl])
+  try {
+    const url = new URL(siteUrl)
+    if (url.hostname === 'localhost') {
+      origins.add(url.origin.replace('localhost', '127.0.0.1'))
+    } else if (url.hostname === '127.0.0.1') {
+      origins.add(url.origin.replace('127.0.0.1', 'localhost'))
+    }
+  } catch {
+    return [siteUrl]
+  }
+  return [...origins]
+}
+
 export const authComponent = createClient<DataModel, typeof authSchema>(
   components.betterAuth,
   {
@@ -83,7 +98,7 @@ export function createAuthOptions(
   return {
     secret: getAuthSecret(ctx),
     baseURL: siteUrl,
-    trustedOrigins: [siteUrl],
+    trustedOrigins: getTrustedOrigins(siteUrl),
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: true,
