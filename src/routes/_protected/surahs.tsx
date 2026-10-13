@@ -9,9 +9,8 @@ import {
   useMantineTheme,
 } from '@mantine/core'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { convexQuery } from '@convex-dev/react-query'
 import { useMemo } from 'react'
-import { api } from '../../../convex/_generated/api'
+import { gradesQuery, notesQuery, reviewsQuery } from '~/lib/queries'
 import { currentUserQuery } from '~/lib/auth-queries'
 import {
   BottomNav,
@@ -26,17 +25,9 @@ export const Route = createFileRoute('/_protected/surahs')({
   loader: async ({ context }) => {
     const me = await context.queryClient.ensureQueryData(currentUserQuery)
     await Promise.all([
-      context.queryClient.ensureQueryData(
-        convexQuery(api.surahGrades.listForStudent, { studentId: me.id }),
-      ),
-      context.queryClient.ensureQueryData(
-        convexQuery(api.surahReviews.listOpenForStudent, {
-          studentId: me.id,
-        }),
-      ),
-      context.queryClient.ensureQueryData(
-        convexQuery(api.studentNotes.listForStudent, { studentId: me.id }),
-      ),
+      context.queryClient.ensureQueryData(gradesQuery(me.id)),
+      context.queryClient.ensureQueryData(reviewsQuery(me.id)),
+      context.queryClient.ensureQueryData(notesQuery(me.id)),
     ])
   },
   component: StudentSurahsPage,
@@ -45,15 +36,9 @@ export const Route = createFileRoute('/_protected/surahs')({
 function StudentSurahsPage() {
   const theme = useMantineTheme()
   const { data: me } = useSuspenseQuery(currentUserQuery)
-  const { data: rows } = useSuspenseQuery(
-    convexQuery(api.surahGrades.listForStudent, { studentId: me.id }),
-  )
-  const { data: openAssignments } = useSuspenseQuery(
-    convexQuery(api.surahReviews.listOpenForStudent, { studentId: me.id }),
-  )
-  const { data: notes } = useSuspenseQuery(
-    convexQuery(api.studentNotes.listForStudent, { studentId: me.id }),
-  )
+  const { data: rows } = useSuspenseQuery(gradesQuery(me.id))
+  const { data: openAssignments } = useSuspenseQuery(reviewsQuery(me.id))
+  const { data: notes } = useSuspenseQuery(notesQuery(me.id))
   const homeDashboardData = useMemo(
     () => createHomeDashboardData(me.displayName),
     [me.displayName],

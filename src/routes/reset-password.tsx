@@ -1,4 +1,4 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useHydrated } from '@tanstack/react-router'
 import {
   Alert,
   Anchor,
@@ -11,17 +11,18 @@ import {
   TextInput,
   Title,
 } from '@mantine/core'
-import { useAction } from 'convex/react'
 import * as React from 'react'
-import { api } from '../../convex/_generated/api'
-import { extractActionErrorMessage } from '~/lib/convex-errors'
+import { extractActionErrorMessage } from '~/lib/action-errors'
+import { useAppMutation } from '~/lib/queries'
+import * as resetCodes from '~/server/functions/reset-codes'
 
 export const Route = createFileRoute('/reset-password')({
   component: ResetPasswordPage,
 })
 
 function ResetPasswordPage() {
-  const redeem = useAction(api.auth.resetCodes.redeem)
+  const hydrated = useHydrated()
+  const redeem = useAppMutation(resetCodes.redeem, ['session'])
   const [identifier, setIdentifier] = React.useState('')
   const [code, setCode] = React.useState('')
   const [newPassword, setNewPassword] = React.useState('')
@@ -54,7 +55,9 @@ function ResetPasswordPage() {
       window.location.assign('/login?reason=passwordReset')
     } catch (error) {
       console.error('reset password redeem failed', error)
-      setErrorMessage(extractActionErrorMessage(error, 'رمز غير صالح أو منتهي.'))
+      setErrorMessage(
+        extractActionErrorMessage(error, 'رمز غير صالح أو منتهي.'),
+      )
     } finally {
       setLoading(false)
     }
@@ -80,6 +83,7 @@ function ResetPasswordPage() {
           <form onSubmit={handleSubmit}>
             <Stack gap="md">
               <TextInput
+                disabled={!hydrated}
                 label="البريد الإلكتروني أو اسم المستخدم"
                 placeholder="name@example.com أو username"
                 value={identifier}
@@ -89,6 +93,7 @@ function ResetPasswordPage() {
               />
 
               <TextInput
+                disabled={!hydrated}
                 label="رمز إعادة التعيين"
                 placeholder="123456"
                 value={code}
@@ -99,6 +104,7 @@ function ResetPasswordPage() {
               />
 
               <PasswordInput
+                disabled={!hydrated}
                 label="كلمة المرور الجديدة"
                 placeholder="8 أحرف على الأقل"
                 value={newPassword}
@@ -108,15 +114,23 @@ function ResetPasswordPage() {
               />
 
               <PasswordInput
+                disabled={!hydrated}
                 label="تأكيد كلمة المرور"
                 placeholder="أعد إدخال كلمة المرور"
                 value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.currentTarget.value)}
+                onChange={(event) =>
+                  setConfirmPassword(event.currentTarget.value)
+                }
                 required
                 autoComplete="new-password"
               />
 
-              <Button type="submit" loading={loading} fullWidth>
+              <Button
+                disabled={!hydrated}
+                type="submit"
+                loading={loading}
+                fullWidth
+              >
                 حفظ كلمة المرور
               </Button>
             </Stack>

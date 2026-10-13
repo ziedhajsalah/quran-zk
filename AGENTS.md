@@ -1,7 +1,11 @@
-<!-- convex-ai-start -->
-This project uses [Convex](https://convex.dev) as its backend.
+# Project instructions
 
-When working on Convex code, **always read `convex/_generated/ai/guidelines.md` first** for important guidelines on how to correctly use Convex APIs and patterns. The file contains rules that override what you may have learned about Convex from training data.
+This app uses TanStack Start on Cloudflare Workers, PostgreSQL (Neon Free for hosted environments), Drizzle and Better Auth 1.5.3.
 
-Convex agent skills for common tasks can be installed by running `npx convex ai-files install`.
-<!-- convex-ai-end -->
+- Read SETUP.md and docs/architecture.md for runtime and local database commands.
+- Keep database/auth implementation server-only; derive actors from request sessions.
+- Apply reviewed Drizzle migrations, never run seeds against remote databases.
+- Preserve transaction locks for review close, password-reset redemption and last-admin account changes.
+- Keep credentials out of source, browser variables and logs.
+- Integration tests use a separate PostgreSQL database ending in `_test` and erase its data.
+- Preserve existing UI/storybook work and Arabic RTL behavior.

@@ -1,7 +1,7 @@
 import { Button, Drawer, Group, Stack, Text, Textarea } from '@mantine/core'
 import { useEffect, useState } from 'react'
 
-// Must match MAX_BODY_LENGTH in convex/studentNotes.ts.
+// Must match MAX_BODY_LENGTH in src/server/functions/validation.ts.
 const MAX_BODY_LENGTH = 2000
 
 export interface AddNoteDrawerProps {

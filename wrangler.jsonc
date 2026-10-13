@@ -8,5 +8,12 @@
   "main": "@tanstack/react-start/server-entry",
   "compatibility_flags": [
     "nodejs_compat"
+  ],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "2d291ff522d94474b68541e49e89ee4b",
+      "localConnectionString": "postgresql://quran_dev:quran_local@127.0.0.1:55432/quran_dev"
+    }
   ]
 }

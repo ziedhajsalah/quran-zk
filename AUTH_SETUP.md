@@ -1,71 +1,15 @@
-# Better Auth + Convex auth setup
+# Better Auth setup
 
-## 1. Required Convex env vars
+Better Auth 1.5.3 runs in the application with the PostgreSQL Drizzle adapter, username and admin plugins. Public signup is disabled. Set `BETTER_AUTH_SECRET` and exact-origin `SITE_URL` in `.dev.vars` locally, or as Worker secrets remotely. Database setup is in [SETUP.md](SETUP.md).
 
-Set these on the Convex deployment before you bootstrap the first admin:
+Cookie sessions live in SQL. Cookie caching is disabled; backend authorization reads the current user and status. Multi-role users retain admin/teacher/student flags. Teachers create students with a fixed server-side role; all other account administration is app-admin-only. The plugin's public `/admin/*` routes are disabled so they cannot bypass the app's transactional last-admin checks.
 
-```bash
-npx convex env set BETTER_AUTH_SECRET "$(openssl rand -base64 32)"
-npx convex env set SITE_URL http://localhost:3000
-```
+Create the first admin with `npm run bootstrap:admin` and server-only operator variables `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_NAME`, optional `ADMIN_EMAIL`, and a direct `DATABASE_URL`. Bootstrap refuses existing users.
 
-For production, set `SITE_URL` to the real app origin.
+For recovery, supply `RESET_IDENTIFIER` and `RESET_PASSWORD` to `npm run rescue:password`, with an explicit direct `DATABASE_URL`. This CLI requires DB access; there is no public rescue endpoint. It hashes with Better Auth's pinned password contract and revokes all target sessions transactionally.
 
-## 2. Local app env vars
+Admins issue six-digit password reset codes in the existing UI. Codes expire after 30 minutes, allow five failed attempts, and are stored as secret-keyed hashes. Issuing a new code invalidates earlier ones. Redemption atomically updates credentials, consumes the code and revokes sessions. Codes never carry plaintext Better Auth reset tokens.
 
-`.env.local` should contain:
+Core self-service profile/account mutation endpoints are also disabled, keeping username/display-name/email changes inside the admin-managed service.
 
-```dotenv
-CONVEX_DEPLOYMENT=
-VITE_CONVEX_URL=
-VITE_CONVEX_SITE_URL=
-VITE_SITE_URL=http://localhost:3000
-```
-
-`VITE_CONVEX_SITE_URL` must end in `.convex.site`.
-
-## 3. Push the Convex config
-
-Run:
-
-```bash
-npx convex dev --once
-```
-
-This updates generated files and pushes the Better Auth component/auth config.
-
-## 4. Bootstrap the first admin
-
-Run:
-
-```bash
-npm run bootstrap:admin -- --username admin --password 'strong-password' --display-name 'Admin Name' [--email admin@example.com]
-```
-
-The bootstrap command:
-
-1. Verifies the Better Auth user store is empty.
-2. Creates the first user.
-3. Promotes that user to the `admin` role.
-
-After the first admin exists, bootstrap is blocked and all further account creation must go through the app's admin APIs.
-
-## 5. Rescue: reset a password from the deployment
-
-Use this when no admin can sign in (e.g. the only admin forgot their password and the in-app admin-mediated reset is unreachable). It bypasses the in-app admin session check, so it is restricted to whoever has Convex deployment access.
-
-```bash
-npx convex run --push 'auth/admin:rescueResetPassword' '{"identifier":"<email-or-username>","password":"<new-password>"}'
-```
-
-`identifier` accepts either the user's email (anything containing `@`) or their username. The action looks up the user, hashes the new password with Better Auth's default hasher, and writes it directly to the matching `account` row (`providerId='credential'`).
-
-Defined as an `internalAction` in `convex/auth/admin.ts`, so it cannot be called from the public API — only via `npx convex run` with deployment credentials.
-
-## 6. Auth model
-
-- Public sign-up is disabled.
-- Login supports email/password and username/password.
-- Password resets are admin-only.
-- User roles are `admin`, `teacher`, and `student`.
-- Disabled users are implemented with Better Auth bans plus session revocation.
+Direct auth-table writes are limited to the account/credential services and are covered by schema/login compatibility tests. Re-run these tests and review the generated schema when upgrading Better Auth. Do not weaken hashing to fit a hosting plan.

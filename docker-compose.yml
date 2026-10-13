@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:17-alpine
+    ports:
+      - "127.0.0.1:55432:5432"
+    environment:
+      POSTGRES_USER: quran_dev
+      POSTGRES_PASSWORD: quran_local
+      POSTGRES_DB: quran_dev
+    volumes:
+      - quran_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quran_dev"]
+      interval: 2s
+      retries: 10
+volumes:
+  quran_pg:
