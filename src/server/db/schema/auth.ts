@@ -1,4 +1,4 @@
-// Better Auth 1.5.3 core + admin/username plugin fields. Checked against its schema API.
+// Better Auth 1.7.7 core + admin/username plugin fields. Checked against its schema API.
 import {
   boolean,
   index,

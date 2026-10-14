@@ -1,0 +1,11 @@
+# Hosted findings implementation
+
+Preserve the user's develop checkout and UI changes. Work on a separate branch based on the merged report. Do not change paid subscriptions or weaken password hashing to fit a runtime budget.
+
+1. Upgrade Better Auth and its matching Drizzle adapter, framework and compatible Vite/Cloudflare test toolchain. Review any schema delta using the installed auth schema API and the existing 25 integration cases. Preserve admin endpoint restrictions, fresh session reads and transactional locks.
+2. Use native node:crypto scrypt for all password writers and verification, preserving N=16384, r=16, p=1, key length 64, NFKC normalization and salt:key representation. Verify a pre-upgrade stored hash, library interoperability and malformed-hash rejection. Compare actual deployed CPU before/after, not just wall time.
+3. Add an app-owned auth_rate_limits table with HMAC-derived keys, positive counts and indexed expiry timestamps. Use one atomic INSERT/ON CONFLICT to consume a fixed-window allowance. Test concurrent callers across independent database clients, expiry, canonical username/email accounts, proxy IP spoofing and oversized input. Apply the reviewed additive migration locally and to the development branch only.
+4. Create a Neon development branch in the existing project and a dedicated cache-disabled, verify-full Hyperdrive. Store its direct URL in a new ignored file; do not overwrite production/local credentials. Add explicit development build/deploy settings so the new runtime cannot silently select the production database.
+5. Run lint/build, PostgreSQL integration checks, local browser regressions and Storybook compilation. Re-check the dependency audit and document any remaining development-only advisories that cannot be safely patched.
+6. Deploy only the development Worker. Run hosted checks using temporary random accounts, capture sanitized CPU/outcome metrics, test cookies/session revocation/limits, and remove all owned account data. Record any remaining CPU failures honestly. Request paid-hosting approval only if the verified result still requires it.
+7. Open a PR to develop with implementation, validation and limitations. Keep the user's checkout on develop.

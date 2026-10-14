@@ -7,19 +7,19 @@ export const listAllStudents = createServerFn({ method: 'GET' }).handler(() =>
   withRuntime(({ db, actor }) => service.listStudents(db, actor)),
 )
 export const listForStudent = createServerFn({ method: 'GET' })
-  .inputValidator(studentInput)
+  .validator(studentInput)
   .handler(({ data }) =>
     withRuntime(({ db, actor }) =>
       service.listGrades(db, actor, data.studentId),
     ),
   )
 export const setGrade = createServerFn({ method: 'POST' })
-  .inputValidator(surahInput.extend({ grade: gradeSchema }))
+  .validator(surahInput.extend({ grade: gradeSchema }))
   .handler(({ data }) =>
     withRuntime(({ db, actor }) => service.setGrade(db, actor, data)),
   )
 export const removeFromList = createServerFn({ method: 'POST' })
-  .inputValidator(surahInput)
+  .validator(surahInput)
   .handler(({ data }) =>
     withRuntime(({ db, actor }) => service.removeGrade(db, actor, data)),
   )

@@ -55,7 +55,7 @@ beforeAll(async () => {
 })
 beforeEach(async () => {
   await dbRun(async (db) => {
-    await db.execute(sql`truncate "user" cascade`)
+    await db.execute(sql`truncate "user", auth_rate_limits cascade`)
     for (const [id, role] of [
       ['admin', 'admin'],
       ['teacher', 'teacher'],

@@ -99,3 +99,16 @@ export const resetCodes = pgTable(
     check('reset_attempts_range', sql`${t.attempts} between 0 and 5`),
   ],
 )
+
+export const authRateLimits = pgTable(
+  "auth_rate_limits",
+  {
+    key: text("key").primaryKey(),
+    count: integer("count").notNull(),
+    windowStart: time("window_start").notNull().defaultNow(),
+  },
+  (t) => [
+    index("auth_rate_limits_window_idx").on(t.windowStart),
+    check("auth_rate_limits_positive_count", sql`${t.count} > 0`),
+  ],
+);

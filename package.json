@@ -23,19 +23,21 @@
     "test:e2e": "playwright test",
     "rescue:password": "tsx --env-file-if-exists=.env.local scripts/rescue-reset-password.ts",
     "db:smoke": "tsx --env-file-if-exists=.env.neon.local scripts/db-smoke.ts",
-    "db:auth-smoke": "tsx --env-file-if-exists=.env.neon.local scripts/db-auth-smoke.ts"
+    "db:auth-smoke": "tsx --env-file-if-exists=.env.neon.local scripts/db-auth-smoke.ts",
+    "build:development": "CLOUDFLARE_ENV=development npm run build",
+    "deploy:development": "npm run build:development && wrangler deploy --env development"
   },
   "dependencies": {
-    "@better-auth/drizzle-adapter": "1.5.3",
+    "@better-auth/drizzle-adapter": "1.7.7",
     "@mantine/core": "^8.3.18",
     "@mantine/dates": "^8.3.18",
     "@mantine/hooks": "^8.3.18",
     "@tabler/icons-react": "^3.40.0",
     "@tanstack/react-query": "^5.90.21",
-    "@tanstack/react-router": "^1.167.3",
-    "@tanstack/react-router-with-query": "^1.130.17",
-    "@tanstack/react-start": "^1.166.14",
-    "better-auth": "1.5.3",
+    "@tanstack/react-router": "1.170.44",
+    "@tanstack/react-router-ssr-query": "1.167.3",
+    "@tanstack/react-start": "1.169.1",
+    "better-auth": "1.7.7",
     "dayjs": "^1.11.20",
     "drizzle-orm": "^0.45.4",
     "pg": "^8.23.1",
@@ -44,26 +46,31 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.30.1",
+    "@cloudflare/vite-plugin": "1.64.0",
     "@playwright/test": "^1.64.0",
-    "@storybook/addon-a11y": "^10.3.3",
-    "@storybook/addon-docs": "^10.3.3",
-    "@storybook/react-vite": "^10.3.3",
+    "@storybook/addon-a11y": "10.6.2",
+    "@storybook/addon-docs": "10.6.2",
+    "@storybook/react-vite": "10.6.2",
     "@tanstack/eslint-config": "^0.4.0",
     "@types/node": "^25.5.0",
     "@types/pg": "^8.23.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.2.0",
+    "@vitejs/plugin-react": "6.1.2",
     "drizzle-kit": "^0.31.11",
     "eslint-plugin-storybook": "^10.3.3",
     "prettier": "^3.8.1",
-    "storybook": "^10.3.3",
+    "storybook": "10.6.2",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
-    "vite": "^7.3.1",
+    "vite": "8.3.4",
     "vite-tsconfig-paths": "^6.1.1",
-    "vitest": "^3.2.6",
-    "wrangler": "^4.77.0"
+    "vitest": "5.0.4",
+    "wrangler": "4.151.0"
+  },
+  "overrides": {
+    "@esbuild-kit/core-utils": {
+      "esbuild": "0.28.2"
+    }
   }
 }

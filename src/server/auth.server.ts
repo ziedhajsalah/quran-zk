@@ -5,6 +5,8 @@ import { username } from 'better-auth/plugins/username'
 import { tanstackStartCookies } from 'better-auth/tanstack-start'
 import { adminAc, userAc } from 'better-auth/plugins/admin/access'
 import { schema } from './db.server'
+import { hashPassword, verifyPassword } from './password.server'
+import { consumeRateLimit, rateLimitKey } from './rate-limit.server'
 import type { Database } from './db.server'
 
 export type AuthEnvironment = { BETTER_AUTH_SECRET: string; SITE_URL: string }
@@ -30,7 +32,26 @@ export function createAuth(db: Database, config: AuthEnvironment) {
       '/unlink-account',
     ],
     database: drizzleAdapter(db, { provider: 'pg', schema, transaction: true }),
+    advanced: { ipAddress: { ipAddressHeaders: ['cf-connecting-ip'] } },
+    rateLimit: {
+      enabled: true,
+      window: 60,
+      max: 100,
+      customRules: {
+        '/sign-in/username': { window: 60, max: 30 },
+        '/sign-in/email': { window: 60, max: 30 },
+      },
+      customStorage: {
+        consume: (key, rule) =>
+          consumeRateLimit(
+            db,
+            rateLimitKey(config.BETTER_AUTH_SECRET, 'ip', key),
+            rule,
+          ),
+      },
+    },
     emailAndPassword: {
+      password: { hash: hashPassword, verify: verifyPassword },
       enabled: true,
       disableSignUp: true,
       requireEmailVerification: false,

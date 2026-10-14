@@ -1,5 +1,5 @@
-import { hashPassword } from 'better-auth/crypto'
 import { and, eq, sql } from 'drizzle-orm'
+import { hashPassword } from '../password.server'
 import { account, session, user } from '../db/schema/auth'
 import { accountInput, roles, serializeUser } from '../accounts'
 import { requireAdmin, requireStaff } from '../auth-guards.server'

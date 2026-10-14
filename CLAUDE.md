@@ -1,6 +1,6 @@
 # Project instructions
 
-This app uses TanStack Start on Cloudflare Workers, PostgreSQL (Neon Free for hosted environments), Drizzle and Better Auth 1.5.3.
+This app uses TanStack Start on Cloudflare Workers, PostgreSQL (Neon Free for hosted environments), Drizzle and Better Auth 1.7.7.
 
 - Read SETUP.md and docs/architecture.md for runtime and local database commands.
 - Keep database/auth implementation server-only; derive actors from request sessions.

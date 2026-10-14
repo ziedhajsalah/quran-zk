@@ -6,14 +6,14 @@ import * as service from '../services/reset-codes.server'
 
 const identifier = z.string().trim().min(1).max(320)
 export const adminIssue = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ identifier }))
+  .validator(z.object({ identifier }))
   .handler(({ data }) =>
     withRuntime(({ db, actor, config }) =>
       service.issueCode(db, actor, config.BETTER_AUTH_SECRET, data.identifier),
     ),
   )
 export const redeem = createServerFn({ method: 'POST' })
-  .inputValidator(
+  .validator(
     z.object({
       identifier,
       code: z.string().max(64),

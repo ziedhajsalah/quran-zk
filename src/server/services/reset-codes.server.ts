@@ -1,6 +1,6 @@
 import { createHmac, randomInt, timingSafeEqual } from 'node:crypto'
-import { hashPassword } from 'better-auth/crypto'
 import { and, eq, isNull, sql } from 'drizzle-orm'
+import { hashPassword } from '../password.server'
 import { resetCodes } from '../db/schema/app'
 import { account, session, user } from '../db/schema/auth'
 import { requireAdmin } from '../auth-guards.server'
