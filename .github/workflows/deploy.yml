@@ -1,0 +1,77 @@
+name: Deploy
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [develop, main]
+  workflow_dispatch:
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: quran_dev
+          POSTGRES_PASSWORD: quran_local
+          POSTGRES_DB: quran_dev
+        ports: ['55432:5432']
+        options: --health-cmd pg_isready --health-interval 2s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Prepare isolated local databases and auth secrets
+        run: |
+          node --input-type=module <<'JS'
+          import { Client } from 'pg';
+          import { writeFileSync } from 'node:fs';
+          import { randomBytes } from 'node:crypto';
+          const url = 'postgresql://quran_dev:quran_local@127.0.0.1:55432/quran_dev';
+          const client = new Client({ connectionString: url });
+          await client.connect();
+          await client.query('create database quran_test');
+          await client.end();
+          writeFileSync('.env.local', `DATABASE_URL=${url}\nDEV_SEED_PASSWORD=LocalCI-Only2026!\n`);
+          writeFileSync('.dev.vars', `SITE_URL=http://localhost:3000\nBETTER_AUTH_SECRET=${randomBytes(48).toString('base64url')}\n`);
+          JS
+      - run: npm test
+      - run: npm run lint
+      - run: npm run build
+      - run: npm run db:migrate
+      - run: npm run db:seed
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-test-results
+          path: test-results
+  deploy:
+    if: github.event_name != 'pull_request'
+    name: Migrate PostgreSQL and deploy Worker
+    needs: ci
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Require provisioned Hyperdrive
+        run: node -e "const fs=require('fs'); if(fs.readFileSync('wrangler.jsonc','utf8').includes('00000000000000000000000000000000')) throw Error('Configure a real Hyperdrive ID before deployment')"
+      - run: npm run db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - run: npm run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

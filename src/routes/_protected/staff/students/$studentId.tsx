@@ -1,4 +1,3 @@
-// src/routes/_protected/staff/students/$studentId.tsx
 import { createFileRoute } from '@tanstack/react-router'
 import {
   Avatar,
@@ -15,13 +14,20 @@ import {
 } from '@mantine/core'
 import { IconClipboardPlus } from '@tabler/icons-react'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { convexQuery } from '@convex-dev/react-query'
-import { useMutation } from 'convex/react'
 import { useMemo, useState } from 'react'
-import { api } from '../../../../../convex/_generated/api'
-import type { Id } from '../../../../../convex/_generated/dataModel'
+import { extractActionErrorMessage } from '~/lib/action-errors'
+import {
+  gradesQuery,
+  notesQuery,
+  reviewsQuery,
+  studentsQuery,
+  useAppMutation,
+} from '~/lib/queries'
+import * as noteFunctions from '~/server/functions/notes'
+import * as grades from '~/server/functions/grades'
+import * as reviews from '~/server/functions/reviews'
+// src/routes/_protected/staff/students/$studentId.tsx
 import { currentUserQuery } from '~/lib/auth-queries'
-import { extractActionErrorMessage } from '~/lib/convex-errors'
 import {
   BottomNav,
   HomeTopBar,
@@ -40,24 +46,10 @@ import { getSurah } from '~/data/surahs'
 export const Route = createFileRoute('/_protected/staff/students/$studentId')({
   loader: async ({ context, params }) => {
     await Promise.all([
-      context.queryClient.ensureQueryData(
-        convexQuery(api.surahGrades.listAllStudents, {}),
-      ),
-      context.queryClient.ensureQueryData(
-        convexQuery(api.surahGrades.listForStudent, {
-          studentId: params.studentId,
-        }),
-      ),
-      context.queryClient.ensureQueryData(
-        convexQuery(api.surahReviews.listOpenForStudent, {
-          studentId: params.studentId,
-        }),
-      ),
-      context.queryClient.ensureQueryData(
-        convexQuery(api.studentNotes.listForStudent, {
-          studentId: params.studentId,
-        }),
-      ),
+      context.queryClient.ensureQueryData(studentsQuery()),
+      context.queryClient.ensureQueryData(gradesQuery(params.studentId)),
+      context.queryClient.ensureQueryData(reviewsQuery(params.studentId)),
+      context.queryClient.ensureQueryData(notesQuery(params.studentId)),
     ])
   },
   component: StaffStudentGradingPage,
@@ -67,36 +59,27 @@ function StaffStudentGradingPage() {
   const theme = useMantineTheme()
   const { studentId } = Route.useParams()
   const { data: me } = useSuspenseQuery(currentUserQuery)
-  const { data: students } = useSuspenseQuery(
-    convexQuery(api.surahGrades.listAllStudents, {}),
-  )
-  const { data: rows } = useSuspenseQuery(
-    convexQuery(api.surahGrades.listForStudent, { studentId }),
-  )
-  const { data: openAssignments } = useSuspenseQuery(
-    convexQuery(api.surahReviews.listOpenForStudent, { studentId }),
-  )
-  const { data: notes } = useSuspenseQuery(
-    convexQuery(api.studentNotes.listForStudent, { studentId }),
-  )
+  const { data: students } = useSuspenseQuery(studentsQuery())
+  const { data: rows } = useSuspenseQuery(gradesQuery(studentId))
+  const { data: openAssignments } = useSuspenseQuery(reviewsQuery(studentId))
+  const { data: notes } = useSuspenseQuery(notesQuery(studentId))
 
-  const setGrade = useMutation(api.surahGrades.setGrade)
-  const assignReview = useMutation(api.surahReviews.assign)
-  const closeReview = useMutation(api.surahReviews.close)
-  const cancelReview = useMutation(api.surahReviews.cancel)
-  const addNote = useMutation(api.studentNotes.add)
-  const editNote = useMutation(api.studentNotes.edit)
-  const removeNote = useMutation(api.studentNotes.remove)
+  const setGrade = useAppMutation(grades.setGrade, ['grades'])
+  const assignReview = useAppMutation(reviews.assign, ['reviews'])
+  const closeReview = useAppMutation(reviews.close, ['grades', 'reviews'])
+  const cancelReview = useAppMutation(reviews.cancel, ['reviews'])
+  const addNote = useAppMutation(noteFunctions.add, ['notes'])
+  const editNote = useAppMutation(noteFunctions.edit, ['notes'])
+  const removeNote = useAppMutation(noteFunctions.remove, ['notes'])
 
   const [addSurahOpen, setAddSurahOpen] = useState(false)
   const [assignDrawerOpen, setAssignDrawerOpen] = useState(false)
-  const [closingAssignmentId, setClosingAssignmentId] =
-    useState<Id<'surahReviewAssignments'> | null>(null)
+  const [closingAssignmentId, setClosingAssignmentId] = useState<string | null>(
+    null,
+  )
   const [noteDrawerOpen, setNoteDrawerOpen] = useState(false)
-  const [editingNoteId, setEditingNoteId] =
-    useState<Id<'studentNotes'> | null>(null)
-  const [deletingNoteId, setDeletingNoteId] =
-    useState<Id<'studentNotes'> | null>(null)
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
+  const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const homeDashboardData = useMemo(
@@ -109,7 +92,7 @@ function StaffStudentGradingPage() {
   const closingAssignment = useMemo(
     () =>
       closingAssignmentId
-        ? openAssignments.find((a) => a._id === closingAssignmentId) ?? null
+        ? (openAssignments.find((a) => a._id === closingAssignmentId) ?? null)
         : null,
     [closingAssignmentId, openAssignments],
   )
@@ -117,14 +100,14 @@ function StaffStudentGradingPage() {
     ? getSurah(closingAssignment.surahNumber)
     : null
   const closingCurrentGrade = closingAssignment
-    ? rows.find((r) => r.surahNumber === closingAssignment.surahNumber)?.grade ??
-      null
+    ? (rows.find((r) => r.surahNumber === closingAssignment.surahNumber)
+        ?.grade ?? null)
     : null
 
   const editingNote = useMemo(
     () =>
       editingNoteId
-        ? notes.find((n) => n._id === editingNoteId) ?? null
+        ? (notes.find((n) => n._id === editingNoteId) ?? null)
         : null,
     [editingNoteId, notes],
   )
@@ -185,7 +168,7 @@ function StaffStudentGradingPage() {
     setErrorMessage(null)
     try {
       await cancelReview({
-        assignmentId: assignmentId as Id<'surahReviewAssignments'>,
+        assignmentId: assignmentId,
       })
     } catch (error) {
       setErrorMessage(extractActionErrorMessage(error, 'تعذر إلغاء المراجعة.'))
@@ -296,9 +279,7 @@ function StaffStudentGradingPage() {
                   }))}
                   editable
                   onClose={(assignmentId) =>
-                    setClosingAssignmentId(
-                      assignmentId as Id<'surahReviewAssignments'>,
-                    )
+                    setClosingAssignmentId(assignmentId)
                   }
                   onCancel={handleCancelAssignment}
                 />
@@ -335,12 +316,10 @@ function StaffStudentGradingPage() {
                   setNoteDrawerOpen(true)
                 }}
                 onEdit={(noteId) => {
-                  setEditingNoteId(noteId as Id<'studentNotes'>)
+                  setEditingNoteId(noteId)
                   setNoteDrawerOpen(true)
                 }}
-                onDelete={(noteId) =>
-                  setDeletingNoteId(noteId as Id<'studentNotes'>)
-                }
+                onDelete={(noteId) => setDeletingNoteId(noteId)}
               />
             </Tabs.Panel>
           </Tabs>
@@ -386,10 +365,7 @@ function StaffStudentGradingPage() {
         onConfirm={handleDeleteNote}
       />
 
-      <BottomNav
-        activeItemId="home"
-        items={homeDashboardData.bottomNavItems}
-      />
+      <BottomNav activeItemId="home" items={homeDashboardData.bottomNavItems} />
     </Box>
   )
 }

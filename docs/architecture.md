@@ -1,74 +1,22 @@
-# Architecture
-
-## Runtime architecture
+# Application architecture
 
 ```mermaid
 flowchart LR
-  browser["Browser<br/>React 19 + TanStack Router + React Query"]
-  worker["Cloudflare Worker<br/>TanStack Start SSR + server routes"]
-  authProxy["/api/auth/$ route<br/>proxy handler"]
-  convexHttp["Convex HTTP router"]
-  convexFns["Convex functions<br/>queries / mutations / actions"]
-  authFacade["App auth facade<br/>convex/auth/users.ts<br/>convex/auth/admin.ts<br/>convex/auth/helpers.ts"]
-  authEngine["Better Auth runtime<br/>convex/auth.ts"]
-  authComponent["Convex component: betterAuth"]
-  appTables["App tables<br/>convex/schema.ts"]
-  authTables["Auth tables<br/>user / session / account /<br/>verification / jwks / rateLimit"]
-  provider["ConvexBetterAuthProvider<br/>+ authClient"]
-  convexClient["Convex React client<br/>WebSocket + HTTP"]
-  convexJwt["Convex auth.config.ts<br/>JWT verification"]
-
-  browser --> provider
-  provider --> convexClient
-  browser --> worker
-  worker --> authProxy
-  authProxy --> convexHttp
-  convexHttp --> authEngine
-  authEngine --> authComponent
-  authComponent --> authTables
-
-  worker -->|SSR protected data| convexFns
-  convexClient -->|queries / mutations / actions| convexFns
-  convexFns --> appTables
-  convexFns --> authFacade
-  authFacade --> authComponent
-  authEngine --> convexJwt
+  Browser[React / Mantine / TanStack Query] --> Start[TanStack Start Worker]
+  Start --> Auth[Better Auth cookie sessions]
+  Start --> Services[Validated server functions and role guards]
+  Auth --> Drizzle[Drizzle / request-scoped pg]
+  Services --> Drizzle
+  Drizzle --> Hyperdrive[Hyperdrive, caching disabled]
+  Hyperdrive --> Neon[Neon Free PostgreSQL]
 ```
 
-## Login and auth flow
+Local development uses PostgreSQL 17 through Hyperdrive's local connection. CLI migrations and tests connect directly. Each request opens and closes a pg client; there is no global Worker pool or database client passed to browser code.
 
-```mermaid
-flowchart TD
-  login["User submits login form"]
-  loginPage["/login page<br/>email or username + password"]
-  authClient["Better Auth client<br/>src/lib/auth-client.ts"]
-  proxy["TanStack Start route<br/>src/routes/api/auth/$.ts"]
-  convexSite["Convex .site auth endpoint"]
-  betterAuth["Better Auth runtime on Convex"]
-  sessionTable["betterAuth.session"]
-  userTable["betterAuth.user"]
-  jwtCookie["Convex JWT cookie"]
-  ssr["SSR token fetch<br/>src/lib/auth-server.ts"]
-  protected["requireProtectedAppUser"]
-  current["api.auth.users.current"]
+The auth handler owns `/api/auth/$`. Domain functions validate Zod inputs and derive actors from Better Auth cookies. SQL schema constraints enforce foreign keys, surah range, one grade per student/surah, one open review per student/surah, and one unused reset code per user.
 
-  login --> loginPage
-  loginPage --> authClient
-  authClient --> proxy
-  proxy --> convexSite
-  convexSite --> betterAuth
-  betterAuth --> userTable
-  betterAuth --> sessionTable
-  betterAuth --> jwtCookie
-  jwtCookie --> ssr
-  ssr --> protected
-  protected --> current
-  current --> userTable
-```
+Review close/cancel lock the assignment row. Closing-grade changes and assignment completion share a transaction. Reset redemption locks the account and code, consumes only once, changes credentials and removes sessions in one transaction; failed attempt counters commit before invalid-code errors. All admin role/status/delete operations share a transaction-scoped advisory lock and re-check actor authorization before applying last-admin rules.
 
-## Notes
+Grades/reviews/notes use stable TanStack Query keys. Mutations invalidate affected keys. Login/logout perform a full document navigation, resetting private query caches. Focus/navigation refetch replaces subscriptions; polling remains off to permit Neon scale-to-zero. Student notes retain nullable staff authors after author deletion; student-owned data cascades on student deletion.
 
-- App data and auth data live in the same Convex deployment.
-- App tables are defined in `convex/schema.ts`.
-- Better Auth tables are isolated inside the `betterAuth` Convex component in `convex/betterAuth/schema.ts`.
-- Cloudflare Workers handle SSR and proxy `/api/auth/$`; Better Auth itself runs on Convex.
+Home dashboard progress/courses/lessons remain presentation fixtures. Neon/Hyperdrive provisioning and remote SQL smoke verification are complete. Full-app deployment, CPU measurements, final-origin cookie checks and cold-start verification remain launch steps, tracked in the migration report.

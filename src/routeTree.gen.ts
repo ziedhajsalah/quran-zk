@@ -15,7 +15,6 @@ import { Route as ProtectedRouteRouteImport } from './routes/_protected/route'
 import { Route as ProtectedIndexRouteImport } from './routes/_protected/index'
 import { Route as ProtectedSurahsRouteImport } from './routes/_protected/surahs'
 import { Route as ProtectedProfileRouteImport } from './routes/_protected/profile'
-import { Route as ProtectedAnotherPageRouteImport } from './routes/_protected/anotherPage'
 import { Route as ProtectedStaffRouteRouteImport } from './routes/_protected/staff/route'
 import { Route as ProtectedAdminRouteRouteImport } from './routes/_protected/admin/route'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -50,11 +49,6 @@ const ProtectedSurahsRoute = ProtectedSurahsRouteImport.update({
 const ProtectedProfileRoute = ProtectedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
-  getParentRoute: () => ProtectedRouteRoute,
-} as any)
-const ProtectedAnotherPageRoute = ProtectedAnotherPageRouteImport.update({
-  id: '/anotherPage',
-  path: '/anotherPage',
   getParentRoute: () => ProtectedRouteRoute,
 } as any)
 const ProtectedStaffRouteRoute = ProtectedStaffRouteRouteImport.update({
@@ -97,7 +91,6 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof ProtectedAdminRouteRouteWithChildren
   '/staff': typeof ProtectedStaffRouteRouteWithChildren
-  '/anotherPage': typeof ProtectedAnotherPageRoute
   '/profile': typeof ProtectedProfileRoute
   '/surahs': typeof ProtectedSurahsRoute
   '/admin/reset-password': typeof ProtectedAdminResetPasswordRoute
@@ -110,7 +103,6 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof ProtectedAdminRouteRouteWithChildren
   '/staff': typeof ProtectedStaffRouteRouteWithChildren
-  '/anotherPage': typeof ProtectedAnotherPageRoute
   '/profile': typeof ProtectedProfileRoute
   '/surahs': typeof ProtectedSurahsRoute
   '/': typeof ProtectedIndexRoute
@@ -126,7 +118,6 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_protected/admin': typeof ProtectedAdminRouteRouteWithChildren
   '/_protected/staff': typeof ProtectedStaffRouteRouteWithChildren
-  '/_protected/anotherPage': typeof ProtectedAnotherPageRoute
   '/_protected/profile': typeof ProtectedProfileRoute
   '/_protected/surahs': typeof ProtectedSurahsRoute
   '/_protected/': typeof ProtectedIndexRoute
@@ -143,7 +134,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/admin'
     | '/staff'
-    | '/anotherPage'
     | '/profile'
     | '/surahs'
     | '/admin/reset-password'
@@ -156,7 +146,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/admin'
     | '/staff'
-    | '/anotherPage'
     | '/profile'
     | '/surahs'
     | '/'
@@ -171,7 +160,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_protected/admin'
     | '/_protected/staff'
-    | '/_protected/anotherPage'
     | '/_protected/profile'
     | '/_protected/surahs'
     | '/_protected/'
@@ -230,13 +218,6 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProtectedProfileRouteImport
-      parentRoute: typeof ProtectedRouteRoute
-    }
-    '/_protected/anotherPage': {
-      id: '/_protected/anotherPage'
-      path: '/anotherPage'
-      fullPath: '/anotherPage'
-      preLoaderRoute: typeof ProtectedAnotherPageRouteImport
       parentRoute: typeof ProtectedRouteRoute
     }
     '/_protected/staff': {
@@ -311,7 +292,6 @@ const ProtectedStaffRouteRouteWithChildren =
 interface ProtectedRouteRouteChildren {
   ProtectedAdminRouteRoute: typeof ProtectedAdminRouteRouteWithChildren
   ProtectedStaffRouteRoute: typeof ProtectedStaffRouteRouteWithChildren
-  ProtectedAnotherPageRoute: typeof ProtectedAnotherPageRoute
   ProtectedProfileRoute: typeof ProtectedProfileRoute
   ProtectedSurahsRoute: typeof ProtectedSurahsRoute
   ProtectedIndexRoute: typeof ProtectedIndexRoute
@@ -320,7 +300,6 @@ interface ProtectedRouteRouteChildren {
 const ProtectedRouteRouteChildren: ProtectedRouteRouteChildren = {
   ProtectedAdminRouteRoute: ProtectedAdminRouteRouteWithChildren,
   ProtectedStaffRouteRoute: ProtectedStaffRouteRouteWithChildren,
-  ProtectedAnotherPageRoute: ProtectedAnotherPageRoute,
   ProtectedProfileRoute: ProtectedProfileRoute,
   ProtectedSurahsRoute: ProtectedSurahsRoute,
   ProtectedIndexRoute: ProtectedIndexRoute,

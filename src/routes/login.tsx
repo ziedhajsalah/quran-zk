@@ -1,4 +1,9 @@
-import { Link, createFileRoute, redirect } from '@tanstack/react-router'
+import {
+  Link,
+  createFileRoute,
+  redirect,
+  useHydrated,
+} from '@tanstack/react-router'
 import {
   Alert,
   Anchor,
@@ -23,7 +28,10 @@ type LoginSearch = {
 export const Route = createFileRoute('/login')({
   validateSearch: (search): LoginSearch => ({
     redirect:
-      typeof search.redirect === 'string' && search.redirect.startsWith('/')
+      typeof search.redirect === 'string' &&
+      search.redirect.startsWith('/') &&
+      !search.redirect.startsWith('//') &&
+      !search.redirect.includes('\\')
         ? search.redirect
         : undefined,
     reason:
@@ -45,6 +53,7 @@ export const Route = createFileRoute('/login')({
 })
 
 function LoginPage() {
+  const hydrated = useHydrated()
   const search = Route.useSearch()
   const [identifier, setIdentifier] = React.useState('')
   const [password, setPassword] = React.useState('')
@@ -70,13 +79,19 @@ function LoginPage() {
           })
 
       if (result.error) {
-        setErrorMessage(result.error.message ?? 'فشل تسجيل الدخول. تحقق من البيانات.')
+        setErrorMessage(
+          result.error.message ?? 'فشل تسجيل الدخول. تحقق من البيانات.',
+        )
         return
       }
 
       window.location.assign(search.redirect ?? '/')
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'فشل تسجيل الدخول. تحقق من البيانات.')
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'فشل تسجيل الدخول. تحقق من البيانات.',
+      )
     } finally {
       setLoading(false)
     }
@@ -122,6 +137,7 @@ function LoginPage() {
           <form onSubmit={handleSubmit}>
             <Stack gap="md">
               <TextInput
+                disabled={!hydrated}
                 label="البريد الإلكتروني أو اسم المستخدم"
                 placeholder="name@example.com أو username"
                 value={identifier}
@@ -130,6 +146,7 @@ function LoginPage() {
               />
 
               <PasswordInput
+                disabled={!hydrated}
                 label="كلمة المرور"
                 placeholder="أدخل كلمة المرور"
                 value={password}
@@ -137,7 +154,12 @@ function LoginPage() {
                 required
               />
 
-              <Button type="submit" loading={loading} fullWidth>
+              <Button
+                disabled={!hydrated}
+                type="submit"
+                loading={loading}
+                fullWidth
+              >
                 تسجيل الدخول
               </Button>
             </Stack>

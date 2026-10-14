@@ -1,20 +1,9 @@
-import { convexBetterAuthReactStart } from '@convex-dev/better-auth/react-start'
+import { withRuntime } from '~/server/runtime.server'
 
-function getRequiredEnv(name: 'VITE_CONVEX_URL' | 'VITE_CONVEX_SITE_URL') {
-  const value = process.env[name]
-  if (!value) {
-    throw new Error(`Missing ${name} environment variable.`)
-  }
-  return value
+export const handler = (request: Request) => {
+  // Account administration uses the app services' last-admin lock and revocation rules.
+  // Do not expose the admin plugin's parallel mutation endpoints to browser callers.
+  if (new URL(request.url).pathname.startsWith('/api/auth/admin/'))
+    return Promise.resolve(new Response('Not found', { status: 404 }))
+  return withRuntime(({ auth }) => auth.handler(request), request)
 }
-
-export const {
-  handler,
-  getToken,
-  fetchAuthQuery,
-  fetchAuthMutation,
-  fetchAuthAction,
-} = convexBetterAuthReactStart({
-  convexUrl: getRequiredEnv('VITE_CONVEX_URL'),
-  convexSiteUrl: getRequiredEnv('VITE_CONVEX_SITE_URL'),
-})

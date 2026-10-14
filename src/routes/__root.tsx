@@ -3,33 +3,26 @@ import {
   Outlet,
   Scripts,
   createRootRouteWithContext,
-  useRouteContext,
+  useHydrated,
 } from '@tanstack/react-router'
-import { ConvexBetterAuthProvider } from '@convex-dev/better-auth/react'
-import { ColorSchemeScript, DirectionProvider, MantineProvider, mantineHtmlProps } from '@mantine/core'
+import {
+  ColorSchemeScript,
+  DirectionProvider,
+  MantineProvider,
+  mantineHtmlProps,
+} from '@mantine/core'
 import * as React from 'react'
 import type { QueryClient } from '@tanstack/react-query'
-import type { ConvexQueryClient } from '@convex-dev/react-query'
-import type { ConvexReactClient } from 'convex/react'
+import { fetchAppSession } from '~/lib/auth'
 import appCss from '~/styles/app.css?url'
-import { authClient } from '~/lib/auth-client'
-import { fetchAuthToken } from '~/lib/auth'
 import { appTheme } from '~/theme'
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
-  convexClient: ConvexReactClient
-  convexQueryClient: ConvexQueryClient
 }>()({
-  beforeLoad: async ({ context }) => {
-    const token = await fetchAuthToken()
-    if (token) {
-      context.convexQueryClient.serverHttpClient?.setAuth(token)
-    }
-    return {
-      token,
-      isAuthenticated: Boolean(token),
-    }
+  beforeLoad: async () => {
+    const session = await fetchAppSession()
+    return { isAuthenticated: Boolean(session.currentUser) }
   },
   head: () => ({
     meta: [
@@ -72,33 +65,26 @@ export const Route = createRootRouteWithContext<{
 })
 
 function RootComponent() {
-  const context = useRouteContext({ from: Route.id })
-
   return (
-    <ConvexBetterAuthProvider
-      client={context.convexClient}
-      authClient={authClient}
-      initialToken={context.token ?? undefined}
-    >
-      <DirectionProvider initialDirection="rtl">
+    <DirectionProvider initialDirection="rtl">
+      <RootDocument>
         <MantineProvider theme={appTheme} defaultColorScheme="auto">
-          <RootDocument>
-            <Outlet />
-          </RootDocument>
+          <Outlet />
         </MantineProvider>
-      </DirectionProvider>
-    </ConvexBetterAuthProvider>
+      </RootDocument>
+    </DirectionProvider>
   )
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const hydrated = useHydrated()
   return (
     <html {...mantineHtmlProps} lang="ar" dir="rtl">
       <head>
         <ColorSchemeScript defaultColorScheme="auto" />
         <HeadContent />
       </head>
-      <body>
+      <body data-app-ready={hydrated}>
         {children}
         <Scripts />
       </body>

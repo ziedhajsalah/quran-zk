@@ -3,6 +3,7 @@ node_modules
 !.env
 .env
 .env.local
+.env.neon.local
 .DS_Store
 .cache
 .vercel

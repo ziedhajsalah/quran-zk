@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useHydrated } from '@tanstack/react-router'
 import {
   Alert,
   Button,
@@ -11,10 +11,10 @@ import {
   TextInput,
   Title,
 } from '@mantine/core'
-import { useAction } from 'convex/react'
 import * as React from 'react'
-import { api } from '../../../../convex/_generated/api'
-import { extractActionErrorMessage } from '~/lib/convex-errors'
+import { extractActionErrorMessage } from '~/lib/action-errors'
+import { useAppMutation } from '~/lib/queries'
+import * as resetCodes from '~/server/functions/reset-codes'
 
 export const Route = createFileRoute('/_protected/admin/reset-password')({
   component: AdminResetPasswordPage,
@@ -26,7 +26,8 @@ type IssuedCode = {
 }
 
 function AdminResetPasswordPage() {
-  const issue = useAction(api.auth.resetCodes.adminIssue)
+  const hydrated = useHydrated()
+  const issue = useAppMutation(resetCodes.adminIssue, [])
   const [identifier, setIdentifier] = React.useState('')
   const [loading, setLoading] = React.useState(false)
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
@@ -67,13 +68,16 @@ function AdminResetPasswordPage() {
           <div>
             <Title order={1}>إعادة تعيين كلمة مرور مستخدم</Title>
             <Text c="dimmed" mt="xs">
-              أدخل البريد الإلكتروني أو اسم المستخدم الخاص بالمستخدم ليصدر له رمز
-              إعادة تعيين صالح لمدة محدودة.
+              أدخل البريد الإلكتروني أو اسم المستخدم الخاص بالمستخدم ليصدر له
+              رمز إعادة تعيين صالح لمدة محدودة.
             </Text>
           </div>
 
           {issued ? (
-            <IssuedCodeBlock issued={issued} onIssueAnother={handleIssueAnother} />
+            <IssuedCodeBlock
+              issued={issued}
+              onIssueAnother={handleIssueAnother}
+            />
           ) : (
             <>
               {errorMessage ? (
@@ -85,14 +89,22 @@ function AdminResetPasswordPage() {
               <form onSubmit={handleSubmit}>
                 <Stack gap="md">
                   <TextInput
+                    disabled={!hydrated}
                     label="البريد الإلكتروني أو اسم المستخدم"
                     placeholder="name@example.com أو username"
                     value={identifier}
-                    onChange={(event) => setIdentifier(event.currentTarget.value)}
+                    onChange={(event) =>
+                      setIdentifier(event.currentTarget.value)
+                    }
                     required
                   />
 
-                  <Button type="submit" loading={loading} fullWidth>
+                  <Button
+                    disabled={!hydrated}
+                    type="submit"
+                    loading={loading}
+                    fullWidth
+                  >
                     إصدار الرمز
                   </Button>
                 </Stack>

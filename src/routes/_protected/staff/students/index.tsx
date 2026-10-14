@@ -12,22 +12,23 @@ import {
   useMantineTheme,
 } from '@mantine/core'
 import { IconPlus } from '@tabler/icons-react'
-import { convexQuery } from '@convex-dev/react-query'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useAction } from 'convex/react'
 import { useMemo, useState } from 'react'
-import { api } from '../../../../../convex/_generated/api'
+import * as accounts from '~/server/functions/accounts'
+import { studentsQuery, useAppMutation } from '~/lib/queries'
+import { extractActionErrorMessage } from '~/lib/action-errors'
 import { currentUserQuery } from '~/lib/auth-queries'
-import { extractActionErrorMessage } from '~/lib/convex-errors'
-import { BottomNav, HomeTopBar, createHomeDashboardData } from '~/components/home'
+import {
+  BottomNav,
+  HomeTopBar,
+  createHomeDashboardData,
+} from '~/components/home'
 import { StudentsPicker } from '~/components/surahs/StudentsPicker'
 import { CreateStudentDrawer } from '~/components/staff/CreateStudentDrawer'
 
 export const Route = createFileRoute('/_protected/staff/students/')({
   loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(
-      convexQuery(api.surahGrades.listAllStudents, {}),
-    )
+    await context.queryClient.ensureQueryData(studentsQuery())
   },
   component: StaffStudentsPage,
 })
@@ -36,10 +37,10 @@ function StaffStudentsPage() {
   const theme = useMantineTheme()
   const navigate = useNavigate()
   const { data: me } = useSuspenseQuery(currentUserQuery)
-  const { data: students } = useSuspenseQuery(
-    convexQuery(api.surahGrades.listAllStudents, {}),
-  )
-  const createStudent = useAction(api.auth.admin.staffCreateStudent)
+  const { data: students } = useSuspenseQuery(studentsQuery())
+  const createStudent = useAppMutation(accounts.staffCreateStudent, [
+    'students',
+  ])
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -90,9 +91,7 @@ function StaffStudentsPage() {
                 إدارة الطلاب
               </Text>
               <Title order={1}>طلابك</Title>
-              <Text c="dimmed">
-                اختر طالبًا لعرض السور التي حفظها وتقييمه.
-              </Text>
+              <Text c="dimmed">اختر طالبًا لعرض السور التي حفظها وتقييمه.</Text>
             </Stack>
             <Button
               leftSection={<IconPlus size={16} />}
@@ -135,10 +134,7 @@ function StaffStudentsPage() {
         onSubmit={handleCreateStudent}
       />
 
-      <BottomNav
-        activeItemId="home"
-        items={homeDashboardData.bottomNavItems}
-      />
+      <BottomNav activeItemId="home" items={homeDashboardData.bottomNavItems} />
     </Box>
   )
 }
