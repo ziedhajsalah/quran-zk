@@ -28,7 +28,25 @@
           "id": "d428e5b5be924fa9bb143d379c38a94d",
           "localConnectionString": "postgresql://quran_dev:quran_local@127.0.0.1:55432/quran_dev"
         }
-      ]
+      ],
+      "routes": [],
+      "workers_dev": true,
+      "preview_urls": false
     }
-  }
+  },
+  "vars": {
+    "SITE_URL": "https://quran-zk.tn"
+  },
+  "routes": [
+    {
+      "pattern": "quran-zk.tn",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.quran-zk.tn/*",
+      "zone_name": "quran-zk.tn"
+    }
+  ],
+  "workers_dev": true,
+  "preview_urls": false
 }
