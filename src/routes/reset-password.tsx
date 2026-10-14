@@ -54,7 +54,6 @@ function ResetPasswordPage() {
       })
       window.location.assign('/login?reason=passwordReset')
     } catch (error) {
-      console.error('reset password redeem failed', error)
       setErrorMessage(
         extractActionErrorMessage(error, 'رمز غير صالح أو منتهي.'),
       )

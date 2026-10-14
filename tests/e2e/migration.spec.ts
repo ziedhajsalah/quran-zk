@@ -120,6 +120,10 @@ test('admin-issued reset works signed out, revokes sessions and rejects replay',
   await login(student, 'qa.student.oct13')
   const publicContext = await browser.newContext()
   const reset = await publicContext.newPage()
+  const resetConsoleErrors: Array<string> = []
+  reset.on('console', (message) => {
+    if (message.type() === 'error') resetConsoleErrors.push(message.text())
+  })
   await goto(reset, '/reset-password')
   await reset
     .getByLabel('البريد الإلكتروني أو اسم المستخدم')
@@ -143,6 +147,7 @@ test('admin-issued reset works signed out, revokes sessions and rejects replay',
   await expect(
     reset.getByText('رمز غير صالح أو منتهي.', { exact: true }),
   ).toBeVisible()
+  expect(resetConsoleErrors).toEqual([])
   await context.close()
   await studentContext.close()
   await publicContext.close()
