@@ -41,13 +41,13 @@ await withDatabase(url, async (db) => {
   )
   if (count.rows[0].count !== 2) throw new Error('Transaction rollback failed.')
   const tables = await db.execute(
-    sql`select count(*)::integer as count from information_schema.tables where table_schema = 'public' and table_name in ('user', 'session', 'account', 'verification', 'student_surah_grades', 'surah_review_assignments', 'student_notes', 'password_reset_codes')`,
+    sql`select count(*)::integer as count from information_schema.tables where table_schema = 'public' and table_name in ('user', 'session', 'account', 'verification', 'student_surah_grades', 'surah_review_assignments', 'student_notes', 'password_reset_codes', 'auth_rate_limits')`,
   )
-  if (tables.rows[0].count !== 8)
+  if (tables.rows[0].count !== 9)
     throw new Error(
       'Apply the committed migration before running this smoke check.',
     )
   console.log(
-    'Commit, rollback and all eight migration tables verified. No persistent test data created.',
+    'Commit, rollback and all nine migration tables verified. No persistent test data created.',
   )
 })

@@ -10,14 +10,14 @@ import {
 } from './validation'
 
 export const listOpenForStudent = createServerFn({ method: 'GET' })
-  .inputValidator(studentInput)
+  .validator(studentInput)
   .handler(({ data }) =>
     withRuntime(({ db, actor }) =>
       service.listReviews(db, actor, data.studentId),
     ),
   )
 export const assign = createServerFn({ method: 'POST' })
-  .inputValidator(
+  .validator(
     surahInput.extend({
       dueAt: z.number().int().min(0).max(8.64e15).optional(),
     }),
@@ -26,12 +26,12 @@ export const assign = createServerFn({ method: 'POST' })
     withRuntime(({ db, actor }) => service.assignReview(db, actor, data)),
   )
 export const close = createServerFn({ method: 'POST' })
-  .inputValidator(assignmentInput.extend({ newGrade: gradeSchema.optional() }))
+  .validator(assignmentInput.extend({ newGrade: gradeSchema.optional() }))
   .handler(({ data }) =>
     withRuntime(({ db, actor }) => service.finishReview(db, actor, data)),
   )
 export const cancel = createServerFn({ method: 'POST' })
-  .inputValidator(assignmentInput)
+  .validator(assignmentInput)
   .handler(({ data }) =>
     withRuntime(({ db, actor }) => service.finishReview(db, actor, data, true)),
   )

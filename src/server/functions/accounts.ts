@@ -11,12 +11,12 @@ import {
 import * as service from '../services/accounts.server'
 
 export const staffCreateStudent = createServerFn({ method: 'POST' })
-  .inputValidator(accountInput)
+  .validator(accountInput)
   .handler(({ data }) =>
     withRuntime(({ db, actor }) => service.staffCreateStudent(db, actor, data)),
   )
 export const adminCreate = createServerFn({ method: 'POST' })
-  .inputValidator(
+  .validator(
     accountInput.extend({ roles: z.array(roleSchema).min(1).max(3) }),
   )
   .handler(({ data }) =>
@@ -26,7 +26,7 @@ export const listUsers = createServerFn({ method: 'GET' }).handler(() =>
   withRuntime(({ db, actor }) => service.adminList(db, actor)),
 )
 export const adminUpdate = createServerFn({ method: 'POST' })
-  .inputValidator(
+  .validator(
     accountInput.omit({ password: true }).extend({
       userId: z.string().min(1),
       roles: z.array(roleSchema).min(1).max(3),
@@ -41,7 +41,7 @@ export const adminUpdate = createServerFn({ method: 'POST' })
     ),
   )
 export const adminSetStatus = createServerFn({ method: 'POST' })
-  .inputValidator(
+  .validator(
     z.object({
       userId: z.string().min(1),
       status: z.enum(['active', 'disabled']),
@@ -51,14 +51,14 @@ export const adminSetStatus = createServerFn({ method: 'POST' })
     withRuntime(({ db, actor }) => service.updateAccount(db, actor, data)),
   )
 export const adminRemove = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ userId: z.string().min(1) }))
+  .validator(z.object({ userId: z.string().min(1) }))
   .handler(({ data }) =>
     withRuntime(({ db, actor }) =>
       service.updateAccount(db, actor, { ...data, remove: true }),
     ),
   )
 export const adminResetPassword = createServerFn({ method: 'POST' })
-  .inputValidator(
+  .validator(
     z.object({ userId: z.string().min(1), password: passwordSchema }),
   )
   .handler(({ data }) =>

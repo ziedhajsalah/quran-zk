@@ -171,7 +171,9 @@ test('teacher creates a student, grades a surah, closes and cancels reviews, and
   await page.getByRole('button', { name: 'إنشاء الحساب' }).click()
   const mutation = await pendingMutation
   await expect(page.getByText(displayName, { exact: true })).toBeVisible()
-  const wrongMethod = await page.request.get(mutation.url(), { headers: { 'x-tsr-serverFn': 'true' } })
+  const wrongMethod = await page.request.get(mutation.url(), {
+    headers: { 'x-tsr-serverFn': 'true' },
+  })
   expect(wrongMethod.status()).toBe(405)
   const wrongOrigin = await page.request.post(mutation.url(), {
     data: mutation.postData()!,
@@ -230,4 +232,32 @@ test('teacher creates a student, grades a surah, closes and cancels reviews, and
   await page.getByRole('menuitem', { name: 'حذف', exact: true }).click()
   await page.getByRole('button', { name: 'حذف', exact: true }).click()
   await expect(page.getByText('ملاحظة معدلة', { exact: true })).toHaveCount(0)
+})
+
+test('session cookie attributes, origin rejection and logout revocation', async ({
+  page,
+  baseURL,
+}) => {
+  const origin = baseURL!
+  await login(page, 'qa.student.oct13')
+  const cookie = (await page.context().cookies()).find((value) =>
+    value.name.includes('session_token'),
+  )
+  expect(cookie).toBeDefined()
+  expect(cookie!.secure).toBe(origin.startsWith('https:'))
+  expect(cookie!.httpOnly).toBe(true)
+  expect(cookie!.sameSite).toBe('Lax')
+  const headers = { cookie: `${cookie!.name}=${cookie!.value}` }
+  const before = await page.request.get('/api/auth/get-session', { headers })
+  expect((await before.json()).user).toBeTruthy()
+  const foreign = await page.request.post('/api/auth/sign-in/username', {
+    headers: { origin: 'https://untrusted.example' },
+    data: { username: 'qa.student.oct13', password },
+  })
+  expect(foreign.status()).toBe(403)
+  await goto(page, '/profile')
+  await page.getByRole('button', { name: 'تسجيل الخروج' }).click()
+  await expect(page).toHaveURL(/\/login/)
+  const after = await page.request.get('/api/auth/get-session', { headers })
+  expect(await after.json()).toBeNull()
 })

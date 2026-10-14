@@ -8,6 +8,13 @@
       "when": 1791912797614,
       "tag": "0000_ordinary_cloak",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791979441662,
+      "tag": "0001_young_retro_girl",
+      "breakpoints": true
     }
   ]
 }

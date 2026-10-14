@@ -44,7 +44,9 @@ export async function withRuntime<T>(
     })
   } catch (error) {
     if (error instanceof AppError) throw new Error(error.message)
-    console.error('Backend request failed', error)
+    console.error('Backend request failed', {
+      name: error instanceof Error ? error.name : 'UnknownError',
+    })
     throw new Error('تعذر إتمام العملية. حاول مرة أخرى.')
   }
 }

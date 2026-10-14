@@ -1,6 +1,6 @@
 # Better Auth setup
 
-Better Auth 1.5.3 runs in the application with the PostgreSQL Drizzle adapter, username and admin plugins. Public signup is disabled. Set `BETTER_AUTH_SECRET` and exact-origin `SITE_URL` in `.dev.vars` locally, or as Worker secrets remotely. Database setup is in [SETUP.md](SETUP.md).
+Better Auth 1.7.7 runs in the application with the PostgreSQL Drizzle adapter, username and admin plugins. Public signup is disabled. Set `BETTER_AUTH_SECRET` and exact-origin `SITE_URL` in `.dev.vars` locally, or as Worker secrets remotely. Database setup is in [SETUP.md](SETUP.md).
 
 Cookie sessions live in SQL. Cookie caching is disabled; backend authorization reads the current user and status. Multi-role users retain admin/teacher/student flags. Teachers create students with a fixed server-side role; all other account administration is app-admin-only. The plugin's public `/admin/*` routes are disabled so they cannot bypass the app's transactional last-admin checks.
 
