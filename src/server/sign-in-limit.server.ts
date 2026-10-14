@@ -42,29 +42,11 @@ export async function limitSignIn(
     { window: 60, max: 30 },
   )
   if (!ipResult.allowed) return denied(ipResult.retryAfter!)
-  const reader = request.clone().body?.getReader()
-  if (!reader) return null
-  let size = 0
-  const chunks: Array<Uint8Array> = []
   try {
-    for (;;) {
-      const part = await reader.read()
-      if (part.done) break
-      size += part.value.byteLength
-      if (size > 8192) {
-        void reader.cancel()
-        return new Response('Request too large', { status: 413 })
-      }
-      chunks.push(part.value)
-    }
-    const bytes = new Uint8Array(size)
-    let offset = 0
-    for (const chunk of chunks) {
-      bytes.set(chunk, offset)
-      offset += chunk.byteLength
-    }
-    const body = JSON.parse(new TextDecoder().decode(bytes))
-    const identifier = path.endsWith('/username') ? body?.username : body?.email
+    const body: unknown = await request.clone().json()
+    if (typeof body !== 'object' || body === null) return null
+    const fields = body as Record<string, unknown>
+    const identifier = fields[path.endsWith('/username') ? 'username' : 'email']
     if (typeof identifier !== 'string' || identifier.length > 320) return null
     const normalized = identifier.trim().toLowerCase()
     const existing = (
@@ -78,8 +60,8 @@ export async function limitSignIn(
       db,
       rateLimitKey(
         config.BETTER_AUTH_SECRET,
-        'sign-in-account',
-        existing ? `id:${existing.id}` : `input:${normalized}`,
+        'sign-in-account-ip',
+        `${ip}:${existing ? `id:${existing.id}` : `input:${normalized}`}`,
       ),
       { window: 300, max: 5 },
     )
@@ -87,7 +69,5 @@ export async function limitSignIn(
   } catch (error) {
     if (error instanceof SyntaxError) return null
     throw error
-  } finally {
-    reader.releaseLock()
   }
 }

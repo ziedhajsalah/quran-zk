@@ -12,8 +12,8 @@ No paid subscription, production Worker deployment, production schema migration,
 
 - Better Auth and its Drizzle adapter are pinned together at 1.7.7. The framework, Vite, Cloudflare tooling, Vitest and Storybook use a compatible patched dependency set. The obsolete router/query adapter was replaced with the current SSR query integration, retaining a request-specific QueryClient.
 - All password writers and verification use native `node:crypto` scrypt: N=16384, r=16, p=1, 64-byte key, NFKC normalization, and the original hexadecimal salt:key representation. Verification checks the representation and uses timingSafeEqual. A stored pre-upgrade Unicode password hash and interoperability with Better Auth are tested. Existing users need no reset or data migration.
-- `auth_rate_limits` uses an atomic PostgreSQL upsert, bounded counters and database-clock window expiry. Keys are secret-keyed HMACs. Better Auth's endpoint limiter uses this distributed store. HTTP sign-in also shares a canonical account bucket between username/email and a trusted Cloudflare IP bucket. The limits are five account attempts per five minutes and 30 attempts per IP per minute; exhausted requests return HTTP 429 and Retry-After. Caller-supplied forwarded IP headers do not substitute for cf-connecting-ip.
-- Sign-in body reading is bounded at 8 KiB. Foreign-origin requests are left to Better Auth's origin rejection without consuming the target account's budget. Expired counters older than one day are pruned at most hourly per isolate; they are not retained indefinitely.
+- `auth_rate_limits` uses an atomic PostgreSQL upsert, bounded counters and database-clock window expiry. Keys are secret-keyed HMACs. Better Auth's endpoint limiter uses this distributed store. HTTP sign-in shares a canonical account/IP bucket between username/email and a separate trusted Cloudflare IP bucket. The limits are five attempts per account/IP pair per five minutes and 30 attempts per IP per minute; exhausted requests return HTTP 429 and Retry-After. Caller-supplied forwarded IP headers do not substitute for cf-connecting-ip.
+- All auth POST bodies are buffered before database acquisition, bounded at 8 KiB and an absolute five-second deadline. Oversized and stalled bodies return 413/408 without opening a database connection. Foreign-origin requests are left to Better Auth's origin rejection without consuming the target account's budget. Expired counters older than one day are pruned at most hourly per isolate; they are not retained indefinitely.
 - The reviewed additive migration creates only the counter table, positive-count constraint and expiry index. It was applied to local development/tests and the isolated development branch. Existing review/reset/admin locks and revocation behavior are unchanged.
 - Raw unexpected backend errors are no longer logged; only the error class is recorded, avoiding database parameters or submitted credentials in logs.
 - Storybook has its own Vite config so application/Worker entries are excluded from component compilation. Existing components and Arabic RTL presentation are preserved.
@@ -39,7 +39,7 @@ The new direct connection is stored only in ignored `.env.neon-development.local
 
 | Check | Result |
 | --- | --- |
-| PostgreSQL integration and security regressions | 32 passed |
+| PostgreSQL integration and security regressions | 35 passed |
 | Local browser regressions, including cookie/token revocation | Five passed |
 | Hosted browser scenarios | Five passed |
 | TypeScript / ESLint | Passed |
@@ -48,7 +48,7 @@ The new direct connection is stored only in ignored `.env.neon-development.local
 | Reviewed dev migration, nine-table/rollback smoke | Passed |
 | Legacy password hash / library interoperability | Passed |
 | Concurrent distributed limiter | Exactly five allowed out of twenty simultaneous independent clients |
-| Account aliases, changing IP, forwarded-header spoof and oversized input | Regression checks passed |
+| Account aliases within one IP, correct owner login from another IP, forwarded-header spoof, oversized input and stalled streams | Regression checks passed |
 | Deployed throttle | Five HTTP 401 responses, then HTTP 429 with Retry-After 298 |
 | Warm authenticated profile sequence | Twenty HTTP 200 responses |
 | Additional invalid sign-in sequence | Fifteen expected HTTP 401 responses |
@@ -59,12 +59,20 @@ Hosted checks cover anonymous protection, signup/admin restrictions, safe redire
 
 Three temporary role accounts and one student created through the staff UI were deleted, with cascading cleanup of their credentials, sessions, grades, notes, reviews and reset codes. Private temporary passwords/cookies and QA scripts were removed. Nonsecret HMAC limiter counters expire through the normal pruning policy. There are no permanent hosted QA accounts.
 
-## Remaining hosting decision and costs
+## Selected free hosting and remaining CPU constraints
 
-Neon remains on its existing Free plan; its branch compute/storage use shares project quotas. No extra paid database plan was enabled. The development branch adds compute use within those quotas when awake.
+The user has explicitly selected Workers Free and Neon Free because the project has no hosting budget and expects low traffic. No paid upgrade is planned or authorized. The development branch shares the existing Neon Free project's compute/storage quotas; no database paid plan was enabled.
 
-Cloudflare documents [10 ms CPU per HTTP request on Free](https://developers.cloudflare.com/workers/platform/limits/) and temporary isolate flexibility for occasional overruns. This app continues to exceed that allowance materially. A passing short run should not be used to promise a reliable free deployment.
+Cloudflare documents [10 ms CPU per HTTP request on Free](https://developers.cloudflare.com/workers/platform/limits/) and temporary isolate flexibility for occasional overruns. Low traffic helps request/compute quotas but does not increase the per-request CPU allowance. Keep the existing hashing strength, monitor execution outcomes on Free, and record any recurrence of CPU-limit failures. The passing small hosted sample is evidence for the early-development use case, not a guarantee of production reliability.
 
-[Workers Paid starts at $5/month](https://developers.cloudflare.com/workers/platform/pricing/), with included requests/CPU and usage overages. Enabling it and rerunning the hosted suite is the smallest remaining hosting change. It requires the user's approval because it changes billing. If the entire hosting budget must remain $0, evaluate a different Node host before production instead of weakening hashing or relying on overrun flexibility. Distributed throttling and dependency changes can be reviewed and merged independently of that choice.
+Before production rollout, apply the reviewed migration to the production database, configure its origin/secrets, bootstrap a real admin and verify the final origin on Free. Production readiness is not declared by this follow-up.
 
-Before production rollout, apply the reviewed migration to the production database, configure its origin/secrets, bootstrap a real admin and verify the final production origin on the selected hosting allowance. Production readiness is not declared by this follow-up.
+## PR review follow-up
+
+Both review findings were reproduced and addressed. Account throttling now uses an account/IP pair: five invalid attempts from one IP cannot deny an owner with the correct password from a different IP. Username/email aliases still share the pair's quota, and the independent 30-per-minute IP limit remains. This avoids a global unauthenticated account lockout without weakening the atomic distributed counters.
+
+Request body buffering runs before withRuntime acquires the PostgreSQL client. A single five-second deadline covers the whole auth POST body rather than restarting on each chunk. Integration tests hold streams open, exceed 8 KiB and drip bytes near the deadline; they verify the database runtime is never entered until a complete acceptable body is available. Timed-out and oversized readers are cancelled.
+
+The review follow-up passes 35 tests, including the three request/connection lifecycle regressions and a real credential login from another IP after exhausting the attacker's pair. The earlier hosted measurements remain historical evidence; the updated development deployment is recorded below.
+
+The review fixes were deployed to the existing Free development Worker as version `565302e2-2445-4143-bc67-e3816b56598e`. Hosted probes returned 413 for an oversized body and five expected 401 responses followed by 429 for a throttled account/IP pair. The external stalled-upload probe reached its ten-second client deadline without a response, so no hosted 408 pass is claimed; the deterministic request/connection lifecycle test verifies the five-second handler deadline and zero database acquisition. All five local Worker browser scenarios, 35 tests, lint/type checks and the development build passed. No hosting plan or database schema was changed by this review follow-up.

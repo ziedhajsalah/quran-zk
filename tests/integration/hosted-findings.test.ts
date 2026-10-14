@@ -7,7 +7,8 @@ import {
 } from 'better-auth/crypto'
 import { withDatabase } from '../../src/server/db.server'
 import { authRateLimits } from '../../src/server/db/schema/app'
-import { user } from '../../src/server/db/schema/auth'
+import { createAccount } from '../../src/server/services/accounts.server'
+import { createAuth } from '../../src/server/auth.server'
 import { hashPassword, verifyPassword } from '../../src/server/password.server'
 import {
   consumeRateLimit,
@@ -116,36 +117,51 @@ describe('password compatibility and distributed sign-in protection', () => {
         .allowed,
     ).toBe(true)
   })
-  it('shares a canonical account limit across email, username and distinct IPs', async () => {
-    await run((db) =>
-      db.insert(user).values({
-        id: 'canonical',
-        name: 'Canonical',
-        username: 'canonical',
-        email: 'canonical@example.com',
-      }),
-    )
-    for (let i = 0; i < 5; i++)
-      expect(
-        await run((db) =>
-          limitSignIn(
-            db,
-            config,
-            request(
-              i % 2 ? 'canonical@example.com' : ' CANONICAL ',
-              `192.0.2.${i}`,
-              Boolean(i % 2),
-            ),
-          ),
-        ),
-      ).toBeNull()
-    const denied = await run((db) =>
-      limitSignIn(db, config, request('canonical', '192.0.2.9')),
-    )
-    expect(denied!.status).toBe(429)
-    expect(Number(denied!.headers.get('retry-after'))).toBeGreaterThan(0)
-    const keys = await run((db) => db.select().from(authRateLimits))
-    expect(keys.every((row) => /^[a-f0-9]{64}$/.test(row.key))).toBe(true)
+  it('shares aliases within one IP without locking the owner out from another IP', async () => {
+    await run(async (db) => {
+      await createAccount(
+        db,
+        {
+          username: 'canonical',
+          displayName: 'Canonical',
+          email: 'canonical@example.com',
+          password: 'Correct-owner-password!',
+        },
+        ['student'],
+      )
+      const auth = createAuth(db, config)
+      for (let i = 0; i < 5; i++) {
+        const attempt = request(
+          i % 2 ? 'canonical@example.com' : ' CANONICAL ',
+          '192.0.2.1',
+          Boolean(i % 2),
+        )
+        expect(await limitSignIn(db, config, attempt)).toBeNull()
+        expect((await auth.handler(attempt)).status).toBe(401)
+      }
+      const denied = await limitSignIn(db, config, request('canonical'))
+      expect(denied!.status).toBe(429)
+      expect(Number(denied!.headers.get('retry-after'))).toBeGreaterThan(0)
+      const owner = new Request(
+        `${config.SITE_URL}/api/auth/sign-in/username`,
+        {
+          method: 'POST',
+          headers: {
+            origin: config.SITE_URL,
+            'content-type': 'application/json',
+            'cf-connecting-ip': '192.0.2.9',
+          },
+          body: JSON.stringify({
+            username: 'canonical',
+            password: 'Correct-owner-password!',
+          }),
+        },
+      )
+      expect(await limitSignIn(db, config, owner)).toBeNull()
+      expect((await auth.handler(owner)).status).toBe(200)
+      const keys = await db.select().from(authRateLimits)
+      expect(keys.every((row) => /^[a-f0-9]{64}$/.test(row.key))).toBe(true)
+    })
     expect(
       rateLimitKey(config.BETTER_AUTH_SECRET, 'one', 'canonical'),
     ).not.toBe(rateLimitKey(config.BETTER_AUTH_SECRET, 'two', 'canonical'))
@@ -159,14 +175,10 @@ describe('password compatibility and distributed sign-in protection', () => {
     req.headers.set('x-forwarded-for', '203.0.113.99')
     expect((await run((db) => limitSignIn(db, config, req)))!.status).toBe(429)
   })
-  it('rejects oversized input and ignores foreign-origin requests for account counters', async () => {
-    const oversized = request('x'.repeat(9000))
-    expect(
-      (await run((db) => limitSignIn(db, config, oversized)))!.status,
-    ).toBe(413)
+  it('does not consume target account counters for foreign-origin requests', async () => {
     const foreign = request('target')
     foreign.headers.set('origin', 'https://untrusted.example')
     expect(await run((db) => limitSignIn(db, config, foreign))).toBeNull()
-    expect(await run((db) => db.select().from(authRateLimits))).toHaveLength(1)
+    expect(await run((db) => db.select().from(authRateLimits))).toHaveLength(0)
   })
 })

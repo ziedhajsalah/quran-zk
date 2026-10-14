@@ -48,7 +48,7 @@ npm run test:e2e
 5. For a development branch, save its direct URL privately in ignored `.env.neon.local` as `DATABASE_URL`. Run `npx tsx --env-file=.env.neon.local scripts/db-migrate.ts`, then `npm run db:smoke`. This checks connectivity, commit/rollback and migrated table presence without persistent test rows. `npm run db:auth-smoke` additionally checks login/sessions/reset revocation using a temporary account and removes it afterward. It does not replace a Worker/Hyperdrive smoke check.
 6. Verify hosted login, sessions, reconnects, queries and actual Worker CPU before launch. Local wall time is not a deployed CPU measurement. The selected Neon branch and its Hyperdrive binding have been configured. The merged app has been deployed separately to `quran-zk-dev` for development verification; hosted CPU failures block launch. See [the hosted verification report](docs/hosted-test-report-2026-10-14.md).
 
-Neon is $0 within Free quotas. Hosted follow-up tests pass, but measured auth/SSR CPU still exceeds the Workers Free allowance; see [the findings follow-up](docs/hosted-findings-followup-2026-10-14.md). Workers Paid starts at $5/month. See the migration plan for dated pricing and assumptions. No paid upgrade is automatic.
+Neon is $0 within Free quotas. Hosted follow-up tests pass, but measured auth/SSR CPU still exceeds the Workers Free allowance; see [the findings follow-up](docs/hosted-findings-followup-2026-10-14.md). Workers Free and Neon Free are the selected hosting plans because the project has no hosting budget and expects low traffic. CPU usage remains a constraint even with low traffic; no paid upgrade is planned. See the findings follow-up for measurements.
 
 ## Commands
 
@@ -77,4 +77,4 @@ npm run deploy:development
 
 The environment supplies the exact HTTPS SITE_URL. Set its own BETTER_AUTH_SECRET with `npx wrangler secret put BETTER_AUTH_SECRET --env development` when provisioning a new Worker. No remote seeds are allowed. Temporary hosted QA accounts must be individually created and cleaned up by the verification operator.
 
-The additive `0001` migration is required before deploying this auth version to any environment. Sign-in limits persist in PostgreSQL across instances: five attempts per account per five minutes and 30 per Cloudflare IP per minute. Backend origin protection and fresh session reads remain enabled. The native password implementation accepts existing stored hashes.
+The additive `0001` migration is required before deploying this auth version to any environment. Sign-in limits persist in PostgreSQL across instances: five attempts per account/IP pair per five minutes and 30 per Cloudflare IP per minute. Backend origin protection and fresh session reads remain enabled. The native password implementation accepts existing stored hashes.
