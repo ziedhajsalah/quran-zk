@@ -25,7 +25,8 @@
     "db:smoke": "tsx --env-file-if-exists=.env.neon.local scripts/db-smoke.ts",
     "db:auth-smoke": "tsx --env-file-if-exists=.env.neon.local scripts/db-auth-smoke.ts",
     "build:development": "CLOUDFLARE_ENV=development npm run build",
-    "deploy:development": "npm run build:development && wrangler deploy --env development"
+    "deploy:development": "npm run build:development && wrangler deploy --env development",
+    "check:deployment": "node scripts/check-deployment.mjs"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "1.7.7",
