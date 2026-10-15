@@ -56,9 +56,14 @@ const tlsCodes = new Set([
   'ERR_TLS_CERT_ALTNAME_INVALID',
 ])
 
-export function adminSetupErrorMessage(error: unknown): string {
+export function adminSetupErrorMessage(
+  error: unknown,
+  operation: 'create' | 'reset' = 'create',
+): string {
   if (error instanceof AdminSetupError) return error.message
   if (error instanceof ZodError) {
+    if (operation === 'reset')
+      return 'Invalid recovery details. The new password must contain 8–128 characters; it was not saved.'
     const fields: Record<string, string> = {
       username:
         'username: use 3–32 letters, numbers, dots, underscores or hyphens',
@@ -88,12 +93,28 @@ export function adminSetupErrorMessage(error: unknown): string {
       current.message === 'Bootstrap is only available before any user exists.'
     )
       return 'This database already contains users, so first-admin setup is disabled. Sign in with an existing admin, use npm run rescue:password with DATABASE_URL explicitly set to this database if you forgot the password, or select an empty application database. No new admin was created by this attempt.'
+    if (operation === 'reset' && current instanceof AppError) {
+      if (current.message === 'المستخدم غير موجود.')
+        return 'The account no longer exists. Check the identifier and selected environment. No password was changed.'
+      if (current.message === 'لا توجد بيانات دخول لهذا المستخدم.')
+        return 'This account has no password credential to reset. Ask the project maintainer to check its sign-in method. No password was changed.'
+    }
     const failure = current as {
       code?: unknown
       cause?: unknown
       errors?: unknown
     }
     if (typeof failure.code === 'string') {
+      if (operation === 'reset') {
+        if (failure.code === '42501')
+          return 'The database role lacks permission to update credentials or revoke sessions. Use the intended application database role or ask its operator to check permissions.'
+        if (failure.code === '28P01')
+          return 'PostgreSQL rejected the database credentials. Check the DATABASE_URL user and password; these are separate from the new account password.'
+        if (failure.code === '23505')
+          return 'Conflicting credential records prevented password recovery. Ask the project maintainer to check this account.'
+        if (['ECONNRESET', 'EPIPE'].includes(failure.code))
+          return 'The database connection was interrupted. The reset outcome is uncertain: try signing in with the new password before retrying recovery.'
+      }
       if (Object.hasOwn(messages, failure.code)) return messages[failure.code]
       if (tlsCodes.has(failure.code))
         return 'The database TLS certificate could not be verified. Check the connection hostname, system clock and trusted CA configuration. Keep certificate verification enabled.'
@@ -110,5 +131,7 @@ export function adminSetupErrorMessage(error: unknown): string {
     if (Array.isArray(failure.errors))
       pending.push(...failure.errors.slice(0, 8))
   }
+  if (operation === 'reset')
+    return 'Password recovery failed unexpectedly. Verify the selected database and account, then retry. Do not share passwords or the connection URL when reporting the issue.'
   return 'Admin setup failed unexpectedly. Verify the selected database and retry. If it persists, report the failing step to the project maintainer without sharing passwords or the connection URL.'
 }

@@ -1,69 +1,9 @@
-import { readFile } from 'node:fs/promises'
-import { createInterface } from 'node:readline/promises'
-import { Writable } from 'node:stream'
-import { parseEnv } from 'node:util'
 import { withDatabase } from '../src/server/db.server'
 import { createAccount } from '../src/server/services/accounts.server'
 import { accountInput } from '../src/server/accounts'
 import { collectAdminSetup, parseDatabaseTarget } from './lib/admin-setup'
 import { AdminSetupError, adminSetupErrorMessage } from './lib/admin-errors'
-
-async function interactiveSetup() {
-  if (!process.stdin.isTTY || !process.stdout.isTTY)
-    throw new AdminSetupError(
-      'Use an interactive terminal, or pass --non-interactive with the required environment variables.',
-    )
-  let hidden = false
-  const output = new Writable({
-    write(chunk, _encoding, callback) {
-      if (!hidden) process.stdout.write(chunk)
-      callback()
-    },
-  })
-  const input = createInterface({
-    input: process.stdin,
-    output,
-    terminal: true,
-  })
-  const controller = new AbortController()
-  input.on('SIGINT', () => {
-    controller.abort()
-    input.close()
-  })
-  input.on('close', () => controller.abort())
-  try {
-    return await collectAdminSetup({
-      databaseUrl: process.env.DATABASE_URL,
-      write: (message) => console.log(message),
-      readDatabaseUrl: async (file) => {
-        try {
-          return parseEnv(await readFile(file, 'utf8')).DATABASE_URL
-        } catch (error) {
-          if ((error as NodeJS.ErrnoException).code === 'ENOENT')
-            return undefined
-          throw error
-        }
-      },
-      ask: async (message, secret = false) => {
-        if (secret) {
-          process.stdout.write(message)
-          hidden = true
-        }
-        try {
-          return await input.question(secret ? '' : message, {
-            signal: controller.signal,
-          })
-        } finally {
-          hidden = false
-          if (secret) process.stdout.write('\n')
-        }
-      },
-    })
-  } finally {
-    input.close()
-    output.end()
-  }
-}
+import { withTerminal } from './lib/terminal'
 
 async function main() {
   const args = process.argv.slice(2)
@@ -110,7 +50,7 @@ async function main() {
         email: ADMIN_EMAIL ?? null,
       },
     }
-  } else setup = await interactiveSetup()
+  } else setup = await withTerminal(collectAdminSetup)
   if (!setup) {
     console.log('Cancelled. No database connection was opened.')
     return

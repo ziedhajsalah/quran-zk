@@ -21,7 +21,7 @@
     "db:seed": "tsx --env-file-if-exists=.env.local scripts/seed-dev.ts",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "rescue:password": "tsx --env-file-if-exists=.env.local scripts/rescue-reset-password.ts",
+    "rescue:password": "tsx scripts/rescue-reset-password.ts",
     "db:smoke": "tsx --env-file-if-exists=.env.neon.local scripts/db-smoke.ts",
     "db:auth-smoke": "tsx --env-file-if-exists=.env.neon.local scripts/db-auth-smoke.ts",
     "build:development": "CLOUDFLARE_ENV=development npm run build",

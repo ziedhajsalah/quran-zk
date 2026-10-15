@@ -6,7 +6,7 @@ import {
 import { AdminSetupError } from './admin-errors'
 
 export type Ask = (message: string, secret?: boolean) => Promise<string>
-type Options = {
+export type SetupOptions = {
   ask: Ask
   write: (message: string) => void
   readDatabaseUrl: (file: string) => Promise<string | undefined>
@@ -33,12 +33,12 @@ export function parseDatabaseTarget(connectionString: string) {
   return target
 }
 
-export async function collectAdminSetup({
+export async function selectDatabase({
   ask,
   write,
   readDatabaseUrl,
   databaseUrl,
-}: Options) {
+}: SetupOptions) {
   const selection =
     (
       await ask(
@@ -83,6 +83,30 @@ export async function collectAdminSetup({
   // Do not show the user, password or query parameters from a connection URL.
   write(`Selected ${environment}: ${target.host}${target.pathname}`)
 
+  return { environment, connectionString: connectionString.trim() }
+}
+
+export async function promptPassword(
+  { ask, write }: Pick<SetupOptions, 'ask' | 'write'>,
+  label = 'Password',
+) {
+  let password: string
+  for (;;) {
+    password = await ask(`${label} (8–128 characters; input hidden): `, true)
+    if (!passwordSchema.safeParse(password).success) {
+      write('The password must contain 8–128 characters.')
+      continue
+    }
+    if (password === (await ask('Confirm password (input hidden): ', true)))
+      break
+    write('Passwords do not match. Try again.')
+  }
+  return password
+}
+
+export async function collectAdminSetup(options: SetupOptions) {
+  const { ask, write } = options
+  const { environment, connectionString } = await selectDatabase(options)
   async function field(
     message: string,
     validate: (value: string) => string | null,
@@ -109,17 +133,7 @@ export async function collectAdminSetup({
       ? null
       : 'Enter a valid email address or leave it empty.',
   )
-  let password: string
-  for (;;) {
-    password = await ask('Password (8–128 characters; input hidden): ', true)
-    if (!passwordSchema.safeParse(password).success) {
-      write('The password must contain 8–128 characters.')
-      continue
-    }
-    if (password === (await ask('Confirm password (input hidden): ', true)))
-      break
-    write('Passwords do not match. Try again.')
-  }
+  const password = await promptPassword({ ask, write })
   const account = accountInput.parse({ username, displayName, email, password })
   write(
     `Create the first admin "${account.username}" (${account.displayName}) in ${environment}?`,

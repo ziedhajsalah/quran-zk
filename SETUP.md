@@ -29,6 +29,12 @@ The app has an `admin` role, without a separate super-admin role. Setup refuses 
 
 The wizard reports specific recovery steps for existing users, missing tables/migrations, invalid account details, wrong database credentials, DNS/network failures, TLS verification and insufficient database permissions. It lists only missing variable names in automation mode. Driver messages, SQL parameters and credentials are never printed. When following migration or password-recovery advice, explicitly set `DATABASE_URL` for the same selected environment; the wizard does not export its chosen URL into your shell.
 
+## Password recovery
+
+Run `npm run rescue:password` in a terminal to select an environment, enter an existing username/email and a new password, confirm the hidden password, and type `reset <environment>` after reviewing the account and target database. Recovery updates only the password and revokes every existing session in one transaction; roles and disabled status stay unchanged. Cancelling opens no database connection. The same configuration selection and credential-safe error guidance as first-admin setup apply: production files are never read automatically.
+
+For automation, use `npm run rescue:password -- --non-interactive` with `DATABASE_URL`, `RESET_IDENTIFIER` and `RESET_PASSWORD` exported explicitly. It does not prompt or automatically load `.env.local`. Keep passwords in private environment configuration rather than shell arguments. `--help` shows usage without connecting to a database.
+
 ## Verification
 
 Create an isolated database named `quran_test` with the same local PostgreSQL role. Integration tests truncate that database and reject a test URL whose database name does not end in `_test`.
