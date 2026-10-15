@@ -27,6 +27,8 @@ Local mode reads only `.env.local`; hosted development reads only `.env.neon-dev
 
 The app has an `admin` role, without a separate super-admin role. Setup refuses any database that already contains users and preserves the transaction lock around this check and account creation. Do not seed production. For automation, explicitly run `npm run bootstrap:admin -- --non-interactive` with `DATABASE_URL`, `ADMIN_USERNAME`, `ADMIN_NAME`, `ADMIN_PASSWORD` and optional `ADMIN_EMAIL` already exported (or supplied through an explicit private env file to `tsx`). Non-interactive mode does not prompt for confirmation or load `.env.local` automatically.
 
+The wizard reports specific recovery steps for existing users, missing tables/migrations, invalid account details, wrong database credentials, DNS/network failures, TLS verification and insufficient database permissions. It lists only missing variable names in automation mode. Driver messages, SQL parameters and credentials are never printed. When following migration or password-recovery advice, explicitly set `DATABASE_URL` for the same selected environment; the wizard does not export its chosen URL into your shell.
+
 ## Verification
 
 Create an isolated database named `quran_test` with the same local PostgreSQL role. Integration tests truncate that database and reject a test URL whose database name does not end in `_test`.

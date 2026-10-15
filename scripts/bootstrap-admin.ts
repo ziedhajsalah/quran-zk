@@ -4,11 +4,13 @@ import { Writable } from 'node:stream'
 import { parseEnv } from 'node:util'
 import { withDatabase } from '../src/server/db.server'
 import { createAccount } from '../src/server/services/accounts.server'
-import { collectAdminSetup } from './lib/admin-setup'
+import { accountInput } from '../src/server/accounts'
+import { collectAdminSetup, parseDatabaseTarget } from './lib/admin-setup'
+import { AdminSetupError, adminSetupErrorMessage } from './lib/admin-errors'
 
 async function interactiveSetup() {
   if (!process.stdin.isTTY || !process.stdout.isTTY)
-    throw new Error(
+    throw new AdminSetupError(
       'Use an interactive terminal, or pass --non-interactive with the required environment variables.',
     )
   let hidden = false
@@ -72,7 +74,7 @@ async function main() {
     return
   }
   if (args.some((arg) => arg !== '--non-interactive'))
-    throw new Error('Unknown option. Use --help for usage.')
+    throw new AdminSetupError('Unknown option. Use --help for usage.')
   console.log(
     'First-admin setup (the app has no separate super-admin role).\nCreates a permanent admin and password credential in PostgreSQL in one transaction.\nRequires migrated tables and an empty user table. It does not migrate, seed, or save passwords to files.\nPress Ctrl+C to cancel.\n',
   )
@@ -85,10 +87,20 @@ async function main() {
       ADMIN_NAME,
       ADMIN_EMAIL,
     } = process.env
-    if (!DATABASE_URL || !ADMIN_USERNAME || !ADMIN_PASSWORD || !ADMIN_NAME)
-      throw new Error(
-        'DATABASE_URL, ADMIN_USERNAME, ADMIN_PASSWORD and ADMIN_NAME are required in non-interactive mode.',
+    if (!DATABASE_URL || !ADMIN_USERNAME || !ADMIN_PASSWORD || !ADMIN_NAME) {
+      const required = {
+        DATABASE_URL,
+        ADMIN_USERNAME,
+        ADMIN_PASSWORD,
+        ADMIN_NAME,
+      }
+      const missing = Object.keys(required).filter(
+        (key) => !required[key as keyof typeof required],
       )
+      throw new AdminSetupError(
+        `Missing environment variables: ${missing.join(', ')}. Export them before running --non-interactive, or run without that flag to use the wizard.`,
+      )
+    }
     setup = {
       connectionString: DATABASE_URL,
       account: {
@@ -103,19 +115,14 @@ async function main() {
     console.log('Cancelled. No database connection was opened.')
     return
   }
-  try {
-    const result = await withDatabase(setup.connectionString, (db) =>
-      createAccount(db, setup.account, ['admin'], true),
-    )
-    console.log(
-      `Created admin ${result.username}. You can now sign in to the selected environment.`,
-    )
-  } catch {
-    // Driver errors can contain connection details or SQL parameters.
-    throw new Error(
-      'Admin creation failed. Check connectivity, applied migrations and that no user already exists in the selected database.',
-    )
-  }
+  const account = accountInput.parse(setup.account)
+  parseDatabaseTarget(setup.connectionString)
+  const result = await withDatabase(setup.connectionString, (db) =>
+    createAccount(db, account, ['admin'], true),
+  )
+  console.log(
+    `Created admin ${result.username}. You can now sign in to the selected environment.`,
+  )
 }
 
 main().catch((error: unknown) => {
@@ -123,22 +130,7 @@ main().catch((error: unknown) => {
     console.error('Cancelled.')
     process.exitCode = 130
   } else {
-    // Only known operator messages; never print a URL parser, driver or filesystem error.
-    const message = error instanceof Error ? error.message : ''
-    const known = [
-      'Use an interactive terminal',
-      'Unknown option.',
-      'DATABASE_URL,',
-      'Choose an environment',
-      'The local configuration',
-      'Admin creation failed.',
-      'A PostgreSQL connection',
-    ]
-    console.error(
-      known.some((prefix) => message.startsWith(prefix))
-        ? message
-        : 'Setup failed. Check your environment selection and PostgreSQL configuration. No credentials were logged.',
-    )
+    console.error(adminSetupErrorMessage(error))
     process.exitCode = 1
   }
 })

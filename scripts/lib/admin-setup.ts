@@ -3,6 +3,7 @@ import {
   passwordSchema,
   usernameSchema,
 } from '../../src/server/accounts'
+import { AdminSetupError } from './admin-errors'
 
 export type Ask = (message: string, secret?: boolean) => Promise<string>
 type Options = {
@@ -10,6 +11,26 @@ type Options = {
   write: (message: string) => void
   readDatabaseUrl: (file: string) => Promise<string | undefined>
   databaseUrl?: string
+}
+
+export function parseDatabaseTarget(connectionString: string) {
+  let target: URL
+  try {
+    target = new URL(connectionString.trim())
+  } catch {
+    throw new AdminSetupError(
+      'The connection URL is not valid. Enter a complete postgresql://user:password@host:port/database URL; input stays hidden.',
+    )
+  }
+  if (
+    !['postgres:', 'postgresql:'].includes(target.protocol) ||
+    !target.hostname ||
+    target.pathname.length < 2
+  )
+    throw new AdminSetupError(
+      'A PostgreSQL connection URL with a database name is required.',
+    )
+  return target
 }
 
 export async function collectAdminSetup({
@@ -30,7 +51,8 @@ export async function collectAdminSetup({
     '3': 'production',
     '4': 'custom',
   }[selection]
-  if (!environment) throw new Error('Choose an environment from 1 to 4.')
+  if (!environment)
+    throw new AdminSetupError('Choose an environment from 1 to 4.')
 
   const file =
     environment === 'local'
@@ -50,20 +72,12 @@ export async function collectAdminSetup({
       'PostgreSQL connection URL (input hidden): ',
       true,
     )
-  const target = new URL(connectionString.trim())
-  if (
-    !['postgres:', 'postgresql:'].includes(target.protocol) ||
-    !target.hostname ||
-    target.pathname.length < 2
-  )
-    throw new Error(
-      'A PostgreSQL connection URL with a database name is required.',
-    )
+  const target = parseDatabaseTarget(connectionString)
   if (
     environment === 'local' &&
     !['localhost', '127.0.0.1', '[::1]'].includes(target.hostname)
   )
-    throw new Error(
+    throw new AdminSetupError(
       'The local configuration points to a remote host. Choose the appropriate hosted environment instead.',
     )
   // Do not show the user, password or query parameters from a connection URL.
