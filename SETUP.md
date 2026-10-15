@@ -21,7 +21,11 @@ npm run dev
 
 Open http://localhost:3000. Seed usernames: `qa.admin.oct13`, `qa.teacher.oct13`, `qa.student.oct13`. Their password is the operator-supplied `DEV_SEED_PASSWORD`. Repeated seeding does not replace existing passwords or reset existing grades. Seeding refuses remote databases and production mode.
 
-For a new deployment, use `npm run bootstrap:admin` with `DATABASE_URL`, `ADMIN_USERNAME`, `ADMIN_NAME`, `ADMIN_PASSWORD`, optional `ADMIN_EMAIL`. It refuses any database that already contains users. Do not seed production.
+For a new deployment, run `npm run bootstrap:admin` in a terminal. The wizard explains the operation, asks you to select local, hosted development, production or a custom database, then asks for username, display name, optional email, password and password confirmation. Password and manually entered database URL input are hidden. It shows the target host/database without credentials and asks you to type `create <environment>` before opening a connection. Ctrl+C or declining confirmation cancels setup.
+
+Local mode reads only `.env.local`; hosted development reads only `.env.neon-development.local` in the checkout where you run it. If the selected file or URL is missing, the wizard asks for the URL privately. Production always asks for its URL explicitly and does not read production configuration files. Custom mode uses an explicitly exported `DATABASE_URL`, or asks for one. Selecting an environment is an operator choice: verify the displayed host/database belongs to that environment before confirming. Existing `ADMIN_*` variables do not prefill the interactive wizard.
+
+The app has an `admin` role, without a separate super-admin role. Setup refuses any database that already contains users and preserves the transaction lock around this check and account creation. Do not seed production. For automation, explicitly run `npm run bootstrap:admin -- --non-interactive` with `DATABASE_URL`, `ADMIN_USERNAME`, `ADMIN_NAME`, `ADMIN_PASSWORD` and optional `ADMIN_EMAIL` already exported (or supplied through an explicit private env file to `tsx`). Non-interactive mode does not prompt for confirmation or load `.env.local` automatically.
 
 ## Verification
 

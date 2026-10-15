@@ -15,7 +15,7 @@
     "lint": "tsc && eslint .  --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "bootstrap:admin": "tsx --env-file-if-exists=.env.local scripts/bootstrap-admin.ts",
+    "bootstrap:admin": "tsx scripts/bootstrap-admin.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=.env.local scripts/db-migrate.ts",
     "db:seed": "tsx --env-file-if-exists=.env.local scripts/seed-dev.ts",
