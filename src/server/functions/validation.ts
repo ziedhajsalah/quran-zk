@@ -10,3 +10,14 @@ export const assignmentInput = z.object({
   assignmentId: z.string().min(1).max(128),
 })
 export const bodySchema = z.string().trim().min(1).max(2000)
+
+export const reviewHistoryInput = studentInput.extend({
+  status: z.enum(['all', 'closed', 'cancelled']).default('all'),
+  cursor: z
+    .object({
+      closedAt: z.number().int().min(0).max(8.64e15).nullable(),
+      id: z.string().min(1).max(128),
+    })
+    .nullable()
+    .default(null),
+})

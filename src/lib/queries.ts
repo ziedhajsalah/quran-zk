@@ -3,6 +3,7 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query'
+import type { ReviewHistoryCursor, ReviewHistoryStatus } from './review-history'
 import * as grades from '~/server/functions/grades'
 import * as reviews from '~/server/functions/reviews'
 import * as notes from '~/server/functions/notes'
@@ -28,6 +29,17 @@ export const reviewsQuery = (studentId: string) =>
   queryOptions({
     queryKey: ['reviews', studentId],
     queryFn: () => reviews.listOpenForStudent({ data: { studentId } }),
+  })
+// Shares the reviews prefix so closing/cancelling immediately invalidates history.
+export const reviewHistoryQuery = (
+  studentId: string,
+  status: ReviewHistoryStatus,
+  cursor: ReviewHistoryCursor | null,
+) =>
+  queryOptions({
+    queryKey: ['reviews', studentId, 'history', status, cursor],
+    queryFn: () =>
+      reviews.listHistoryForStudent({ data: { studentId, status, cursor } }),
   })
 export const notesQuery = (studentId: string) =>
   queryOptions({

@@ -10,6 +10,7 @@ import {
 } from '@mantine/core'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
+import { ReviewHistoryPanel } from '~/components/surahs/ReviewHistory/ReviewHistoryPanel'
 import { gradesQuery, notesQuery, reviewsQuery } from '~/lib/queries'
 import { currentUserQuery } from '~/lib/auth-queries'
 import {
@@ -24,9 +25,11 @@ import { StudentNotesList } from '~/components/staff/StudentNotesList'
 export const Route = createFileRoute('/_protected/surahs')({
   validateSearch: (
     search: Record<string, unknown>,
-  ): { tab?: 'reviews' | 'grades' | 'notes' } => ({
+  ): { tab?: 'reviews' | 'grades' | 'notes' | 'history' } => ({
     tab:
-      search.tab === 'grades' || search.tab === 'notes'
+      search.tab === 'grades' ||
+      search.tab === 'notes' ||
+      search.tab === 'history'
         ? search.tab
         : 'reviews',
   }),
@@ -71,7 +74,7 @@ function StudentSurahsPage() {
         size="xl"
         px={{ base: 'lg', sm: 'xl' }}
         py={{ base: 'lg', sm: 'xl' }}
-        style={{ paddingBottom: '9rem' }}
+        pb="9rem"
       >
         <Stack gap="xl">
           <Stack gap="xs">
@@ -86,11 +89,13 @@ function StudentSurahsPage() {
 
           <Tabs
             value={tab}
+            keepMounted={false}
             onChange={(value) => {
               if (
                 value === 'reviews' ||
                 value === 'grades' ||
-                value === 'notes'
+                value === 'notes' ||
+                value === 'history'
               )
                 void navigate({
                   search: { tab: value },
@@ -103,6 +108,7 @@ function StudentSurahsPage() {
               <Tabs.Tab value="reviews">المراجعات</Tabs.Tab>
               <Tabs.Tab value="grades">السور</Tabs.Tab>
               <Tabs.Tab value="notes">الملاحظات</Tabs.Tab>
+              <Tabs.Tab value="history">السجل</Tabs.Tab>
             </Tabs.List>
 
             <Tabs.Panel value="reviews" pt="md">
@@ -140,6 +146,9 @@ function StudentSurahsPage() {
                 currentUserId={String(me.id)}
                 emptyMessage="لا توجد ملاحظات من معلمك بعد"
               />
+            </Tabs.Panel>
+            <Tabs.Panel value="history" pt="md">
+              <ReviewHistoryPanel key={me.id} studentId={me.id} />
             </Tabs.Panel>
           </Tabs>
         </Stack>

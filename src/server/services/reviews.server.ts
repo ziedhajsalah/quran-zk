@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull, lt, or, sql } from 'drizzle-orm'
 import { grades, reviews } from '../db/schema/app'
 import { user } from '../db/schema/auth'
 import {
@@ -10,6 +10,11 @@ import { fail } from '../errors'
 import type { Database } from '../db.server'
 import type { Actor } from '../auth-guards.server'
 import type { Grade } from './grades.server'
+import type {
+  ReviewHistoryCursor,
+  ReviewHistoryPage,
+  ReviewHistoryStatus,
+} from '~/lib/review-history'
 
 export async function listReviews(
   db: Database,
@@ -30,6 +35,69 @@ export async function listReviews(
     closedAt: row.closedAt?.getTime() ?? null,
   }))
 }
+export async function listReviewHistory(
+  db: Database,
+  actor: Actor | null,
+  input: {
+    studentId: string
+    status?: ReviewHistoryStatus
+    cursor?: ReviewHistoryCursor | null
+  },
+): Promise<ReviewHistoryPage> {
+  requireSelfOrStaff(actor, input.studentId)
+  const cursor = input.cursor
+  const afterCursor = !cursor
+    ? undefined
+    : cursor.closedAt === null
+      ? and(isNull(reviews.closedAt), lt(reviews.id, cursor.id))
+      : or(
+          lt(reviews.closedAt, new Date(cursor.closedAt)),
+          and(
+            eq(reviews.closedAt, new Date(cursor.closedAt)),
+            lt(reviews.id, cursor.id),
+          ),
+          isNull(reviews.closedAt),
+        )
+  const result = await db
+    .select({
+      id: reviews.id,
+      surahNumber: reviews.surahNumber,
+      status: reviews.status,
+      assignedAt: reviews.assignedAt,
+      dueAt: reviews.dueAt,
+      closedAt: reviews.closedAt,
+      closingGrade: reviews.closingGrade,
+    })
+    .from(reviews)
+    .where(
+      and(
+        eq(reviews.studentId, input.studentId),
+        input.status && input.status !== 'all'
+          ? eq(reviews.status, input.status)
+          : inArray(reviews.status, ['closed', 'cancelled']),
+        afterCursor,
+      ),
+    )
+    .orderBy(sql`${reviews.closedAt} desc nulls last`, desc(reviews.id))
+    .limit(21)
+  const rows = result.slice(0, 20).map((row) => ({
+    ...row,
+    status:
+      row.status === 'closed' ? ('closed' as const) : ('cancelled' as const),
+    assignedAt: row.assignedAt.getTime(),
+    dueAt: row.dueAt?.getTime() ?? null,
+    closedAt: row.closedAt?.getTime() ?? null,
+  }))
+  const last = rows.at(-1)
+  return {
+    rows,
+    nextCursor:
+      result.length > 20 && last
+        ? { closedAt: last.closedAt, id: last.id }
+        : null,
+  }
+}
+
 export async function assignReview(
   db: Database,
   actor: Actor | null,

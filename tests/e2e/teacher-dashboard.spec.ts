@@ -7,6 +7,7 @@ import { user } from '../../src/server/db/schema/auth'
 import { createAccount } from '../../src/server/services/accounts.server'
 import { setGrade } from '../../src/server/services/grades.server'
 import { assignReview } from '../../src/server/services/reviews.server'
+import { gotoApp, loginAs, waitForAppReady } from './helpers/navigation'
 
 const env = parseEnv(readFileSync('.env.local', 'utf8'))
 const databaseUrl = env.DATABASE_URL ?? ''
@@ -89,16 +90,11 @@ test.afterAll(async () => {
 for (const width of [390, 1280]) {
   test(`staff attention links and mutation refresh work at ${width}px`, async ({
     page,
-  }) => {
+  }, testInfo) => {
     const errors: Array<string> = []
     page.on('pageerror', (error) => errors.push(error.message))
     await page.setViewportSize({ width, height: 844 })
-    await page.goto('/login')
-    await page.getByLabel('البريد الإلكتروني أو اسم المستخدم').fill(teacherName)
-    await page.getByLabel('كلمة المرور').fill(password)
-    await page
-      .getByRole('button', { name: 'تسجيل الدخول', exact: true })
-      .click()
+    await loginAs(page, teacherName, password)
     await expect(
       page.getByRole('heading', { name: 'متابعة الطلاب', exact: true }),
     ).toBeVisible()
@@ -115,7 +111,7 @@ for (const width of [390, 1280]) {
     ).toBe(true)
     if (width === 390)
       await page.screenshot({
-        path: '/private/tmp/quran-teacher-dashboard-mobile.png',
+        path: testInfo.outputPath('teacher-dashboard-mobile.png'),
         fullPage: true,
       })
     await card
@@ -125,6 +121,7 @@ for (const width of [390, 1280]) {
       page.getByRole('tab', { name: 'الملاحظات', exact: true }),
     ).toHaveAttribute('aria-selected', 'true')
     await page.reload()
+    await waitForAppReady(page)
     await expect(
       page.getByRole('tab', { name: 'الملاحظات', exact: true }),
     ).toHaveAttribute('aria-selected', 'true')
@@ -159,31 +156,21 @@ test('admins see the staff dashboard and students retain their private dashboard
   page,
   browser,
 }) => {
-  await page.goto('/login')
-  await page.getByLabel('البريد الإلكتروني أو اسم المستخدم').fill(adminName)
-  await page.getByLabel('كلمة المرور').fill(password)
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click()
+  await loginAs(page, adminName, password)
   await expect(
     page.getByRole('heading', { name: 'متابعة الطلاب', exact: true }),
   ).toBeVisible()
   const studentContext = await browser.newContext()
   try {
     const student = await studentContext.newPage()
-    await student.goto('/login')
-    await student
-      .getByLabel('البريد الإلكتروني أو اسم المستخدم')
-      .fill(students.get(390)!)
-    await student.getByLabel('كلمة المرور').fill(password)
-    await student
-      .getByRole('button', { name: 'تسجيل الدخول', exact: true })
-      .click()
+    await loginAs(student, students.get(390)!, password)
     await expect(
       student.getByRole('heading', { name: 'تقدم الحفظ', exact: true }),
     ).toBeVisible()
     await expect(
       student.getByRole('heading', { name: 'متابعة الطلاب', exact: true }),
     ).toHaveCount(0)
-    await student.goto('/staff/students')
+    await gotoApp(student, '/staff/students')
     await expect(student).toHaveURL('http://localhost:3000/')
   } finally {
     await studentContext.close()
