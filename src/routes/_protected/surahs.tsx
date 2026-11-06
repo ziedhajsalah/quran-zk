@@ -10,6 +10,7 @@ import {
 } from '@mantine/core'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
+import { GradeHistoryPanel } from '~/components/surahs/GradeHistory/GradeHistoryPanel'
 import { ReviewHistoryPanel } from '~/components/surahs/ReviewHistory/ReviewHistoryPanel'
 import { gradesQuery, notesQuery, reviewsQuery } from '~/lib/queries'
 import { currentUserQuery } from '~/lib/auth-queries'
@@ -25,11 +26,12 @@ import { StudentNotesList } from '~/components/staff/StudentNotesList'
 export const Route = createFileRoute('/_protected/surahs')({
   validateSearch: (
     search: Record<string, unknown>,
-  ): { tab?: 'reviews' | 'grades' | 'notes' | 'history' } => ({
+  ): { tab?: 'reviews' | 'grades' | 'notes' | 'history' | 'progress' } => ({
     tab:
       search.tab === 'grades' ||
       search.tab === 'notes' ||
-      search.tab === 'history'
+      search.tab === 'history' ||
+      search.tab === 'progress'
         ? search.tab
         : 'reviews',
   }),
@@ -95,7 +97,8 @@ function StudentSurahsPage() {
                 value === 'reviews' ||
                 value === 'grades' ||
                 value === 'notes' ||
-                value === 'history'
+                value === 'history' ||
+                value === 'progress'
               )
                 void navigate({
                   search: { tab: value },
@@ -109,6 +112,7 @@ function StudentSurahsPage() {
               <Tabs.Tab value="grades">السور</Tabs.Tab>
               <Tabs.Tab value="notes">الملاحظات</Tabs.Tab>
               <Tabs.Tab value="history">السجل</Tabs.Tab>
+              <Tabs.Tab value="progress">التقدّم</Tabs.Tab>
             </Tabs.List>
 
             <Tabs.Panel value="reviews" pt="md">
@@ -146,6 +150,9 @@ function StudentSurahsPage() {
                 currentUserId={String(me.id)}
                 emptyMessage="لا توجد ملاحظات من معلمك بعد"
               />
+            </Tabs.Panel>
+            <Tabs.Panel value="progress" pt="md">
+              <GradeHistoryPanel key={me.id} studentId={me.id} />
             </Tabs.Panel>
             <Tabs.Panel value="history" pt="md">
               <ReviewHistoryPanel key={me.id} studentId={me.id} />

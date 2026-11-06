@@ -8,6 +8,7 @@ import {
   requireStaff,
   requireStudent,
 } from '../auth-guards.server'
+import { recordGradeChange } from './grade-history.server'
 import type { Database } from '../db.server'
 import type { Actor } from '../auth-guards.server'
 
@@ -38,18 +39,39 @@ export async function setGrade(
   const staff = requireStaff(actor)
   await db.transaction(async (tx) => {
     await requireStudent(tx, input.studentId, true)
+    const previous = (
+      await tx
+        .select()
+        .from(grades)
+        .where(
+          and(
+            eq(grades.studentId, input.studentId),
+            eq(grades.surahNumber, input.surahNumber),
+          ),
+        )
+    ).at(0)
+    const now = new Date()
     await tx
       .insert(grades)
       .values({
         id: crypto.randomUUID(),
         ...input,
-        updatedAt: new Date(),
+        updatedAt: now,
         updatedBy: staff.id,
       })
       .onConflictDoUpdate({
         target: [grades.studentId, grades.surahNumber],
-        set: { grade: input.grade, updatedAt: new Date(), updatedBy: staff.id },
+        set: { grade: input.grade, updatedAt: now, updatedBy: staff.id },
       })
+    await recordGradeChange(tx, {
+      studentId: input.studentId,
+      surahNumber: input.surahNumber,
+      previousGrade: previous?.grade ?? null,
+      newGrade: input.grade,
+      actorId: staff.id,
+      changedAt: now,
+      source: 'grade',
+    })
   })
 }
 export async function removeGrade(
@@ -74,7 +96,7 @@ export async function removeGrade(
           eq(reviews.status, 'open'),
         ),
       )
-    await tx
+    const removed = await tx
       .delete(grades)
       .where(
         and(
@@ -82,5 +104,16 @@ export async function removeGrade(
           eq(grades.surahNumber, input.surahNumber),
         ),
       )
+      .returning()
+    if (removed[0])
+      await recordGradeChange(tx, {
+        studentId: input.studentId,
+        surahNumber: input.surahNumber,
+        previousGrade: removed[0].grade,
+        newGrade: null,
+        actorId: admin.id,
+        changedAt: new Date(),
+        source: 'grade',
+      })
   })
 }

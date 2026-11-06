@@ -42,3 +42,14 @@ export const batchReviewInput = studentInput.extend({
     )
     .optional(),
 })
+
+export const gradeHistoryInput = studentInput.extend({
+  surahNumber: z.number().int().min(1).max(114).optional(),
+  cursor: z
+    .number()
+    .int()
+    .positive()
+    .max(Number.MAX_SAFE_INTEGER)
+    .nullable()
+    .default(null),
+})
