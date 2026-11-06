@@ -38,7 +38,11 @@ export function GradeHistoryPanel({ studentId }: { studentId: string }) {
         placeholder="كل السور"
         searchable
         clearable
-        clearButtonProps={{ 'aria-label': 'عرض كل السور' }}
+        clearButtonProps={{
+          'aria-label': 'عرض كل السور',
+          'aria-hidden': false,
+          tabIndex: 0,
+        }}
         value={surah}
         data={SURAHS.map((item) => ({
           value: String(item.number),
