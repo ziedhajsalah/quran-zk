@@ -196,7 +196,8 @@ test('teacher creates a student, grades a surah, closes and cancels reviews, and
   await expect(page.getByText('الفاتحة', { exact: true })).toBeVisible()
   await page.getByRole('tab', { name: 'المراجعات', exact: true }).click()
   await page.getByRole('button', { name: 'إسناد مراجعة', exact: true }).click()
-  await page.getByRole('button', { name: /الفاتحة/ }).click()
+  await page.getByRole('checkbox', { name: /الفاتحة/ }).check()
+  await page.getByRole('button', { name: 'متابعة', exact: true }).click()
   await page.getByRole('button', { name: 'إسناد', exact: true }).click()
   await expect(
     page.getByRole('button', { name: 'إغلاق', exact: true }),
@@ -211,7 +212,8 @@ test('teacher creates a student, grades a surah, closes and cancels reviews, and
   await expect(page.getByText('حفظ متوسط', { exact: true })).toBeVisible()
   await page.getByRole('tab', { name: 'المراجعات', exact: true }).click()
   await page.getByRole('button', { name: 'إسناد مراجعة', exact: true }).click()
-  await page.getByRole('button', { name: /الفاتحة/ }).click()
+  await page.getByRole('checkbox', { name: /الفاتحة/ }).check()
+  await page.getByRole('button', { name: 'متابعة', exact: true }).click()
   await page.getByRole('button', { name: 'إسناد', exact: true }).click()
   page.once('dialog', (dialog) => dialog.accept())
   await page.getByRole('button', { name: 'إلغاء', exact: true }).click()

@@ -15,6 +15,10 @@ import {
 import { IconClipboardPlus } from '@tabler/icons-react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
+import type {
+  BatchReviewInput,
+  BatchReviewResult,
+} from '~/lib/review-assignment'
 import { ReviewHistoryPanel } from '~/components/surahs/ReviewHistory/ReviewHistoryPanel'
 import { extractActionErrorMessage } from '~/lib/action-errors'
 import {
@@ -43,6 +47,7 @@ import { StudentNotesList } from '~/components/staff/StudentNotesList'
 import { AddNoteDrawer } from '~/components/staff/AddNoteDrawer'
 import { DeleteNoteDialog } from '~/components/staff/DeleteNoteDialog'
 import { getSurah } from '~/data/surahs'
+import { formatArabicNumber } from '~/components/home/home-formatters'
 
 export const Route = createFileRoute('/_protected/staff/students/$studentId')({
   validateSearch: (
@@ -78,7 +83,7 @@ function StaffStudentGradingPage() {
   const { data: notes } = useSuspenseQuery(notesQuery(studentId))
 
   const setGrade = useAppMutation(grades.setGrade, ['grades'])
-  const assignReview = useAppMutation(reviews.assign, ['reviews'])
+  const assignReview = useAppMutation(reviews.assignBatch, ['reviews'])
   const closeReview = useAppMutation(reviews.close, ['grades', 'reviews'])
   const cancelReview = useAppMutation(reviews.cancel, ['reviews'])
   const addNote = useAppMutation(noteFunctions.add, ['notes'])
@@ -87,6 +92,8 @@ function StaffStudentGradingPage() {
 
   const [addSurahOpen, setAddSurahOpen] = useState(false)
   const [assignDrawerOpen, setAssignDrawerOpen] = useState(false)
+  const [assignmentResult, setAssignmentResult] =
+    useState<BatchReviewResult | null>(null)
   const [closingAssignmentId, setClosingAssignmentId] = useState<string | null>(
     null,
   )
@@ -149,16 +156,12 @@ function StaffStudentGradingPage() {
     }
   }
 
-  async function handleAssignReview(input: {
-    surahNumber: number
-    dueAt?: number
-  }) {
+  async function handleAssignReview(input: BatchReviewInput) {
     setErrorMessage(null)
-    try {
-      await assignReview({ studentId, ...input })
-    } catch (error) {
-      setErrorMessage(extractActionErrorMessage(error, 'تعذر إسناد المراجعة.'))
-    }
+    setAssignmentResult(null)
+    const result = await assignReview({ studentId, ...input })
+    setAssignmentResult(result)
+    return result
   }
 
   async function handleCloseAssignment(input: {
@@ -265,6 +268,29 @@ function StaffStudentGradingPage() {
             </Notification>
           ) : null}
 
+          {assignmentResult ? (
+            <Notification
+              color={
+                assignmentResult.assignedSurahNumbers.length > 0
+                  ? 'teal'
+                  : 'orange'
+              }
+              title={
+                assignmentResult.assignedSurahNumbers.length > 0
+                  ? 'تم إسناد المراجعات'
+                  : 'لم تُضف مراجعات جديدة'
+              }
+              onClose={() => setAssignmentResult(null)}
+            >
+              أُسندت{' '}
+              {formatArabicNumber(assignmentResult.assignedSurahNumbers.length)}{' '}
+              مراجعات.
+              {assignmentResult.skippedSurahNumbers.length > 0
+                ? ` تم تجاوز ${formatArabicNumber(assignmentResult.skippedSurahNumbers.length)} سور لديها مراجعات مفتوحة بالفعل.`
+                : ''}
+            </Notification>
+          ) : null}
+
           <Tabs
             value={tab}
             keepMounted={false}
@@ -294,7 +320,10 @@ function StaffStudentGradingPage() {
                 <Group justify="flex-end">
                   <Button
                     leftSection={<IconClipboardPlus size={16} />}
-                    onClick={() => setAssignDrawerOpen(true)}
+                    onClick={() => {
+                      setAssignmentResult(null)
+                      setAssignDrawerOpen(true)
+                    }}
                     variant="light"
                   >
                     إسناد مراجعة
@@ -367,6 +396,7 @@ function StaffStudentGradingPage() {
       />
 
       <AssignReviewDrawer
+        key={studentId}
         opened={assignDrawerOpen}
         onClose={() => setAssignDrawerOpen(false)}
         memorizedSurahNumbers={rows.map((r) => r.surahNumber)}
