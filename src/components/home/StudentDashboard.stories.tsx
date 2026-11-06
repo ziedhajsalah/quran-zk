@@ -74,3 +74,17 @@ export const Mobile: Story = {
     ),
   ],
 }
+
+export const NewMemorization: Story = {
+  args: {
+    memorization: [
+      {
+        _id: 'new-18',
+        surahNumber: 18,
+        assignedAt: now,
+        dueAt: now + 86400000,
+      },
+      { _id: 'new-36', surahNumber: 36, assignedAt: now, dueAt: null },
+    ],
+  },
+}

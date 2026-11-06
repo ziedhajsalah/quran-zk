@@ -19,6 +19,7 @@ import type {
   BatchReviewInput,
   BatchReviewResult,
 } from '~/lib/review-assignment'
+import { MemorizationPanel } from '~/components/surahs/Memorization/MemorizationPanel'
 import { GradeHistoryPanel } from '~/components/surahs/GradeHistory/GradeHistoryPanel'
 import { ReviewHistoryPanel } from '~/components/surahs/ReviewHistory/ReviewHistoryPanel'
 import { extractActionErrorMessage } from '~/lib/action-errors'
@@ -53,12 +54,16 @@ import { formatArabicNumber } from '~/components/home/home-formatters'
 export const Route = createFileRoute('/_protected/staff/students/$studentId')({
   validateSearch: (
     search: Record<string, unknown>,
-  ): { tab?: 'reviews' | 'grades' | 'notes' | 'history' | 'progress' } => ({
+  ): {
+    tab?:
+      'reviews' | 'grades' | 'notes' | 'history' | 'progress' | 'memorization'
+  } => ({
     tab:
       search.tab === 'grades' ||
       search.tab === 'notes' ||
       search.tab === 'history' ||
-      search.tab === 'progress'
+      search.tab === 'progress' ||
+      search.tab === 'memorization'
         ? search.tab
         : 'reviews',
   }),
@@ -302,7 +307,8 @@ function StaffStudentGradingPage() {
                 value === 'grades' ||
                 value === 'notes' ||
                 value === 'history' ||
-                value === 'progress'
+                value === 'progress' ||
+                value === 'memorization'
               )
                 void navigate({
                   search: { tab: value },
@@ -312,6 +318,7 @@ function StaffStudentGradingPage() {
             }}
           >
             <Tabs.List>
+              <Tabs.Tab value="memorization">حفظ جديد</Tabs.Tab>
               <Tabs.Tab value="reviews">المراجعات</Tabs.Tab>
               <Tabs.Tab value="grades">السور</Tabs.Tab>
               <Tabs.Tab value="notes">الملاحظات</Tabs.Tab>
@@ -383,6 +390,14 @@ function StaffStudentGradingPage() {
                   setNoteDrawerOpen(true)
                 }}
                 onDelete={(noteId) => setDeletingNoteId(noteId)}
+              />
+            </Tabs.Panel>
+            <Tabs.Panel value="memorization" pt="md">
+              <MemorizationPanel
+                key={studentId}
+                studentId={studentId}
+                recordedSurahNumbers={rows.map((row) => row.surahNumber)}
+                editable
               />
             </Tabs.Panel>
             <Tabs.Panel value="progress" pt="md">
