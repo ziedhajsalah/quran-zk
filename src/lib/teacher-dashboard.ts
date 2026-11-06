@@ -3,6 +3,7 @@ export interface TeacherDashboardStudent {
   displayName: string
   username: string
   overdueCount: number
+  overdueMemorizationCount: number
   forgottenCount: number
   oldestDueAt: number | null
 }
@@ -11,6 +12,7 @@ export interface TeacherDashboardData {
   totalStudents: number
   attentionStudents: number
   overdueReviews: number
+  overdueMemorization: number
   studentsNeedingReview: number
   students: Array<TeacherDashboardStudent>
 }

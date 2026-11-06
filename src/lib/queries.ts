@@ -75,7 +75,9 @@ export function useAppMutation<TInput, TOutput>(
     mutationFn: (data: TInput) => fn({ data }),
     onSuccess: async () => {
       const affectsDashboard = keys.some((key) =>
-        ['grades', 'reviews', 'students', 'users'].includes(key),
+        ['grades', 'reviews', 'memorization', 'students', 'users'].includes(
+          key,
+        ),
       )
       const affectedKeys = [
         ...new Set([

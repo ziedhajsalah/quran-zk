@@ -26,13 +26,15 @@ const meta = {
     data: {
       totalStudents: 12,
       attentionStudents: 2,
+      overdueMemorization: 3,
       overdueReviews: 3,
-      studentsNeedingReview: 2,
+      studentsNeedingReview: 1,
       students: [
         {
           studentId: 'one',
           displayName: 'أحمد محمد',
           username: 'ahmed',
+          overdueMemorizationCount: 2,
           overdueCount: 3,
           forgottenCount: 1,
           oldestDueAt: Date.UTC(2026, 10, 1),
@@ -41,9 +43,10 @@ const meta = {
           studentId: 'two',
           displayName: 'فاطمة علي',
           username: 'fatima',
+          overdueMemorizationCount: 1,
           overdueCount: 0,
-          forgottenCount: 2,
-          oldestDueAt: null,
+          forgottenCount: 0,
+          oldestDueAt: Date.UTC(2026, 10, 2),
         },
       ],
     },
@@ -57,6 +60,7 @@ export const NoStudents: Story = {
     data: {
       totalStudents: 0,
       attentionStudents: 0,
+      overdueMemorization: 0,
       overdueReviews: 0,
       studentsNeedingReview: 0,
       students: [],
@@ -68,6 +72,7 @@ export const NothingOverdue: Story = {
     data: {
       totalStudents: 12,
       attentionStudents: 0,
+      overdueMemorization: 0,
       overdueReviews: 0,
       studentsNeedingReview: 0,
       students: [],
