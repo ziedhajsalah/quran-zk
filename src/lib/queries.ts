@@ -4,6 +4,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import type { ReviewHistoryCursor, ReviewHistoryStatus } from './review-history'
+import * as memorization from '~/server/functions/memorization'
 import * as grades from '~/server/functions/grades'
 import * as reviews from '~/server/functions/reviews'
 import * as notes from '~/server/functions/notes'
@@ -38,6 +39,11 @@ export const gradeHistoryQuery = (
         data: { studentId, surahNumber, cursor },
       }),
   })
+export const memorizationQuery = (studentId: string) =>
+  queryOptions({
+    queryKey: ['memorization', studentId],
+    queryFn: () => memorization.listOpenForStudent({ data: { studentId } }),
+  })
 export const reviewsQuery = (studentId: string) =>
   queryOptions({
     queryKey: ['reviews', studentId],
@@ -71,9 +77,13 @@ export function useAppMutation<TInput, TOutput>(
       const affectsDashboard = keys.some((key) =>
         ['grades', 'reviews', 'students', 'users'].includes(key),
       )
-      const affectedKeys = affectsDashboard
-        ? [...keys, 'teacher-dashboard']
-        : keys
+      const affectedKeys = [
+        ...new Set([
+          ...keys,
+          ...(affectsDashboard ? ['teacher-dashboard'] : []),
+          ...(keys.includes('grades') ? ['memorization'] : []),
+        ]),
+      ]
       await Promise.all(
         affectedKeys.map((key) =>
           client.invalidateQueries({ queryKey: [key] }),

@@ -6,6 +6,7 @@ import { summarizeStudentDashboard } from '~/components/home/student-dashboard'
 import { currentUserQuery } from '~/lib/auth-queries'
 import {
   gradesQuery,
+  memorizationQuery,
   notesQuery,
   reviewsQuery,
   teacherDashboardQuery,
@@ -19,6 +20,7 @@ export const Route = createFileRoute('/_protected/')({
     else if (me.isStudent)
       await Promise.all([
         context.queryClient.ensureQueryData(gradesQuery(me.id)),
+        context.queryClient.ensureQueryData(memorizationQuery(me.id)),
         context.queryClient.ensureQueryData(reviewsQuery(me.id)),
         context.queryClient.ensureQueryData(notesQuery(me.id)),
       ])
@@ -34,6 +36,7 @@ function Home() {
 
 function StudentHome() {
   const { data: me } = useSuspenseQuery(currentUserQuery)
+  const { data: memorization } = useSuspenseQuery(memorizationQuery(me.id))
   const { data: grades } = useSuspenseQuery(gradesQuery(me.id))
   const { data: reviews } = useSuspenseQuery(reviewsQuery(me.id))
   const { data: notes } = useSuspenseQuery(notesQuery(me.id))
@@ -41,6 +44,7 @@ function StudentHome() {
   return (
     <StudentDashboard
       studentName={me.displayName}
+      memorization={memorization}
       summary={summarizeStudentDashboard(grades, reviews, notes, now)}
     />
   )

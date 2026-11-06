@@ -17,6 +17,7 @@ import { HomeHero } from './HomeHero'
 import { HomeTopBar } from './HomeTopBar'
 import { createHomeDashboardData } from './home-dashboard.fixtures'
 import { formatArabicNumber as number } from './home-formatters'
+import type { MemorizationRow } from '~/lib/memorization'
 import type { StudentDashboardSummary } from './student-dashboard'
 import { GRADE_COLORS, GRADE_LABELS, GRADE_ORDER } from '~/data/grades'
 import { getSurah } from '~/data/surahs'
@@ -29,8 +30,10 @@ const date = new Intl.DateTimeFormat('ar', {
 export function StudentDashboard({
   studentName,
   summary,
+  memorization = [],
 }: {
   studentName: string
+  memorization?: ReadonlyArray<MemorizationRow>
   summary: StudentDashboardSummary
 }) {
   const theme = useMantineTheme()
@@ -102,6 +105,39 @@ export function StudentDashboard({
             </Grid.Col>
             <Grid.Col span={{ base: 12, md: 8 }}>
               <Stack gap="lg">
+                <Card withBorder radius="lg" p="lg">
+                  <Stack gap="md">
+                    <Group justify="space-between">
+                      <Title order={2}>ماذا أحفظ؟</Title>
+                      <Badge>
+                        {number(memorization.length)} واجبات حفظ مفتوحة
+                      </Badge>
+                    </Group>
+                    {memorization.length === 0 ? (
+                      <Text c="gray.7">لا توجد واجبات حفظ جديدة حالياً.</Text>
+                    ) : (
+                      memorization.slice(0, 5).map((assignment) => (
+                        <Box key={assignment._id}>
+                          <Link
+                            to="/surahs"
+                            search={{ tab: 'memorization' }}
+                            hash={`memorization-${assignment._id}`}
+                          >
+                            {getSurah(assignment.surahNumber).nameAr}
+                          </Link>
+                          <Text size="sm" c="gray.7">
+                            {assignment.dueAt === null
+                              ? 'دون موعد محدد'
+                              : `الاستحقاق: ${date.format(assignment.dueAt)}`}
+                          </Text>
+                        </Box>
+                      ))
+                    )}
+                    <Link to="/surahs" search={{ tab: 'memorization' }}>
+                      عرض كل واجبات الحفظ
+                    </Link>
+                  </Stack>
+                </Card>
                 <Card withBorder radius="lg" p="lg">
                   <Stack gap="md">
                     <Group justify="space-between">

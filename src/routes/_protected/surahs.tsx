@@ -10,6 +10,7 @@ import {
 } from '@mantine/core'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
+import { MemorizationPanel } from '~/components/surahs/Memorization/MemorizationPanel'
 import { GradeHistoryPanel } from '~/components/surahs/GradeHistory/GradeHistoryPanel'
 import { ReviewHistoryPanel } from '~/components/surahs/ReviewHistory/ReviewHistoryPanel'
 import { gradesQuery, notesQuery, reviewsQuery } from '~/lib/queries'
@@ -26,12 +27,16 @@ import { StudentNotesList } from '~/components/staff/StudentNotesList'
 export const Route = createFileRoute('/_protected/surahs')({
   validateSearch: (
     search: Record<string, unknown>,
-  ): { tab?: 'reviews' | 'grades' | 'notes' | 'history' | 'progress' } => ({
+  ): {
+    tab?:
+      'reviews' | 'grades' | 'notes' | 'history' | 'progress' | 'memorization'
+  } => ({
     tab:
       search.tab === 'grades' ||
       search.tab === 'notes' ||
       search.tab === 'history' ||
-      search.tab === 'progress'
+      search.tab === 'progress' ||
+      search.tab === 'memorization'
         ? search.tab
         : 'reviews',
   }),
@@ -98,7 +103,8 @@ function StudentSurahsPage() {
                 value === 'grades' ||
                 value === 'notes' ||
                 value === 'history' ||
-                value === 'progress'
+                value === 'progress' ||
+                value === 'memorization'
               )
                 void navigate({
                   search: { tab: value },
@@ -108,6 +114,7 @@ function StudentSurahsPage() {
             }}
           >
             <Tabs.List>
+              <Tabs.Tab value="memorization">حفظ جديد</Tabs.Tab>
               <Tabs.Tab value="reviews">المراجعات</Tabs.Tab>
               <Tabs.Tab value="grades">السور</Tabs.Tab>
               <Tabs.Tab value="notes">الملاحظات</Tabs.Tab>
@@ -149,6 +156,13 @@ function StudentSurahsPage() {
                 }))}
                 currentUserId={String(me.id)}
                 emptyMessage="لا توجد ملاحظات من معلمك بعد"
+              />
+            </Tabs.Panel>
+            <Tabs.Panel value="memorization" pt="md">
+              <MemorizationPanel
+                key={me.id}
+                studentId={me.id}
+                recordedSurahNumbers={rows.map((row) => row.surahNumber)}
               />
             </Tabs.Panel>
             <Tabs.Panel value="progress" pt="md">

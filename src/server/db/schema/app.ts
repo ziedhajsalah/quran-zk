@@ -88,6 +88,34 @@ export const reviews = pgTable(
     check('review_surah_range', sql`${t.surahNumber} between 1 and 114`),
   ],
 )
+export const memorizationAssignments = pgTable(
+  'memorization_assignments',
+  {
+    id: text('id').primaryKey(),
+    studentId: student(),
+    surahNumber: integer('surah_number').notNull(),
+    status: reviewStatus('status').notNull().default('open'),
+    dueAt: time('due_at'),
+    assignedBy: actor('assigned_by'),
+    assignedAt: time('assigned_at').notNull(),
+    closedBy: actor('closed_by'),
+    closedAt: time('closed_at'),
+    closingGrade: gradeEnum('closing_grade'),
+  },
+  (t) => [
+    uniqueIndex('memorization_open_unique').on(t.studentId, t.surahNumber)
+      .where(sql`${t.status} = 'open'`),
+    index('memorization_student_status_due_idx').on(t.studentId, t.status, t.dueAt),
+    check('memorization_surah_range', sql`${t.surahNumber} between 1 and 114`),
+    check('memorization_closure', sql`(
+      ${t.status} = 'open' and ${t.closedAt} is null and ${t.closingGrade} is null
+    ) or (
+      ${t.status} = 'closed' and ${t.closedAt} is not null and ${t.closingGrade} is not null
+    ) or (
+      ${t.status} = 'cancelled' and ${t.closedAt} is not null and ${t.closingGrade} is null
+    )`),
+  ],
+)
 export const notes = pgTable(
   'student_notes',
   {

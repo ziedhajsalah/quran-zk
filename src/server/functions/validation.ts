@@ -53,3 +53,10 @@ export const gradeHistoryInput = studentInput.extend({
     .nullable()
     .default(null),
 })
+
+export const memorizationInput = surahInput.extend({
+  dueAt: batchReviewInput.shape.dueAt,
+})
+export const assessMemorizationInput = assignmentInput.extend({
+  grade: gradeSchema,
+})
