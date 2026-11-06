@@ -1,15 +1,22 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { HomeDashboard, createHomeDashboardData } from '~/components/home'
+import { TeacherDashboard } from '~/components/home/TeacherDashboard'
 import { StudentDashboard } from '~/components/home/StudentDashboard'
 import { summarizeStudentDashboard } from '~/components/home/student-dashboard'
 import { currentUserQuery } from '~/lib/auth-queries'
-import { gradesQuery, notesQuery, reviewsQuery } from '~/lib/queries'
+import {
+  gradesQuery,
+  notesQuery,
+  reviewsQuery,
+  teacherDashboardQuery,
+} from '~/lib/queries'
 
 export const Route = createFileRoute('/_protected/')({
   loader: async ({ context }) => {
     const me = await context.queryClient.ensureQueryData(currentUserQuery)
-    if (me.isStudent)
+    if (me.isTeacher || me.isAdmin)
+      await context.queryClient.ensureQueryData(teacherDashboardQuery())
+    else if (me.isStudent)
       await Promise.all([
         context.queryClient.ensureQueryData(gradesQuery(me.id)),
         context.queryClient.ensureQueryData(reviewsQuery(me.id)),
@@ -22,11 +29,7 @@ export const Route = createFileRoute('/_protected/')({
 
 function Home() {
   const { data: me } = useSuspenseQuery(currentUserQuery)
-  return me.isStudent ? (
-    <StudentHome />
-  ) : (
-    <HomeDashboard data={createHomeDashboardData(me.displayName)} />
-  )
+  return me.isTeacher || me.isAdmin ? <StaffHome /> : <StudentHome />
 }
 
 function StudentHome() {
@@ -41,4 +44,10 @@ function StudentHome() {
       summary={summarizeStudentDashboard(grades, reviews, notes, now)}
     />
   )
+}
+
+function StaffHome() {
+  const { data: me } = useSuspenseQuery(currentUserQuery)
+  const { data } = useSuspenseQuery(teacherDashboardQuery())
+  return <TeacherDashboard displayName={me.displayName} data={data} />
 }

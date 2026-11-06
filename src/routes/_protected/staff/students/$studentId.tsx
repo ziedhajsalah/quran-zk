@@ -44,6 +44,14 @@ import { DeleteNoteDialog } from '~/components/staff/DeleteNoteDialog'
 import { getSurah } from '~/data/surahs'
 
 export const Route = createFileRoute('/_protected/staff/students/$studentId')({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { tab?: 'reviews' | 'grades' | 'notes' } => ({
+    tab:
+      search.tab === 'grades' || search.tab === 'notes'
+        ? search.tab
+        : 'reviews',
+  }),
   loader: async ({ context, params }) => {
     await Promise.all([
       context.queryClient.ensureQueryData(studentsQuery()),
@@ -57,6 +65,8 @@ export const Route = createFileRoute('/_protected/staff/students/$studentId')({
 
 function StaffStudentGradingPage() {
   const theme = useMantineTheme()
+  const { tab } = Route.useSearch()
+  const navigate = Route.useNavigate()
   const { studentId } = Route.useParams()
   const { data: me } = useSuspenseQuery(currentUserQuery)
   const { data: students } = useSuspenseQuery(studentsQuery())
@@ -222,7 +232,7 @@ function StaffStudentGradingPage() {
         size="xl"
         px={{ base: 'lg', sm: 'xl' }}
         py={{ base: 'lg', sm: 'xl' }}
-        style={{ paddingBottom: '9rem' }}
+        pb="9rem"
       >
         <Stack gap="xl">
           <Group wrap="nowrap" align="flex-start">
@@ -252,7 +262,22 @@ function StaffStudentGradingPage() {
             </Notification>
           ) : null}
 
-          <Tabs defaultValue="reviews" keepMounted={false}>
+          <Tabs
+            value={tab}
+            keepMounted={false}
+            onChange={(value) => {
+              if (
+                value === 'reviews' ||
+                value === 'grades' ||
+                value === 'notes'
+              )
+                void navigate({
+                  search: { tab: value },
+                  hash: '',
+                  replace: true,
+                })
+            }}
+          >
             <Tabs.List>
               <Tabs.Tab value="reviews">المراجعات</Tabs.Tab>
               <Tabs.Tab value="grades">السور</Tabs.Tab>
