@@ -79,7 +79,9 @@ function startOfTodayMs() {
   return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
 }
 
+// Deadlines are UTC calendar dates, independent of the viewer's timezone.
 const dateFormatter = new Intl.DateTimeFormat('ar', {
+  timeZone: 'UTC',
   day: 'numeric',
   month: 'long',
   year: 'numeric',
