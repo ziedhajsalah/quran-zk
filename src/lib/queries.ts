@@ -6,6 +6,13 @@ import {
 import * as grades from '~/server/functions/grades'
 import * as reviews from '~/server/functions/reviews'
 import * as notes from '~/server/functions/notes'
+import * as teacherDashboard from '~/server/functions/teacher-dashboard'
+
+export const teacherDashboardQuery = () =>
+  queryOptions({
+    queryKey: ['teacher-dashboard'],
+    queryFn: () => teacherDashboard.summary(),
+  })
 
 export const studentsQuery = () =>
   queryOptions({
@@ -36,8 +43,16 @@ export function useAppMutation<TInput, TOutput>(
   return useMutation({
     mutationFn: (data: TInput) => fn({ data }),
     onSuccess: async () => {
+      const affectsDashboard = keys.some((key) =>
+        ['grades', 'reviews', 'students', 'users'].includes(key),
+      )
+      const affectedKeys = affectsDashboard
+        ? [...keys, 'teacher-dashboard']
+        : keys
       await Promise.all(
-        keys.map((key) => client.invalidateQueries({ queryKey: [key] })),
+        affectedKeys.map((key) =>
+          client.invalidateQueries({ queryKey: [key] }),
+        ),
       )
     },
   }).mutateAsync
