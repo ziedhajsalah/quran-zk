@@ -21,3 +21,24 @@ export const reviewHistoryInput = studentInput.extend({
     .nullable()
     .default(null),
 })
+
+export const batchReviewInput = studentInput.extend({
+  surahNumbers: z
+    .array(z.number().int().min(1).max(114))
+    .min(1)
+    .max(114)
+    .refine(
+      (numbers) => new Set(numbers).size === numbers.length,
+      'لا يمكن تكرار السورة في الدفعة نفسها.',
+    ),
+  dueAt: z
+    .number()
+    .int()
+    .min(0)
+    .max(8.64e15)
+    .refine(
+      (value) => value % 86_400_000 === 0,
+      'يجب أن يكون الموعد تاريخاً بتوقيت UTC.',
+    )
+    .optional(),
+})

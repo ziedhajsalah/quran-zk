@@ -7,6 +7,11 @@ import {
   requireStudent,
 } from '../auth-guards.server'
 import { fail } from '../errors'
+import { batchReviewInput } from '../functions/validation'
+import type {
+  BatchReviewInput,
+  BatchReviewResult,
+} from '~/lib/review-assignment'
 import type { Database } from '../db.server'
 import type { Actor } from '../auth-guards.server'
 import type { Grade } from './grades.server'
@@ -133,6 +138,57 @@ export async function assignReview(
     if (!rows.length) fail('توجد مراجعة مفتوحة لهذه السورة بالفعل.')
   })
 }
+export async function assignReviews(
+  db: Database,
+  actor: Actor | null,
+  input: BatchReviewInput & { studentId: string },
+): Promise<BatchReviewResult> {
+  const staff = requireStaff(actor)
+  const data = batchReviewInput.parse(input)
+  const selected = [...data.surahNumbers].sort((a, b) => a - b)
+  return db.transaction(async (tx) => {
+    // Same user-before-review lock order as grade removal and single assignment.
+    await requireStudent(tx, data.studentId, true)
+    const recorded = await tx
+      .select({ surahNumber: grades.surahNumber })
+      .from(grades)
+      .where(
+        and(
+          eq(grades.studentId, data.studentId),
+          inArray(grades.surahNumber, selected),
+        ),
+      )
+    if (recorded.length !== selected.length)
+      fail(
+        'بعض السور لم تعد مسجّلة للطالب. حدّث القائمة وأعد الاختيار. لم تُضف أي مراجعات.',
+      )
+    const assignedAt = new Date()
+    const inserted = await tx
+      .insert(reviews)
+      .values(
+        selected.map((surahNumber) => ({
+          id: crypto.randomUUID(),
+          studentId: data.studentId,
+          surahNumber,
+          dueAt: data.dueAt === undefined ? null : new Date(data.dueAt),
+          assignedBy: staff.id,
+          assignedAt,
+        })),
+      )
+      .onConflictDoNothing()
+      .returning({ surahNumber: reviews.surahNumber })
+    const insertedNumbers = new Set(inserted.map((row) => row.surahNumber))
+    return {
+      assignedSurahNumbers: selected.filter((number) =>
+        insertedNumbers.has(number),
+      ),
+      skippedSurahNumbers: selected.filter(
+        (number) => !insertedNumbers.has(number),
+      ),
+    }
+  })
+}
+
 export async function finishReview(
   db: Database,
   actor: Actor | null,

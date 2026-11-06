@@ -4,6 +4,7 @@ import { withRuntime } from '../runtime.server'
 import * as service from '../services/reviews.server'
 import {
   assignmentInput,
+  batchReviewInput,
   gradeSchema,
   reviewHistoryInput,
   studentInput,
@@ -30,6 +31,11 @@ export const assign = createServerFn({ method: 'POST' })
   )
   .handler(({ data }) =>
     withRuntime(({ db, actor }) => service.assignReview(db, actor, data)),
+  )
+export const assignBatch = createServerFn({ method: 'POST' })
+  .validator(batchReviewInput)
+  .handler(({ data }) =>
+    withRuntime(({ db, actor }) => service.assignReviews(db, actor, data)),
   )
 export const close = createServerFn({ method: 'POST' })
   .validator(assignmentInput.extend({ newGrade: gradeSchema.optional() }))

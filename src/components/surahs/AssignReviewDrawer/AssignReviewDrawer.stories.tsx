@@ -12,14 +12,24 @@ const meta = {
     onClose: () => {},
     memorizedSurahNumbers: [],
     excludeSurahNumbers: [],
-    onSubmit: () => {},
+    onSubmit: (input) =>
+      Promise.resolve({
+        assignedSurahNumbers: input.surahNumbers,
+        skippedSurahNumbers: [],
+      }),
   },
 } satisfies Meta<typeof AssignReviewDrawer>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-function Wrapper() {
+function Wrapper({
+  fail = false,
+  empty = false,
+}: {
+  fail?: boolean
+  empty?: boolean
+}) {
   const [opened, setOpened] = useState(false)
   return (
     <div style={{ padding: '2rem' }}>
@@ -27,9 +37,18 @@ function Wrapper() {
       <AssignReviewDrawer
         opened={opened}
         onClose={() => setOpened(false)}
-        memorizedSurahNumbers={[1, 2, 18, 36, 67, 112, 113, 114]}
+        memorizedSurahNumbers={empty ? [] : [1, 2, 18, 36, 67, 112, 113, 114]}
         excludeSurahNumbers={[2]}
-        onSubmit={(input) => console.log('submit', input)}
+        onSubmit={(input) => {
+          if (fail)
+            return Promise.reject(
+              new Error('تعذر الاتصال. اختياراتك محفوظة، حاول مرة أخرى.'),
+            )
+          return Promise.resolve({
+            assignedSurahNumbers: input.surahNumbers,
+            skippedSurahNumbers: [],
+          })
+        }}
       />
     </div>
   )
@@ -38,3 +57,6 @@ function Wrapper() {
 export const Interactive: Story = {
   render: () => <Wrapper />,
 }
+
+export const Empty: Story = { render: () => <Wrapper empty /> }
+export const SubmissionError: Story = { render: () => <Wrapper fail /> }
