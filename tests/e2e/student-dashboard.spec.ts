@@ -8,6 +8,7 @@ import { createAccount } from '../../src/server/services/accounts.server'
 import { setGrade } from '../../src/server/services/grades.server'
 import { assignReview } from '../../src/server/services/reviews.server'
 import { addNote } from '../../src/server/services/notes.server'
+import { gotoApp, loginAs, waitForAppReady } from './helpers/navigation'
 
 const env = parseEnv(readFileSync('.env.local', 'utf8'))
 const password = process.env.DEV_SEED_PASSWORD ?? env.DEV_SEED_PASSWORD
@@ -74,14 +75,7 @@ for (const width of [390, 1280]) {
     const errors: Array<string> = []
     page.on('pageerror', (error) => errors.push(error.message))
     await page.setViewportSize({ width, height: 844 })
-    await page.goto('/login')
-    await page
-      .getByLabel('البريد الإلكتروني أو اسم المستخدم')
-      .fill(usernames.get(width)!)
-    await page.getByLabel('كلمة المرور').fill(password)
-    await page
-      .getByRole('button', { name: 'تسجيل الدخول', exact: true })
-      .click()
+    await loginAs(page, usernames.get(width)!, password)
     await expect(page).toHaveURL('http://localhost:3000/')
     await expect(
       page.getByRole('heading', { name: 'تقدم الحفظ' }),
@@ -107,10 +101,12 @@ for (const width of [390, 1280]) {
       page.getByRole('tab', { name: 'السور', exact: true }),
     ).toHaveAttribute('aria-selected', 'true')
     await page.reload()
+    await waitForAppReady(page)
     await expect(
       page.getByRole('tab', { name: 'السور', exact: true }),
     ).toHaveAttribute('aria-selected', 'true')
     await page.goBack()
+    await waitForAppReady(page)
     await expect(
       page.getByRole('heading', { name: 'تقدم الحفظ' }),
     ).toBeVisible()
@@ -120,7 +116,7 @@ for (const width of [390, 1280]) {
       page.getByRole('tab', { name: 'المراجعات', exact: true }),
     ).toHaveAttribute('aria-selected', 'true')
     await expect(page.locator('[id^="review-"]').first()).toBeInViewport()
-    await page.goto('/')
+    await gotoApp(page, '/')
     await page.getByRole('link', { name: 'عرض كل الملاحظات' }).click()
     await expect(
       page.getByRole('tab', { name: 'الملاحظات', exact: true }),

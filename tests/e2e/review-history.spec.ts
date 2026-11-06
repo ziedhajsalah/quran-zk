@@ -8,7 +8,7 @@ import { reviews } from '../../src/server/db/schema/app'
 import { createAccount } from '../../src/server/services/accounts.server'
 import { setGrade } from '../../src/server/services/grades.server'
 import { assignReview } from '../../src/server/services/reviews.server'
-import type { Page } from '@playwright/test'
+import { gotoApp, loginAs, waitForAppReady } from './helpers/navigation'
 
 test.use({ timezoneId: 'America/Los_Angeles' })
 const env = parseEnv(readFileSync('.env.local', 'utf8'))
@@ -108,23 +108,16 @@ test.afterAll(async () => {
       await db.delete(user).where(inArray(user.id, ids))
     })
 })
-async function login(page: Page, username: string) {
-  await page.goto('/login')
-  await page.getByLabel('البريد الإلكتروني أو اسم المستخدم').fill(username)
-  await page.getByLabel('كلمة المرور').fill(password)
-  await page.getByRole('button', { name: 'تسجيل الدخول', exact: true }).click()
-  await expect(page).toHaveURL('http://localhost:3000/')
-}
 
 for (const width of [390, 1280]) {
   test(`student history filters and pagination work at ${width}px west of UTC`, async ({
     page,
-  }) => {
+  }, testInfo) => {
     const errors: Array<string> = []
     page.on('pageerror', (error) => errors.push(error.message))
     await page.setViewportSize({ width, height: 844 })
-    await login(page, studentName)
-    await page.goto('/surahs?tab=history')
+    await loginAs(page, studentName, password)
+    await gotoApp(page, '/surahs?tab=history')
     await expect(
       page.getByRole('tab', { name: 'السجل', exact: true }),
     ).toHaveAttribute('aria-selected', 'true')
@@ -150,7 +143,7 @@ for (const width of [390, 1280]) {
     ).toBe(true)
     if (width === 390)
       await page.screenshot({
-        path: '/private/tmp/quran-review-history-mobile.png',
+        path: testInfo.outputPath('review-history-mobile.png'),
         fullPage: false,
       })
     await page.getByRole('button', { name: 'الأقدم', exact: true }).click()
@@ -179,6 +172,7 @@ for (const width of [390, 1280]) {
     await page.getByRole('button', { name: 'الأقدم', exact: true }).click()
     await expect(page.getByRole('article')).toHaveCount(3)
     await page.reload()
+    await waitForAppReady(page)
     await expect(
       page.getByRole('tab', { name: 'السجل', exact: true }),
     ).toHaveAttribute('aria-selected', 'true')
@@ -190,13 +184,13 @@ for (const width of [390, 1280]) {
 test('staff see the same saved grade and fresh close/cancel records without losing history', async ({
   page,
 }) => {
-  await login(page, teacherName)
-  await page.goto(`/staff/students/${studentId}?tab=history`)
+  await loginAs(page, teacherName, password)
+  await gotoApp(page, `/staff/students/${studentId}?tab=history`)
   await expect(page.getByRole('article')).toHaveCount(20)
   await expect(
     page.getByRole('article').first().getByText('حفظ متوسط', { exact: true }),
   ).toBeVisible()
-  await page.goto(`/staff/students/${liveStudentId}?tab=history`)
+  await gotoApp(page, `/staff/students/${liveStudentId}?tab=history`)
   await expect(page.getByRole('article')).toHaveCount(1)
   await page.getByRole('tab', { name: 'المراجعات', exact: true }).click()
   await page.getByRole('button', { name: 'إغلاق', exact: true }).first().click()
