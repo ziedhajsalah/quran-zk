@@ -22,6 +22,14 @@ import { SurahReviewQueue } from '~/components/surahs/SurahReviewQueue'
 import { StudentNotesList } from '~/components/staff/StudentNotesList'
 
 export const Route = createFileRoute('/_protected/surahs')({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { tab?: 'reviews' | 'grades' | 'notes' } => ({
+    tab:
+      search.tab === 'grades' || search.tab === 'notes'
+        ? search.tab
+        : 'reviews',
+  }),
   loader: async ({ context }) => {
     const me = await context.queryClient.ensureQueryData(currentUserQuery)
     await Promise.all([
@@ -35,6 +43,8 @@ export const Route = createFileRoute('/_protected/surahs')({
 
 function StudentSurahsPage() {
   const theme = useMantineTheme()
+  const { tab } = Route.useSearch()
+  const navigate = Route.useNavigate()
   const { data: me } = useSuspenseQuery(currentUserQuery)
   const { data: rows } = useSuspenseQuery(gradesQuery(me.id))
   const { data: openAssignments } = useSuspenseQuery(reviewsQuery(me.id))
@@ -74,7 +84,21 @@ function StudentSurahsPage() {
             </Text>
           </Stack>
 
-          <Tabs defaultValue="reviews">
+          <Tabs
+            value={tab}
+            onChange={(value) => {
+              if (
+                value === 'reviews' ||
+                value === 'grades' ||
+                value === 'notes'
+              )
+                void navigate({
+                  search: { tab: value },
+                  hash: '',
+                  replace: true,
+                })
+            }}
+          >
             <Tabs.List>
               <Tabs.Tab value="reviews">المراجعات</Tabs.Tab>
               <Tabs.Tab value="grades">السور</Tabs.Tab>

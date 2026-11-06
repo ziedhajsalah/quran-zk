@@ -32,7 +32,13 @@ export function SurahReviewQueue({
         للمراجعة
       </Text>
       {rows.map((row) => (
-        <Card key={row.assignmentId} withBorder radius="lg" p="md">
+        <Card
+          id={`review-${row.assignmentId}`}
+          key={row.assignmentId}
+          withBorder
+          radius="lg"
+          p="md"
+        >
           <SurahReviewRow
             surah={getSurah(row.surahNumber)}
             assignedAt={row.assignedAt}
