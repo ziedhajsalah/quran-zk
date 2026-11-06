@@ -15,6 +15,7 @@ import {
 import { IconClipboardPlus } from '@tabler/icons-react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
+import { ReviewHistoryPanel } from '~/components/surahs/ReviewHistory/ReviewHistoryPanel'
 import { extractActionErrorMessage } from '~/lib/action-errors'
 import {
   gradesQuery,
@@ -46,9 +47,11 @@ import { getSurah } from '~/data/surahs'
 export const Route = createFileRoute('/_protected/staff/students/$studentId')({
   validateSearch: (
     search: Record<string, unknown>,
-  ): { tab?: 'reviews' | 'grades' | 'notes' } => ({
+  ): { tab?: 'reviews' | 'grades' | 'notes' | 'history' } => ({
     tab:
-      search.tab === 'grades' || search.tab === 'notes'
+      search.tab === 'grades' ||
+      search.tab === 'notes' ||
+      search.tab === 'history'
         ? search.tab
         : 'reviews',
   }),
@@ -269,7 +272,8 @@ function StaffStudentGradingPage() {
               if (
                 value === 'reviews' ||
                 value === 'grades' ||
-                value === 'notes'
+                value === 'notes' ||
+                value === 'history'
               )
                 void navigate({
                   search: { tab: value },
@@ -282,6 +286,7 @@ function StaffStudentGradingPage() {
               <Tabs.Tab value="reviews">المراجعات</Tabs.Tab>
               <Tabs.Tab value="grades">السور</Tabs.Tab>
               <Tabs.Tab value="notes">الملاحظات</Tabs.Tab>
+              <Tabs.Tab value="history">السجل</Tabs.Tab>
             </Tabs.List>
 
             <Tabs.Panel value="reviews" pt="md">
@@ -346,6 +351,9 @@ function StaffStudentGradingPage() {
                 }}
                 onDelete={(noteId) => setDeletingNoteId(noteId)}
               />
+            </Tabs.Panel>
+            <Tabs.Panel value="history" pt="md">
+              <ReviewHistoryPanel key={studentId} studentId={studentId} />
             </Tabs.Panel>
           </Tabs>
         </Stack>

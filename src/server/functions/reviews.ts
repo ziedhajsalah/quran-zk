@@ -5,6 +5,7 @@ import * as service from '../services/reviews.server'
 import {
   assignmentInput,
   gradeSchema,
+  reviewHistoryInput,
   studentInput,
   surahInput,
 } from './validation'
@@ -15,6 +16,11 @@ export const listOpenForStudent = createServerFn({ method: 'GET' })
     withRuntime(({ db, actor }) =>
       service.listReviews(db, actor, data.studentId),
     ),
+  )
+export const listHistoryForStudent = createServerFn({ method: 'GET' })
+  .validator(reviewHistoryInput)
+  .handler(({ data }) =>
+    withRuntime(({ db, actor }) => service.listReviewHistory(db, actor, data)),
   )
 export const assign = createServerFn({ method: 'POST' })
   .validator(
