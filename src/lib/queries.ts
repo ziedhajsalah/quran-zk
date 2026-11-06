@@ -25,6 +25,19 @@ export const gradesQuery = (studentId: string) =>
     queryKey: ['grades', studentId],
     queryFn: () => grades.listForStudent({ data: { studentId } }),
   })
+// Grade changes and review closing invalidate this prefix alongside current grades.
+export const gradeHistoryQuery = (
+  studentId: string,
+  surahNumber: number | undefined,
+  cursor: number | null,
+) =>
+  queryOptions({
+    queryKey: ['grades', studentId, 'history', surahNumber, cursor],
+    queryFn: () =>
+      grades.listHistoryForStudent({
+        data: { studentId, surahNumber, cursor },
+      }),
+  })
 export const reviewsQuery = (studentId: string) =>
   queryOptions({
     queryKey: ['reviews', studentId],

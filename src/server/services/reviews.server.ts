@@ -8,6 +8,7 @@ import {
 } from '../auth-guards.server'
 import { fail } from '../errors'
 import { batchReviewInput } from '../functions/validation'
+import { recordGradeChange } from './grade-history.server'
 import type {
   BatchReviewInput,
   BatchReviewResult,
@@ -222,6 +223,17 @@ export async function finishReview(
     let closingGrade: Grade | null = null
     if (!cancel) {
       if (input.newGrade) {
+        const previous = (
+          await tx
+            .select()
+            .from(grades)
+            .where(
+              and(
+                eq(grades.studentId, row.studentId),
+                eq(grades.surahNumber, row.surahNumber),
+              ),
+            )
+        ).at(0)
         await tx
           .insert(grades)
           .values({
@@ -236,6 +248,15 @@ export async function finishReview(
             target: [grades.studentId, grades.surahNumber],
             set: { grade: input.newGrade, updatedBy: staff.id, updatedAt: now },
           })
+        await recordGradeChange(tx, {
+          studentId: row.studentId,
+          surahNumber: row.surahNumber,
+          previousGrade: previous?.grade ?? null,
+          newGrade: input.newGrade,
+          actorId: staff.id,
+          changedAt: now,
+          source: 'review',
+        })
         closingGrade = input.newGrade
       } else {
         const grade = (

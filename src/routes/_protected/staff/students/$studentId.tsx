@@ -19,6 +19,7 @@ import type {
   BatchReviewInput,
   BatchReviewResult,
 } from '~/lib/review-assignment'
+import { GradeHistoryPanel } from '~/components/surahs/GradeHistory/GradeHistoryPanel'
 import { ReviewHistoryPanel } from '~/components/surahs/ReviewHistory/ReviewHistoryPanel'
 import { extractActionErrorMessage } from '~/lib/action-errors'
 import {
@@ -52,11 +53,12 @@ import { formatArabicNumber } from '~/components/home/home-formatters'
 export const Route = createFileRoute('/_protected/staff/students/$studentId')({
   validateSearch: (
     search: Record<string, unknown>,
-  ): { tab?: 'reviews' | 'grades' | 'notes' | 'history' } => ({
+  ): { tab?: 'reviews' | 'grades' | 'notes' | 'history' | 'progress' } => ({
     tab:
       search.tab === 'grades' ||
       search.tab === 'notes' ||
-      search.tab === 'history'
+      search.tab === 'history' ||
+      search.tab === 'progress'
         ? search.tab
         : 'reviews',
   }),
@@ -299,7 +301,8 @@ function StaffStudentGradingPage() {
                 value === 'reviews' ||
                 value === 'grades' ||
                 value === 'notes' ||
-                value === 'history'
+                value === 'history' ||
+                value === 'progress'
               )
                 void navigate({
                   search: { tab: value },
@@ -313,6 +316,7 @@ function StaffStudentGradingPage() {
               <Tabs.Tab value="grades">السور</Tabs.Tab>
               <Tabs.Tab value="notes">الملاحظات</Tabs.Tab>
               <Tabs.Tab value="history">السجل</Tabs.Tab>
+              <Tabs.Tab value="progress">التقدّم</Tabs.Tab>
             </Tabs.List>
 
             <Tabs.Panel value="reviews" pt="md">
@@ -380,6 +384,9 @@ function StaffStudentGradingPage() {
                 }}
                 onDelete={(noteId) => setDeletingNoteId(noteId)}
               />
+            </Tabs.Panel>
+            <Tabs.Panel value="progress" pt="md">
+              <GradeHistoryPanel key={studentId} studentId={studentId} />
             </Tabs.Panel>
             <Tabs.Panel value="history" pt="md">
               <ReviewHistoryPanel key={studentId} studentId={studentId} />

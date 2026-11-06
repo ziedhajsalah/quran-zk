@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import {
+  bigserial,
   check,
   index,
   integer,
@@ -37,6 +38,32 @@ export const grades = pgTable(
   (t) => [
     uniqueIndex('grade_student_surah_unique').on(t.studentId, t.surahNumber),
     check('grade_surah_range', sql`${t.surahNumber} between 1 and 114`),
+  ],
+)
+// An append-only product history; no FK to the current grade, which may be removed.
+export const gradeHistory = pgTable(
+  'student_grade_history',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    studentId: student(),
+    surahNumber: integer('surah_number').notNull(),
+    previousGrade: gradeEnum('previous_grade'),
+    newGrade: gradeEnum('new_grade'),
+    actorId: actor('actor_id'),
+    changedAt: time('changed_at').notNull(),
+    source: text('source').$type<'grade' | 'review'>().notNull(),
+  },
+  (t) => [
+    index('grade_history_student_id_idx').on(t.studentId, t.id.desc()),
+    index('grade_history_student_surah_id_idx').on(
+      t.studentId, t.surahNumber, t.id.desc(),
+    ),
+    check('grade_history_surah_range', sql`${t.surahNumber} between 1 and 114`),
+    check(
+      'grade_history_transition',
+      sql`${t.previousGrade} is distinct from ${t.newGrade}`,
+    ),
+    check('grade_history_source', sql`${t.source} in ('grade', 'review')`),
   ],
 )
 export const reviews = pgTable(
