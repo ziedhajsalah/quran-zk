@@ -163,13 +163,40 @@ for (const width of [390, 1280]) {
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true)
-    await rows.getByRole('link', { name: 'فتح الواجب' }).click()
+    // Hold the lazy memorization read to expose hash scrolling before data mounts.
+    let requested = false
+    let release!: () => void
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const endpoint = '**/_serverFn/**'
+    await page.route(endpoint, async (route) => {
+      const encoded =
+        new URL(route.request().url()).pathname.split('/').at(-1) ?? ''
+      const definition = Buffer.from(
+        decodeURIComponent(encoded),
+        'base64url',
+      ).toString()
+      if (
+        definition.includes('memorization.ts') &&
+        definition.includes('listOpenForStudent')
+      ) {
+        requested = true
+        await held
+      }
+      await route.continue()
+    })
+    const opening = rows.getByRole('link', { name: 'فتح الواجب' }).click()
+    await expect.poll(() => requested).toBe(true)
+    release()
+    await opening
     await expect(page).toHaveURL(
       new RegExp(`tab=memorization#memorization-${student.id}-m3$`),
     )
     const linked = page.locator(`[id="memorization-${student.id}-m3"]`)
     await expect(linked).toBeVisible()
     await expect(linked).toBeInViewport()
+    await page.unroute(endpoint)
     await linked
       .getByRole('button', { name: 'إلغاء الواجب', exact: true })
       .click()

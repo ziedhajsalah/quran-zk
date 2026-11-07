@@ -25,6 +25,7 @@ import { ReviewHistoryPanel } from '~/components/surahs/ReviewHistory/ReviewHist
 import { extractActionErrorMessage } from '~/lib/action-errors'
 import {
   gradesQuery,
+  memorizationQuery,
   notesQuery,
   reviewsQuery,
   studentsQuery,
@@ -67,12 +68,20 @@ export const Route = createFileRoute('/_protected/staff/students/$studentId')({
         ? search.tab
         : 'reviews',
   }),
-  loader: async ({ context, params }) => {
+  loaderDeps: ({ search }) => ({ memorization: search.tab === 'memorization' }),
+  loader: async ({ context, params, deps }) => {
     await Promise.all([
       context.queryClient.ensureQueryData(studentsQuery()),
       context.queryClient.ensureQueryData(gradesQuery(params.studentId)),
       context.queryClient.ensureQueryData(reviewsQuery(params.studentId)),
       context.queryClient.ensureQueryData(notesQuery(params.studentId)),
+      ...(deps.memorization
+        ? [
+            context.queryClient.ensureQueryData(
+              memorizationQuery(params.studentId),
+            ),
+          ]
+        : []),
     ])
   },
   component: StaffStudentGradingPage,
