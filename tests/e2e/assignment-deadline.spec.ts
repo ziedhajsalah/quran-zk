@@ -19,7 +19,7 @@ import {
   finishMemorization,
 } from '../../src/server/services/memorization.server'
 import { rescheduleAssignment } from '../../src/server/services/assignment-deadline.server'
-import { arabicDate } from './helpers/deadline'
+import { arabicDate, expectRtlMonthArrows } from './helpers/deadline'
 import { gotoApp, loginAs } from './helpers/navigation'
 import type { Locator, Page } from '@playwright/test'
 import type { Actor } from '../../src/server/auth-guards.server'
@@ -117,6 +117,7 @@ async function pickDate(page: Page, dialog: Locator, screenshotPath?: string) {
       exact: true,
     }),
   ).toBeVisible()
+  await expectRtlMonthArrows(page)
   await expect(page.getByRole('columnheader')).toHaveText([
     'ن',
     'ث',

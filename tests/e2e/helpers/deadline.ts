@@ -12,6 +12,20 @@ export function arabicDate(
   }).format(timestamp)
 }
 
+// In RTL the "next month" arrow sits to the left of "previous month".
+export async function expectRtlMonthArrows(scope: Page | Locator) {
+  const next = scope.getByRole('button', { name: 'الشهر التالي', exact: true })
+  const previous = scope.getByRole('button', {
+    name: 'الشهر السابق',
+    exact: true,
+  })
+  const [nextBox, previousBox] = await Promise.all([
+    next.boundingBox(),
+    previous.boundingBox(),
+  ])
+  expect(nextBox!.x).toBeLessThan(previousBox!.x)
+}
+
 export async function useUtcDeadlineBoundary(page: Page) {
   const now = new Date()
   await page.clock.setFixedTime(
@@ -61,6 +75,7 @@ export async function chooseArabicDeadline(page: Page, drawer: Locator) {
   await drawer
     .getByRole('button', { name: 'الشهر السابق', exact: true })
     .click()
+  await expectRtlMonthArrows(drawer)
   await expect(drawer.getByRole('columnheader')).toHaveText([
     'ن',
     'ث',
