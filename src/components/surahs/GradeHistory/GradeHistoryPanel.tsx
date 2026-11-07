@@ -9,25 +9,25 @@ import {
   Title,
 } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { GradeHistoryList } from './GradeHistoryList'
+import { useCursorPages } from '~/lib/use-cursor-pages'
 import { gradeHistoryQuery } from '~/lib/queries'
 import { SURAHS } from '~/data/surahs'
 import { formatArabicNumber } from '~/components/home/home-formatters'
 
 export function GradeHistoryPanel({ studentId }: { studentId: string }) {
-  const start = useRef<HTMLDivElement>(null)
+  const pages = useCursorPages<number>()
   const [surah, setSurah] = useState<string | null>(null)
-  const [cursors, setCursors] = useState<Array<number | null>>([null])
   const query = useQuery(
     gradeHistoryQuery(
       studentId,
       surah === null ? undefined : Number(surah),
-      cursors[cursors.length - 1],
+      pages.cursor,
     ),
   )
   return (
-    <Stack ref={start} gap="md" style={{ scrollMarginTop: '7rem' }}>
+    <Stack ref={pages.start} gap="md" style={{ scrollMarginTop: '7rem' }}>
       <Title order={2}>سجل التقدّم</Title>
       <Text size="sm" c="dimmed">
         تغييرات تقييم الحفظ منذ بدء تسجيل السجل. لا يشمل تغييرات سابقة. التواريخ
@@ -50,7 +50,7 @@ export function GradeHistoryPanel({ studentId }: { studentId: string }) {
         }))}
         onChange={(value) => {
           setSurah(value)
-          setCursors([null])
+          pages.reset()
         }}
       />
       {query.isPending ? (
@@ -73,16 +73,15 @@ export function GradeHistoryPanel({ studentId }: { studentId: string }) {
       <Group justify="space-between" wrap="wrap">
         <Button
           variant="light"
-          disabled={cursors.length === 1 || query.isFetching}
+          disabled={!pages.hasPrevious || query.isFetching}
           onClick={() => {
-            setCursors((previous) => previous.slice(0, -1))
-            start.current?.scrollIntoView({ block: 'start' })
+            pages.previous()
           }}
         >
           الأحدث
         </Button>
         <Text size="sm" c="dimmed" aria-live="polite">
-          الصفحة {formatArabicNumber(cursors.length)}
+          الصفحة {formatArabicNumber(pages.page)}
         </Text>
         <Button
           variant="light"
@@ -92,8 +91,7 @@ export function GradeHistoryPanel({ studentId }: { studentId: string }) {
           onClick={() => {
             const next = query.data?.nextCursor
             if (next) {
-              setCursors((previous) => [...previous, next])
-              start.current?.scrollIntoView({ block: 'start' })
+              pages.next(next)
             }
           }}
         >

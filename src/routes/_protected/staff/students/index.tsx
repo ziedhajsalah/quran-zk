@@ -13,6 +13,7 @@ import {
 import { IconPlus } from '@tabler/icons-react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
+import { defaultWorkFilters } from '~/lib/work-queue'
 import * as accounts from '~/server/functions/accounts'
 import { studentsQuery, useAppMutation } from '~/lib/queries'
 import { currentUserQuery } from '~/lib/auth-queries'
@@ -93,7 +94,7 @@ function StaffStudentsPage() {
 
           <Link
             to="/staff/work"
-            search={{ q: '', kind: 'all', deadline: 'overdue' }}
+            search={defaultWorkFilters}
             style={{ color: 'var(--app-accent-text)' }}
           >
             قائمة الواجبات

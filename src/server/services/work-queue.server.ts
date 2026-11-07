@@ -40,12 +40,13 @@ export async function listWorkQueue(
       : sql`(w.due_at > ${new Date(cursor.dueAt).toISOString()}::timestamptz
         or w.due_at is null
         or (w.due_at = ${new Date(cursor.dueAt).toISOString()}::timestamptz and ${tie}))`
+  // Normalize the ORDER BY and cursor comparison too, not only the JSON projection.
   const result = await db.execute<WorkRow & Record<string, unknown>>(sql`
     with work as (
-      select id, student_id, surah_number, due_at, 'review'::text as kind
+      select id, student_id, surah_number, date_trunc('milliseconds', due_at) as due_at, 'review'::text as kind
       from ${reviews} where status = 'open'
       union all
-      select id, student_id, surah_number, due_at, 'memorization'::text as kind
+      select id, student_id, surah_number, date_trunc('milliseconds', due_at) as due_at, 'memorization'::text as kind
       from ${memorizationAssignments} where status = 'open'
     )
     select w.id, w.kind, w.student_id as "studentId", w.surah_number as "surahNumber",

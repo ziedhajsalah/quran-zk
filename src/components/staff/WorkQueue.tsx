@@ -8,10 +8,17 @@ import {
   Text,
   TextInput,
 } from '@mantine/core'
+import { useHydrated } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { WorkQueueList } from './WorkQueueList'
 import type { WorkCursor, WorkFilters } from '~/lib/work-queue'
+import { useCursorPages } from '~/lib/use-cursor-pages'
+import {
+  workDeadlineOptions,
+  workFilterSchema,
+  workKindOptions,
+} from '~/lib/work-queue'
 import { workQueueQuery } from '~/lib/queries'
 import { formatArabicNumber } from '~/components/home/home-formatters'
 
@@ -22,6 +29,7 @@ export function WorkQueue({
   filters: WorkFilters
   onFilter: (filters: WorkFilters) => Promise<void>
 }) {
+  const hydrated = useHydrated()
   const [search, setSearch] = useState(filters.q)
   const [filtering, setFiltering] = useState(false)
   const [filterError, setFilterError] = useState(false)
@@ -37,23 +45,27 @@ export function WorkQueue({
       setFiltering(false)
     }
   }
-  const [cursors, setCursors] = useState<Array<WorkCursor | null>>([null])
-  const start = useRef<HTMLDivElement>(null)
-  const query = useQuery(workQueueQuery(filters, cursors[cursors.length - 1]))
+  const pages = useCursorPages<WorkCursor>()
+  const query = useQuery(workQueueQuery(filters, pages.cursor))
   return (
-    <Stack gap="lg" ref={start} style={{ scrollMarginTop: '7rem' }}>
+    <Stack gap="lg" ref={pages.start} style={{ scrollMarginTop: '7rem' }}>
       <Text c="dimmed">
         واجبات الطلاب النشطين المفتوحة، من أقدم موعد إلى الأحدث، ثم دون موعد.
         التواريخ حسب التوقيت العالمي (UTC).
       </Text>
       <form
+        action="/staff/work"
+        method="get"
         onSubmit={(event) => {
           event.preventDefault()
           void changeFilters({ ...filters, q: search.trim() })
         }}
       >
+        <input type="hidden" name="kind" value={filters.kind} />
+        <input type="hidden" name="deadline" value={filters.deadline} />
         <Group align="flex-end">
           <TextInput
+            name="q"
             label="البحث عن طالب"
             placeholder="الاسم أو اسم المستخدم"
             value={search}
@@ -72,42 +84,24 @@ export function WorkQueue({
           label="نوع الواجب"
           value={filters.kind}
           allowDeselect={false}
-          disabled={filtering}
-          data={[
-            { value: 'all', label: 'كل الواجبات' },
-            { value: 'review', label: 'مراجعة' },
-            { value: 'memorization', label: 'حفظ جديد' },
-          ]}
+          disabled={filtering || !hydrated}
+          data={workKindOptions}
           onChange={(value) => {
-            if (
-              value === 'all' ||
-              value === 'review' ||
-              value === 'memorization'
-            )
-              void changeFilters({ ...filters, kind: value })
+            const parsed = workFilterSchema.shape.kind.safeParse(value)
+            if (parsed.success)
+              void changeFilters({ ...filters, kind: parsed.data })
           }}
         />
         <Select
           label="موعد الاستحقاق"
           value={filters.deadline}
           allowDeselect={false}
-          disabled={filtering}
-          data={[
-            { value: 'all', label: 'كل المواعيد' },
-            { value: 'overdue', label: 'متأخرة' },
-            { value: 'today', label: 'اليوم' },
-            { value: 'upcoming', label: 'قادمة' },
-            { value: 'undated', label: 'دون موعد' },
-          ]}
+          disabled={filtering || !hydrated}
+          data={workDeadlineOptions}
           onChange={(value) => {
-            if (
-              value === 'all' ||
-              value === 'overdue' ||
-              value === 'today' ||
-              value === 'upcoming' ||
-              value === 'undated'
-            )
-              void changeFilters({ ...filters, deadline: value })
+            const parsed = workFilterSchema.shape.deadline.safeParse(value)
+            if (parsed.success)
+              void changeFilters({ ...filters, deadline: parsed.data })
           }}
         />
       </Group>
@@ -132,20 +126,22 @@ export function WorkQueue({
       <Group justify="space-between">
         <Button
           variant="light"
-          disabled={filtering || cursors.length === 1 || query.isFetching}
+          disabled={
+            !hydrated || filtering || !pages.hasPrevious || query.isFetching
+          }
           onClick={() => {
-            setCursors((previous) => previous.slice(0, -1))
-            start.current?.scrollIntoView({ block: 'start' })
+            pages.previous()
           }}
         >
           السابق
         </Button>
         <Text aria-live="polite" size="sm">
-          الصفحة {formatArabicNumber(cursors.length)}
+          الصفحة {formatArabicNumber(pages.page)}
         </Text>
         <Button
           variant="light"
           disabled={
+            !hydrated ||
             filtering ||
             !query.data?.nextCursor ||
             query.isFetching ||
@@ -153,8 +149,7 @@ export function WorkQueue({
           }
           onClick={() => {
             if (query.data?.nextCursor) {
-              setCursors((previous) => [...previous, query.data.nextCursor])
-              start.current?.scrollIntoView({ block: 'start' })
+              pages.next(query.data.nextCursor)
             }
           }}
         >

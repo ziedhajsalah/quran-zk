@@ -16,6 +16,7 @@ import { HomeTopBar } from './HomeTopBar'
 import { createHomeDashboardData } from './home-dashboard.fixtures'
 import { formatArabicNumber as number } from './home-formatters'
 import type { TeacherDashboardData } from '~/lib/teacher-dashboard'
+import { defaultWorkFilters } from '~/lib/work-queue'
 
 const date = new Intl.DateTimeFormat('ar', {
   dateStyle: 'medium',
@@ -74,7 +75,7 @@ export function TeacherDashboard({
             <Group gap="lg">
               <Link
                 to="/staff/work"
-                search={{ q: '', kind: 'all', deadline: 'overdue' }}
+                search={defaultWorkFilters}
                 style={linkStyle}
               >
                 قائمة الواجبات

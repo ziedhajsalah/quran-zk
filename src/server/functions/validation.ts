@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { workFilterSchema, workKindSchema } from '~/lib/work-queue'
 
 export const studentInput = z.object({ studentId: z.string().min(1).max(128) })
 export const surahInput = studentInput.extend({
@@ -78,16 +79,11 @@ export const assignmentDeadlineInput = assignmentInput.extend({
   expectedDueAt: z.number().int().min(0).max(8.64e15).nullable(),
 })
 
-export const workQueueInput = z.object({
-  q: z.string().trim().max(100).default(''),
-  kind: z.enum(['all', 'review', 'memorization']).default('all'),
-  deadline: z
-    .enum(['all', 'overdue', 'today', 'upcoming', 'undated'])
-    .default('overdue'),
+export const workQueueInput = workFilterSchema.extend({
   cursor: z
     .object({
       dueAt: z.number().int().min(0).max(8.64e15).nullable(),
-      kind: z.enum(['review', 'memorization']),
+      kind: workKindSchema,
       id: z.string().min(1).max(128),
     })
     .nullable()

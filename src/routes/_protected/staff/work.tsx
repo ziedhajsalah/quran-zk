@@ -1,23 +1,21 @@
 import { Box, Container, Group, Stack, Title } from '@mantine/core'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { z } from 'zod'
 import { WorkQueue } from '~/components/staff/WorkQueue'
 import {
   BottomNav,
   HomeTopBar,
   createHomeDashboardData,
 } from '~/components/home'
+import { parseWorkFilters } from '~/lib/work-queue'
+import { workQueueQuery } from '~/lib/queries'
 import { currentUserQuery } from '~/lib/auth-queries'
 
 export const Route = createFileRoute('/_protected/staff/work')({
-  validateSearch: z.object({
-    q: z.string().trim().max(100).catch(''),
-    kind: z.enum(['all', 'review', 'memorization']).catch('all'),
-    deadline: z
-      .enum(['all', 'overdue', 'today', 'upcoming', 'undated'])
-      .catch('overdue'),
-  }),
+  validateSearch: parseWorkFilters,
+  loaderDeps: ({ search }) => search,
+  loader: ({ context, deps }) =>
+    context.queryClient.prefetchQuery(workQueueQuery(deps, null)),
   component: StaffWorkPage,
 })
 

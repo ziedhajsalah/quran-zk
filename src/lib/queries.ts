@@ -3,6 +3,7 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query'
+import { mutationInvalidationKeys } from './mutation-keys'
 import type {
   MemorizationHistoryCursor,
   MemorizationHistoryStatus,
@@ -101,18 +102,7 @@ export function useAppMutation<TInput, TOutput>(
   return useMutation({
     mutationFn: (data: TInput) => fn({ data }),
     onSuccess: async () => {
-      const affectsDashboard = keys.some((key) =>
-        ['grades', 'reviews', 'memorization', 'students', 'users'].includes(
-          key,
-        ),
-      )
-      const affectedKeys = [
-        ...new Set([
-          ...keys,
-          ...(affectsDashboard ? ['teacher-dashboard', 'work-queue'] : []),
-          ...(keys.includes('grades') ? ['memorization'] : []),
-        ]),
-      ]
+      const affectedKeys = mutationInvalidationKeys(keys)
       await Promise.all(
         affectedKeys.map((key) =>
           client.invalidateQueries({ queryKey: [key] }),

@@ -16,3 +16,14 @@ Add a `/staff/work` route and `src/components/staff/WorkQueue.tsx`. Keep search/
 
 ### Task 3: Verification and delivery
 Add local-only browser fixtures in `tests/e2e/work-queue.spec.ts`; exercise mobile/desktop search/filter/pages, direct links, returning after mutations, authorization and request failure. Run `npm test`, `npm run lint`, `npm run build`, `npm run build-storybook`, `npm run test:e2e`. Update SETUP and architecture. Review the diff, commit/push `feature/staff-work-queue`, open a PR to develop and verify CI. Preserve the main checkout's UI edits; do not access production configuration or mutate hosted data. No additional service cost.
+
+### Review follow-up
+
+1. Gate every memorization card action with `pending || !hydrated`.
+2. Let the memorization panel own its fetch after hydration; scroll a selected hash after its card mounts, once per navigation. Preserve panel retry and usable tabs during slow/failed reads.
+3. Use native GET search with `name=q` and hidden `kind`/`deadline` fields.
+4. Truncate deadlines to milliseconds in the read CTE, so cursor values, comparisons and ordering agree; do not change stored timestamps. Test tied sub-millisecond deadlines across pages.
+5. Prefetch the work queue's first page from its route loader; let fetch errors fall through to the panel retry.
+6. Drop student-creation/notes invalidation. Keep grade invalidation: the shared grade writer can complete memorization, and grade removal cancels reviews. Cover this dependency with a browser regression.
+7. Share the filter schema/defaults/options in the browser-safe work-queue module; derive strict API input from it and tolerant URL parsing separately.
+8. Reuse `useCursorPages` in the work queue and all three history panels; run their existing pagination/reset browser coverage.

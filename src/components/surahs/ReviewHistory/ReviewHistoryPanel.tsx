@@ -9,26 +9,22 @@ import {
   Title,
 } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { ReviewHistoryList } from './ReviewHistoryList'
 import type {
   ReviewHistoryCursor,
   ReviewHistoryStatus,
 } from '~/lib/review-history'
+import { useCursorPages } from '~/lib/use-cursor-pages'
 import { reviewHistoryQuery } from '~/lib/queries'
 import { formatArabicNumber } from '~/components/home/home-formatters'
 
 export function ReviewHistoryPanel({ studentId }: { studentId: string }) {
-  const start = useRef<HTMLDivElement>(null)
+  const pages = useCursorPages<ReviewHistoryCursor>()
   const [status, setStatus] = useState<ReviewHistoryStatus>('all')
-  const [cursors, setCursors] = useState<Array<ReviewHistoryCursor | null>>([
-    null,
-  ])
-  const query = useQuery(
-    reviewHistoryQuery(studentId, status, cursors[cursors.length - 1]),
-  )
+  const query = useQuery(reviewHistoryQuery(studentId, status, pages.cursor))
   return (
-    <Stack ref={start} gap="md" style={{ scrollMarginTop: '7rem' }}>
+    <Stack ref={pages.start} gap="md" style={{ scrollMarginTop: '7rem' }}>
       <Title order={2}>سجل المراجعات</Title>
       <Text size="sm" c="dimmed">
         المراجعات المكتملة والملغاة، مع التقييم المسجّل وقت الإغلاق. التواريخ
@@ -46,7 +42,7 @@ export function ReviewHistoryPanel({ studentId }: { studentId: string }) {
         onChange={(value) => {
           if (value === 'all' || value === 'closed' || value === 'cancelled') {
             setStatus(value)
-            setCursors([null])
+            pages.reset()
           }
         }}
       />
@@ -70,16 +66,15 @@ export function ReviewHistoryPanel({ studentId }: { studentId: string }) {
       <Group justify="space-between" wrap="wrap">
         <Button
           variant="light"
-          disabled={cursors.length === 1 || query.isFetching}
+          disabled={!pages.hasPrevious || query.isFetching}
           onClick={() => {
-            setCursors((previous) => previous.slice(0, -1))
-            start.current?.scrollIntoView({ block: 'start' })
+            pages.previous()
           }}
         >
           الأحدث
         </Button>
         <Text size="sm" c="dimmed" aria-live="polite">
-          الصفحة {formatArabicNumber(cursors.length)}
+          الصفحة {formatArabicNumber(pages.page)}
         </Text>
         <Button
           variant="light"
@@ -89,8 +84,7 @@ export function ReviewHistoryPanel({ studentId }: { studentId: string }) {
           onClick={() => {
             const next = query.data?.nextCursor
             if (next) {
-              setCursors((previous) => [...previous, next])
-              start.current?.scrollIntoView({ block: 'start' })
+              pages.next(next)
             }
           }}
         >

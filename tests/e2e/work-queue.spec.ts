@@ -222,8 +222,14 @@ for (const width of [390, 1280]) {
       await route.continue()
     })
     const opening = rows.getByRole('link', { name: 'فتح الواجب' }).click()
-    await expect.poll(() => requested).toBe(true)
-    release()
+    try {
+      await expect.poll(() => requested).toBe(true)
+      await expect(
+        page.getByRole('heading', { name: 'واجبات الحفظ الجديد', exact: true }),
+      ).toBeVisible()
+    } finally {
+      release()
+    }
     await opening
     await expect(page).toHaveURL(
       new RegExp(`tab=memorization#memorization-${student.id}-m3$`),
@@ -312,4 +318,96 @@ test('queue handles loading failures, retry, empty search and invalid URL filter
   await expect(
     page.getByRole('textbox', { name: 'موعد الاستحقاق', exact: true }),
   ).toHaveValue('متأخرة')
+})
+
+test('server-rendered search preserves filters without JavaScript and inactive controls are disabled', async ({
+  page,
+  browser,
+}) => {
+  await loginAs(page, teacher.username, password)
+  const context = await browser.newContext({
+    javaScriptEnabled: false,
+    storageState: await page.context().storageState(),
+  })
+  try {
+    const native = await context.newPage()
+    const student = fixtures.get(1280)!
+    await native.goto(
+      `/staff/work?q=${student.username}&kind=memorization&deadline=all`,
+    )
+    await expect(native.getByRole('article').first()).toBeVisible()
+    await expect(
+      native.getByRole('textbox', { name: 'نوع الواجب', exact: true }),
+    ).toBeDisabled()
+    await native.getByLabel('البحث عن طالب').fill('no-matching-native-search')
+    await native.getByRole('button', { name: 'بحث', exact: true }).click()
+    const address = new URL(native.url())
+    expect(address.searchParams.get('q')).toBe('no-matching-native-search')
+    expect(address.searchParams.get('kind')).toBe('memorization')
+    expect(address.searchParams.get('deadline')).toBe('all')
+    await expect(
+      native.getByText('لا توجد واجبات تطابق البحث والفلاتر.'),
+    ).toBeVisible()
+    await native.goto(`/staff/students/${student.id}?tab=memorization`)
+    await expect(
+      native.getByRole('heading', { name: student.displayName, exact: true }),
+    ).toBeVisible()
+    await expect(native.locator('article button:enabled')).toHaveCount(0)
+    await expect(
+      native.getByRole('button', { name: 'إسناد حفظ جديد', exact: true }),
+    ).toBeDisabled()
+  } finally {
+    await context.close()
+  }
+})
+
+test('memorization errors stay in the panel, retry works and ordinary grading refreshes the queue', async ({
+  page,
+}) => {
+  const student = fixtures.get(1280)!
+  await loginAs(page, teacher.username, password)
+  await gotoApp(
+    page,
+    `/staff/work?q=${student.username}&kind=memorization&deadline=overdue`,
+  )
+  await expect(page.getByRole('article')).toHaveCount(1)
+  const endpoint = '**/_serverFn/**'
+  await page.route(endpoint, async (route) => {
+    const definition = rpcDefinition(route.request().url())
+    if (
+      definition.includes('memorization.ts') &&
+      definition.includes('listOpenForStudent')
+    )
+      await route.abort()
+    else await route.continue()
+  })
+  await page.getByRole('link', { name: 'فتح الواجب', exact: true }).click()
+  await expect(
+    page.getByRole('heading', { name: student.displayName, exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByText('تعذر تحميل واجبات الحفظ', { exact: true }),
+  ).toBeVisible({ timeout: 20000 })
+  await expect(
+    page.getByRole('tab', { name: 'السور', exact: true }),
+  ).toBeEnabled()
+  await page.unroute(endpoint)
+  await page
+    .getByRole('button', { name: 'إعادة المحاولة', exact: true })
+    .click()
+  await expect(
+    page.locator(`[id="memorization-${student.id}-m0"]`),
+  ).toBeVisible()
+  await page.getByRole('tab', { name: 'السور', exact: true }).click()
+  await page.getByRole('button', { name: 'إضافة سورة', exact: true }).click()
+  await page.getByRole('button', { name: /الروم/ }).click()
+  await page.getByRole('button', { name: 'حفظ', exact: true }).click()
+  await expect(
+    page.getByRole('dialog', { name: 'إضافة سورة', exact: true }),
+  ).toHaveCount(0)
+  await page.goBack()
+  await expect(page).toHaveURL(/\/staff\/work\?/)
+  await expect(
+    page.getByText('لا توجد واجبات تطابق البحث والفلاتر.'),
+  ).toBeVisible()
 })

@@ -224,6 +224,43 @@ describe('staff work queue', () => {
       expect(found).toEqual(expected)
       expect(new Set(found).size).toBe(54)
     }))
+  it('paginates sub-millisecond PostgreSQL deadlines without skipping or repeating rows', () =>
+    run(async (db) => {
+      await account(db, 'student')
+      for (const kind of ['review', 'memorization'] as const) {
+        for (let i = 0; i < 25; i++) {
+          const id = String(i).padStart(2, '0')
+          await task(db, id, 'student', kind, today, i + 1)
+          const table = kind === 'review' ? reviews : memorizationAssignments
+          await db.execute(sql`update ${table} set due_at = ${new Date(today).toISOString()}::timestamptz
+            + ${((25 - i) % 9) + 1} * interval '0.0001 seconds' where id = ${id}`)
+        }
+      }
+      let cursor: WorkCursor | null = null
+      const found: Array<string> = []
+      do {
+        const page = await listWorkQueue(
+          db,
+          staff,
+          { deadline: 'all', cursor },
+          now,
+        )
+        expect(page.rows.every((row) => row.dueAt === today)).toBe(true)
+        cursor = page.nextCursor
+        if (cursor)
+          expect(workQueueInput.safeParse({ cursor }).success).toBe(true)
+        found.push(...page.rows.map((row) => `${row.kind}-${row.id}`))
+        if (found.length > 50) throw new Error('Cursor repeated rows')
+      } while (cursor)
+      expect(found).toEqual(
+        ['memorization', 'review'].flatMap((kind) =>
+          Array.from(
+            { length: 25 },
+            (_, i) => `${kind}-${String(i).padStart(2, '0')}`,
+          ),
+        ),
+      )
+    }))
   it('reflects completion, deadline edits, disabled accounts and removed roles on a fresh read', () =>
     run(async (db) => {
       await account(db, 'student')
