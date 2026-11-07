@@ -71,3 +71,9 @@ export const memorizationHistoryInput = studentInput.extend({
     .nullable()
     .default(null),
 })
+
+export const assignmentDeadlineInput = assignmentInput.extend({
+  dueAt: batchReviewInput.shape.dueAt.unwrap().nullable(),
+  // Older review deadlines may contain a time of day; accept their exact snapshot.
+  expectedDueAt: z.number().int().min(0).max(8.64e15).nullable(),
+})

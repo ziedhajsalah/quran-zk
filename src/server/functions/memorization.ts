@@ -1,8 +1,10 @@
 import { createServerFn } from '@tanstack/react-start'
+import { rescheduleAssignment } from '../services/assignment-deadline.server'
 import { withRuntime } from '../runtime.server'
 import * as service from '../services/memorization.server'
 import {
   assessMemorizationInput,
+  assignmentDeadlineInput,
   assignmentInput,
   memorizationHistoryInput,
   memorizationInput,
@@ -37,5 +39,13 @@ export const listHistoryForStudent = createServerFn({ method: 'GET' })
   .handler(({ data }) =>
     withRuntime(({ db, actor }) =>
       service.listMemorizationHistory(db, actor, data),
+    ),
+  )
+
+export const reschedule = createServerFn({ method: 'POST' })
+  .validator(assignmentDeadlineInput)
+  .handler(({ data }) =>
+    withRuntime(({ db, actor }) =>
+      rescheduleAssignment(db, actor, 'memorization', data),
     ),
   )
