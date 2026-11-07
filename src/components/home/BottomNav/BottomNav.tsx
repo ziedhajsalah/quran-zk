@@ -57,7 +57,9 @@ export function BottomNav({
             <Stack align="center" gap={2}>
               <Icon size={20} />
               <Text
-                c={isActive ? 'white' : 'gray.8'}
+                c={
+                  isActive ? 'white' : theme.other.semanticColors.onSurfaceVariant
+                }
                 fw={isActive ? 700 : 500}
                 size="xs"
               >

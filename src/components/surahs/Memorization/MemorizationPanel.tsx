@@ -77,7 +77,7 @@ export function MemorizationPanel({
           </Button>
         ) : null}
       </Group>
-      <Text size="sm" c="gray.7">
+      <Text size="sm" c="dimmed">
         سور جديدة للحفظ، منفصلة عن مراجعة السور المسجّلة. لا تُحتسب ضمن تقدّم
         الحفظ قبل تسجيل تقييم المعلم.
       </Text>

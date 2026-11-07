@@ -77,7 +77,7 @@ function StaffStudentsPage() {
         <Stack gap="xl">
           <Group justify="space-between" align="flex-end" wrap="nowrap">
             <Stack gap="xs" style={{ minWidth: 0 }}>
-              <Text c="primary.6" fw={700} size="sm">
+              <Text c="var(--app-accent-text)" fw={700} size="sm">
                 إدارة الطلاب
               </Text>
               <Title order={1}>طلابك</Title>

@@ -51,7 +51,7 @@ export function HomeTopBar({
               >
                 {brandName}
               </Text>
-              <Text size="xs" c="gray.8">
+              <Text size="xs" c={theme.other.semanticColors.onSurfaceVariant}>
                 {brandMarkText}
               </Text>
             </Box>

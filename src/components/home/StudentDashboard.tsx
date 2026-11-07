@@ -77,7 +77,7 @@ export function StudentDashboard({
                     value={summary.masteryPercent}
                     aria-label="نسبة السور المتقنة"
                   />
-                  <Text size="sm" c="gray.7">
+                  <Text size="sm" c="dimmed">
                     النسبة حسب عدد السور المتقنة، وليست حسب الصفحات أو الآيات.
                   </Text>
                   {summary.recorded === 0 ? (
@@ -114,7 +114,7 @@ export function StudentDashboard({
                       </Badge>
                     </Group>
                     {memorization.length === 0 ? (
-                      <Text c="gray.7">لا توجد واجبات حفظ جديدة حالياً.</Text>
+                      <Text c="dimmed">لا توجد واجبات حفظ جديدة حالياً.</Text>
                     ) : (
                       memorization.slice(0, 5).map((assignment) => (
                         <Box key={assignment._id}>
@@ -125,7 +125,7 @@ export function StudentDashboard({
                           >
                             {getSurah(assignment.surahNumber).nameAr}
                           </Link>
-                          <Text size="sm" c="gray.7">
+                          <Text size="sm" c="dimmed">
                             {assignment.dueAt === null
                               ? 'دون موعد محدد'
                               : `الاستحقاق: ${date.format(assignment.dueAt)}`}
@@ -147,7 +147,7 @@ export function StudentDashboard({
                       </Badge>
                     </Group>
                     {summary.reviewCount === 0 ? (
-                      <Text c="gray.7">
+                      <Text c="dimmed">
                         لا توجد مراجعات مسندة إليك حالياً. يمكنك مراجعة السور
                         التي تحتاج إلى تثبيت مع معلمك.
                       </Text>
@@ -161,7 +161,7 @@ export function StudentDashboard({
                           <Box key={review._id}>
                             <Link
                               style={{
-                                color: theme.colors.primary[7],
+                                color: 'var(--app-accent-text)',
                                 textUnderlineOffset: '0.2em',
                               }}
                               to="/surahs"
@@ -170,7 +170,7 @@ export function StudentDashboard({
                             >
                               {getSurah(review.surahNumber).nameAr}
                             </Link>
-                            <Text size="sm" c="gray.7">
+                            <Text size="sm" c="dimmed">
                               {review.dueAt === null
                                 ? 'دون موعد محدد'
                                 : `الاستحقاق: ${date.format(review.dueAt)}`}
@@ -188,7 +188,7 @@ export function StudentDashboard({
                   <Stack gap="md">
                     <Title order={2}>آخر ملاحظات المعلم</Title>
                     {summary.notes.length === 0 ? (
-                      <Text c="gray.7">لا توجد ملاحظات من معلمك بعد.</Text>
+                      <Text c="dimmed">لا توجد ملاحظات من معلمك بعد.</Text>
                     ) : (
                       summary.notes.map((note) => (
                         <Box
@@ -196,7 +196,7 @@ export function StudentDashboard({
                           style={{ overflowWrap: 'anywhere' }}
                         >
                           <Text fw={700}>{note.authorDisplayName}</Text>
-                          <Text size="sm" c="gray.7">
+                          <Text size="sm" c="dimmed">
                             {date.format(note.createdAt)}
                             {note.editedAt !== null ? ' · تم التعديل' : ''}
                           </Text>

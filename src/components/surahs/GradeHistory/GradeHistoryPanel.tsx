@@ -29,7 +29,7 @@ export function GradeHistoryPanel({ studentId }: { studentId: string }) {
   return (
     <Stack ref={start} gap="md" style={{ scrollMarginTop: '7rem' }}>
       <Title order={2}>سجل التقدّم</Title>
-      <Text size="sm" c="gray.7">
+      <Text size="sm" c="dimmed">
         تغييرات تقييم الحفظ منذ بدء تسجيل السجل. لا يشمل تغييرات سابقة. التواريخ
         حسب التوقيت العالمي (UTC).
       </Text>
@@ -81,7 +81,7 @@ export function GradeHistoryPanel({ studentId }: { studentId: string }) {
         >
           الأحدث
         </Button>
-        <Text size="sm" c="gray.7" aria-live="polite">
+        <Text size="sm" c="dimmed" aria-live="polite">
           الصفحة {formatArabicNumber(cursors.length)}
         </Text>
         <Button
