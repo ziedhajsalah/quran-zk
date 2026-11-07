@@ -18,6 +18,7 @@
 - Add `src/server/services/memorization.server.ts` and `src/server/functions/memorization.ts`. Assignment rejects recorded surahs and duplicates; completion requires an explicit grade, checks open status under locks and writes grade/history/closure atomically; cancellation writes no grade. Open list is bounded by 114 possible surahs and ordered by UTC deadline.
 
 ### Task 2: Teacher and student UI
+- QA-03 localization follow-up implemented: memorization and batch-review calendars, weekday headings and selected deadlines use Arabic. Clear controls have Arabic keyboard-accessible labels; optional UTC deadlines and minimum dates are unchanged. Browser regressions cover selection/clearing, dated/undated persistence and west-of-UTC boundaries at mobile/desktop widths.
 - Add browser-safe row/input types in `src/lib/memorization.ts`, query helper in `src/lib/queries.ts` and invalidation for grade writes.
 - Add `MemorizationQueue`, `AssignMemorizationDrawer`, `AssessMemorizationDialog` and query panel under `src/components/surahs/Memorization/`, with presentation stories.
 - The assignment drawer offers searchable, unrecorded/unassigned surahs and one optional UTC calendar date. Await writes; preserve input and explain errors; block duplicate/pending dismissal.
