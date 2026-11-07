@@ -3,6 +3,10 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query'
+import type {
+  MemorizationHistoryCursor,
+  MemorizationHistoryStatus,
+} from './memorization'
 import type { ReviewHistoryCursor, ReviewHistoryStatus } from './review-history'
 import * as memorization from '~/server/functions/memorization'
 import * as grades from '~/server/functions/grades'
@@ -43,6 +47,18 @@ export const memorizationQuery = (studentId: string) =>
   queryOptions({
     queryKey: ['memorization', studentId],
     queryFn: () => memorization.listOpenForStudent({ data: { studentId } }),
+  })
+export const memorizationHistoryQuery = (
+  studentId: string,
+  status: MemorizationHistoryStatus,
+  cursor: MemorizationHistoryCursor | null,
+) =>
+  queryOptions({
+    queryKey: ['memorization', studentId, 'history', status, cursor],
+    queryFn: () =>
+      memorization.listHistoryForStudent({
+        data: { studentId, status, cursor },
+      }),
   })
 export const reviewsQuery = (studentId: string) =>
   queryOptions({

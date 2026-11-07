@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, lt, or, sql } from 'drizzle-orm'
 import { grades, memorizationAssignments } from '../db/schema/app'
 import { user } from '../db/schema/auth'
 import {
@@ -10,12 +10,19 @@ import { fail } from '../errors'
 import {
   assignmentInput,
   gradeSchema,
+  memorizationHistoryInput,
   memorizationInput,
 } from '../functions/validation'
 import { writeStudentGrade } from './grades.server'
 import type { Actor } from '../auth-guards.server'
 import type { Database } from '../db.server'
-import type { MemorizationInput, MemorizationRow } from '~/lib/memorization'
+import type {
+  MemorizationHistoryCursor,
+  MemorizationHistoryPage,
+  MemorizationHistoryStatus,
+  MemorizationInput,
+  MemorizationRow,
+} from '~/lib/memorization'
 
 export async function listMemorization(
   db: Database,
@@ -154,4 +161,70 @@ export async function finishMemorization(
         .where(eq(memorizationAssignments.id, row.id))
     }
   })
+}
+
+export async function listMemorizationHistory(
+  db: Database,
+  actor: Actor | null,
+  input: {
+    studentId: string
+    status?: MemorizationHistoryStatus
+    cursor?: MemorizationHistoryCursor | null
+  },
+): Promise<MemorizationHistoryPage> {
+  requireSelfOrStaff(actor, input.studentId)
+  const data = memorizationHistoryInput.parse(input)
+  const table = memorizationAssignments
+  const cursor = data.cursor
+  const result = await db
+    .select({
+      id: table.id,
+      surahNumber: table.surahNumber,
+      status: table.status,
+      assignedAt: table.assignedAt,
+      dueAt: table.dueAt,
+      closedAt: table.closedAt,
+      closingGrade: table.closingGrade,
+    })
+    .from(table)
+    .where(
+      and(
+        eq(table.studentId, data.studentId),
+        data.status === 'all'
+          ? inArray(table.status, ['closed', 'cancelled'])
+          : eq(table.status, data.status),
+        cursor
+          ? or(
+              lt(table.closedAt, new Date(cursor.closedAt)),
+              and(
+                eq(table.closedAt, new Date(cursor.closedAt)),
+                lt(table.id, cursor.id),
+              ),
+            )
+          : undefined,
+      ),
+    )
+    .orderBy(desc(table.closedAt), desc(table.id))
+    .limit(21)
+  const rows = result.slice(0, 20).map((row) => {
+    // The memorization_closure constraint guarantees terminal dates.
+    if (row.closedAt === null)
+      throw new Error('Missing memorization closure date.')
+    return {
+      ...row,
+      status:
+        row.status === 'closed' ? ('closed' as const) : ('cancelled' as const),
+      assignedAt: row.assignedAt.getTime(),
+      dueAt: row.dueAt?.getTime() ?? null,
+      closedAt: row.closedAt.getTime(),
+    }
+  })
+  const last = rows.at(-1)
+  return {
+    rows,
+    nextCursor:
+      result.length > 20 && last
+        ? { closedAt: last.closedAt, id: last.id }
+        : null,
+  }
 }

@@ -60,3 +60,14 @@ export const memorizationInput = surahInput.extend({
 export const assessMemorizationInput = assignmentInput.extend({
   grade: gradeSchema,
 })
+
+export const memorizationHistoryInput = studentInput.extend({
+  status: z.enum(['all', 'closed', 'cancelled']).default('all'),
+  cursor: z
+    .object({
+      closedAt: z.number().int().min(0).max(8.64e15),
+      id: z.string().min(1).max(128),
+    })
+    .nullable()
+    .default(null),
+})

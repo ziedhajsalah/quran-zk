@@ -12,6 +12,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { AssignMemorizationDrawer } from './AssignMemorizationDrawer'
 import { AssessMemorizationDialog } from './AssessMemorizationDialog'
+import { MemorizationHistoryPanel } from './MemorizationHistoryPanel'
 import { MemorizationQueue } from './MemorizationQueue'
 import type { MemorizationRow } from '~/lib/memorization'
 import { memorizationQuery, useAppMutation } from '~/lib/queries'
@@ -32,6 +33,7 @@ export function MemorizationPanel({
   const assign = useAppMutation(functions.assign, ['memorization'])
   const assess = useAppMutation(functions.assess, ['memorization', 'grades'])
   const cancel = useAppMutation(functions.cancel, ['memorization'])
+  const [showHistory, setShowHistory] = useState(false)
   const [assigning, setAssigning] = useState(false)
   const [assessing, setAssessing] = useState<MemorizationRow | null>(null)
   const [cancelling, setCancelling] = useState<MemorizationRow | null>(null)
@@ -99,6 +101,19 @@ export function MemorizationPanel({
           }}
         />
       )}
+      <Button
+        variant="subtle"
+        aria-expanded={showHistory}
+        aria-controls="memorization-history"
+        onClick={() => setShowHistory((previous) => !previous)}
+      >
+        {showHistory ? 'إخفاء سجل الحفظ' : 'عرض سجل الحفظ'}
+      </Button>
+      {showHistory ? (
+        <section id="memorization-history" aria-label="سجل الحفظ الجديد">
+          <MemorizationHistoryPanel key={studentId} studentId={studentId} />
+        </section>
+      ) : null}
       {editable ? (
         <>
           <AssignMemorizationDrawer
