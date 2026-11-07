@@ -17,7 +17,7 @@ export function GradeHistoryList({
   if (!rows.length)
     return (
       <Card withBorder radius="lg" p="xl">
-        <Text c="gray.7">لا توجد تغييرات مسجّلة لهذا الاختيار بعد.</Text>
+        <Text c="dimmed">لا توجد تغييرات مسجّلة لهذا الاختيار بعد.</Text>
       </Card>
     )
   return (
@@ -41,7 +41,7 @@ export function GradeHistoryList({
             <Group gap="xs" wrap="wrap">
               <Text size="sm">من:</Text>
               {row.previousGrade === null ? (
-                <Text size="sm" c="gray.7">
+                <Text size="sm" c="dimmed">
                   غير مسجّلة
                 </Text>
               ) : (
@@ -51,7 +51,7 @@ export function GradeHistoryList({
               )}
               <Text size="sm">إلى:</Text>
               {row.newGrade === null ? (
-                <Text size="sm" c="gray.7">
+                <Text size="sm" c="dimmed">
                   غير مسجّلة
                 </Text>
               ) : (
@@ -63,10 +63,10 @@ export function GradeHistoryList({
             <Text size="sm">
               بواسطة: {row.actorDisplayName ?? 'حساب محذوف'}
             </Text>
-            <Text size="sm" c="gray.7">
+            <Text size="sm" c="dimmed">
               التاريخ: {date.format(row.changedAt)} (UTC)
             </Text>
-            <Text size="sm" c="gray.7">
+            <Text size="sm" c="dimmed">
               {row.source === 'review' ? 'عند إغلاق مراجعة' : 'تحديث سجل الحفظ'}
             </Text>
           </Stack>

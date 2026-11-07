@@ -51,7 +51,7 @@ export function AssessMemorizationDialog({
     >
       <Stack gap="md">
         <Text fw={700}>{getSurah(assignment.surahNumber).nameAr}</Text>
-        <Text size="sm" c="gray.7">
+        <Text size="sm" c="dimmed">
           يُسجّل التقييم في قائمة السور وسجل التقدّم، ويُغلق واجب الحفظ.
         </Text>
         {error ? (

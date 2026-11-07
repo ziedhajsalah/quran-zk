@@ -69,7 +69,7 @@ export function AssignMemorizationDrawer({
       closeButtonProps={{ 'aria-label': 'إغلاق محدد الحفظ' }}
     >
       <Stack gap="md">
-        <Text size="sm" c="gray.7">
+        <Text size="sm" c="dimmed">
           اختر سورة كاملة لم يُسجّل لها تقييم بعد. السور المسندة للحفظ حالياً
           مستبعدة.
         </Text>
@@ -114,7 +114,7 @@ export function AssignMemorizationDrawer({
             previousMonth: 'الشهر السابق',
           }}
         />
-        <Text size="sm" c="gray.7">
+        <Text size="sm" c="dimmed">
           الموعد حسب التوقيت العالمي (UTC). اتركه فارغاً للإسناد دون موعد محدد.
         </Text>
         <Button

@@ -16,7 +16,7 @@ export function MemorizationHistoryList({
   if (!rows.length)
     return (
       <Card withBorder radius="lg" p="xl">
-        <Text c="gray.7">
+        <Text c="dimmed">
           لا توجد واجبات حفظ مكتملة أو ملغاة لهذا الاختيار.
         </Text>
       </Card>
@@ -35,18 +35,18 @@ export function MemorizationHistoryList({
                 {row.status === 'closed' ? 'مكتملة' : 'ملغاة'}
               </Badge>
             </Group>
-            <Text size="sm" c="gray.7">
+            <Text size="sm" c="dimmed">
               {`${row.status === 'closed' ? 'أُنجزت في' : 'أُلغيت في'}: ${date.format(row.closedAt)}`}
             </Text>
-            <Text size="sm" c="gray.7">
+            <Text size="sm" c="dimmed">
               تاريخ الإسناد: {date.format(row.assignedAt)}
             </Text>
             {row.dueAt === null ? (
-              <Text size="sm" c="gray.7">
+              <Text size="sm" c="dimmed">
                 دون موعد محدد
               </Text>
             ) : (
-              <Text size="sm" c="gray.7">
+              <Text size="sm" c="dimmed">
                 الاستحقاق: {date.format(row.dueAt)}
               </Text>
             )}
@@ -54,7 +54,7 @@ export function MemorizationHistoryList({
               <Group gap="sm">
                 <Text size="sm">التقييم عند الإنجاز:</Text>
                 {row.closingGrade === null ? (
-                  <Text size="sm" c="gray.7">
+                  <Text size="sm" c="dimmed">
                     التقييم غير مسجّل
                   </Text>
                 ) : (

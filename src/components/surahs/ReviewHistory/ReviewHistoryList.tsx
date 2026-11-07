@@ -16,7 +16,7 @@ export function ReviewHistoryList({
   if (!rows.length)
     return (
       <Card withBorder radius="lg" p="xl">
-        <Text c="gray.7">لا توجد مراجعات مكتملة أو ملغاة لهذا الاختيار.</Text>
+        <Text c="dimmed">لا توجد مراجعات مكتملة أو ملغاة لهذا الاختيار.</Text>
       </Card>
     )
   return (
@@ -33,16 +33,16 @@ export function ReviewHistoryList({
                 {row.status === 'closed' ? 'مكتملة' : 'ملغاة'}
               </Badge>
             </Group>
-            <Text size="sm" c="gray.7">
+            <Text size="sm" c="dimmed">
               {row.closedAt === null
                 ? 'تاريخ الإغلاق غير مسجّل'
                 : `${row.status === 'closed' ? 'أُنجزت في' : 'أُلغيت في'}: ${date.format(row.closedAt)}`}
             </Text>
-            <Text size="sm" c="gray.7">
+            <Text size="sm" c="dimmed">
               تاريخ الإسناد: {date.format(row.assignedAt)}
             </Text>
             {row.dueAt !== null ? (
-              <Text size="sm" c="gray.7">
+              <Text size="sm" c="dimmed">
                 الاستحقاق: {date.format(row.dueAt)}
               </Text>
             ) : null}
@@ -50,7 +50,7 @@ export function ReviewHistoryList({
               <Group gap="sm">
                 <Text size="sm">التقييم عند الإغلاق:</Text>
                 {row.closingGrade === null ? (
-                  <Text size="sm" c="gray.7">
+                  <Text size="sm" c="dimmed">
                     لم يُسجّل تقييم عند الإغلاق
                   </Text>
                 ) : (
