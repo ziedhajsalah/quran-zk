@@ -111,3 +111,7 @@ Apply committed migration `0003_memorization_assignments.sql` before deploying t
 Completed and cancelled new memorization assignments are available through **عرض سجل الحفظ** inside **حفظ جديد** for students and staff. The history offers status filters and 20-row pages, showing the saved completion grade and UTC dates. It uses existing migration `0003` data and needs no additional migration or service.
 
 Staff use **تعديل الموعد** on an open review or memorization assignment to change its UTC deadline, add a missing deadline or clear it. Existing assignments are retained. Completed/cancelled work and stale deadline snapshots cannot be edited; close the dialog and refresh the list if another teacher changed the task. No additional migration is required.
+
+## Staff work queue
+
+Teachers and admins open **قائمة الواجبات** from the home dashboard or student list. It combines open reviews and new memorization across active students. Submit a student name/username search, filter by work type and UTC deadline (overdue, today, upcoming, undated, or all), and browse 20 assignments per page. **فتح الواجب** opens the exact assignment in its student's existing controls. Search and filters remain in the URL when returning; pagination starts at the first page. Changes refresh the queue through existing mutation invalidation. Other browsers refetch on focus/navigation; there is no polling. No migration or additional service is required.

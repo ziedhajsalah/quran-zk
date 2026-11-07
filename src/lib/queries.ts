@@ -8,11 +8,22 @@ import type {
   MemorizationHistoryStatus,
 } from './memorization'
 import type { ReviewHistoryCursor, ReviewHistoryStatus } from './review-history'
+import type { WorkCursor, WorkFilters } from './work-queue'
 import * as memorization from '~/server/functions/memorization'
 import * as grades from '~/server/functions/grades'
 import * as reviews from '~/server/functions/reviews'
 import * as notes from '~/server/functions/notes'
+import * as workQueue from '~/server/functions/work-queue'
 import * as teacherDashboard from '~/server/functions/teacher-dashboard'
+
+export const workQueueQuery = (
+  filters: WorkFilters,
+  cursor: WorkCursor | null,
+) =>
+  queryOptions({
+    queryKey: ['work-queue', filters, cursor],
+    queryFn: () => workQueue.list({ data: { ...filters, cursor } }),
+  })
 
 export const teacherDashboardQuery = () =>
   queryOptions({
@@ -98,7 +109,7 @@ export function useAppMutation<TInput, TOutput>(
       const affectedKeys = [
         ...new Set([
           ...keys,
-          ...(affectsDashboard ? ['teacher-dashboard'] : []),
+          ...(affectsDashboard ? ['teacher-dashboard', 'work-queue'] : []),
           ...(keys.includes('grades') ? ['memorization'] : []),
         ]),
       ]

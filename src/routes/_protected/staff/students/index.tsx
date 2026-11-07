@@ -1,5 +1,5 @@
 // src/routes/_protected/staff/students/index.tsx
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   Box,
   Button,
@@ -111,6 +111,12 @@ function StaffStudentsPage() {
             </Notification>
           ) : null}
 
+          <Link
+            to="/staff/work"
+            search={{ q: '', kind: 'all', deadline: 'overdue' }}
+          >
+            قائمة الواجبات
+          </Link>
           <StudentsPicker
             students={students.map((s) => ({
               id: s.id,
