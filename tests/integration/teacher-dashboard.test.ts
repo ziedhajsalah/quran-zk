@@ -3,10 +3,15 @@ import { migrate } from 'drizzle-orm/node-postgres/migrator'
 import { sql } from 'drizzle-orm'
 import { withDatabase } from '../../src/server/db.server'
 import { user } from '../../src/server/db/schema/auth'
-import { grades, reviews } from '../../src/server/db/schema/app'
+import {
+  grades,
+  memorizationAssignments,
+  reviews,
+} from '../../src/server/db/schema/app'
 import { serializeUser } from '../../src/server/accounts'
 import { getTeacherDashboard } from '../../src/server/services/teacher-dashboard.server'
 import { finishReview } from '../../src/server/services/reviews.server'
+import { finishMemorization } from '../../src/server/services/memorization.server'
 import { setGrade } from '../../src/server/services/grades.server'
 import type { Actor } from '../../src/server/auth-guards.server'
 import type { Database } from '../../src/server/db.server'
@@ -45,15 +50,13 @@ async function grade(
   surahNumber: number,
   value: 'good' | 'medium' | 'forgotten' = 'forgotten',
 ) {
-  await db
-    .insert(grades)
-    .values({
-      id: `${studentId}-g-${surahNumber}`,
-      studentId,
-      surahNumber,
-      grade: value,
-      updatedAt: now,
-    })
+  await db.insert(grades).values({
+    id: `${studentId}-g-${surahNumber}`,
+    studentId,
+    surahNumber,
+    grade: value,
+    updatedAt: now,
+  })
 }
 async function review(
   db: Database,
@@ -62,16 +65,14 @@ async function review(
   dueAt: number | null,
   status: 'open' | 'closed' | 'cancelled' = 'open',
 ) {
-  await db
-    .insert(reviews)
-    .values({
-      id: `${studentId}-r-${surahNumber}`,
-      studentId,
-      surahNumber,
-      assignedAt: new Date(today - 86400000 * 10),
-      dueAt: dueAt === null ? null : new Date(dueAt),
-      status,
-    })
+  await db.insert(reviews).values({
+    id: `${studentId}-r-${surahNumber}`,
+    studentId,
+    surahNumber,
+    assignedAt: new Date(today - 86400000 * 10),
+    dueAt: dueAt === null ? null : new Date(dueAt),
+    status,
+  })
 }
 beforeAll(() => run((db) => migrate(db, { migrationsFolder: './drizzle' })))
 beforeEach(() =>
@@ -103,6 +104,7 @@ describe('teacher attention dashboard', () => {
         totalStudents: 0,
         attentionStudents: 0,
         overdueReviews: 0,
+        overdueMemorization: 0,
         studentsNeedingReview: 0,
         students: [],
       }
@@ -208,5 +210,125 @@ describe('teacher attention dashboard', () => {
       expect(
         (await getTeacherDashboard(db, teacher, now)).studentsNeedingReview,
       ).toBe(1)
+    }))
+})
+
+describe('memorization follow-up', () => {
+  async function task(
+    db: Database,
+    studentId: string,
+    surahNumber: number,
+    dueAt: number | null,
+  ) {
+    await db.insert(memorizationAssignments).values({
+      id: `${studentId}-m-${surahNumber}`,
+      studentId,
+      surahNumber,
+      assignedAt: now,
+      dueAt: dueAt === null ? null : new Date(dueAt),
+    })
+  }
+  it('counts work types independently and uses UTC deadlines across both queues', () =>
+    run(async (db) => {
+      await addUser(db, 'review-only')
+      await addUser(db, 'memorization-only')
+      await addUser(db, 'mixed-work')
+      await addUser(db, 'not-overdue')
+      await review(db, 'review-only', 1, today - 86400000 * 2)
+      await task(db, 'memorization-only', 1, today - 86400000 * 3)
+      await review(db, 'mixed-work', 1, today - 86400000)
+      await review(db, 'mixed-work', 2, today - 1)
+      await task(db, 'mixed-work', 3, today - 86400000 * 4)
+      await task(db, 'mixed-work', 4, today - 1)
+      await grade(db, 'mixed-work', 1)
+      await grade(db, 'mixed-work', 2)
+      await task(db, 'not-overdue', 1, today)
+      await task(db, 'not-overdue', 2, today + 86400000)
+      await task(db, 'not-overdue', 3, null)
+      // This instant is still the previous calendar day west of UTC.
+      const result = await getTeacherDashboard(
+        db,
+        teacher,
+        new Date(today + 3600000),
+      )
+      expect(result).toMatchObject({
+        totalStudents: 4,
+        attentionStudents: 3,
+        overdueReviews: 3,
+        overdueMemorization: 3,
+        studentsNeedingReview: 1,
+      })
+      expect(result.students.map((s) => s.studentId)).toEqual([
+        'mixed-work',
+        'memorization-only',
+        'review-only',
+      ])
+      expect(result.students[0]).toMatchObject({
+        overdueCount: 2,
+        overdueMemorizationCount: 2,
+        forgottenCount: 2,
+        oldestDueAt: today - 86400000 * 4,
+      })
+      expect(result.students[1]).toMatchObject({
+        overdueCount: 0,
+        overdueMemorizationCount: 1,
+      })
+    }))
+  it('excludes cancelled, assessed, manually graded and inactive work on the next read', () =>
+    run(async (db) => {
+      await addUser(db, 'student-a')
+      await addUser(db, 'disabled', 'student', true)
+      await addUser(db, 'nonstudent', 'teacher')
+      for (const id of ['student-a', 'disabled', 'nonstudent'])
+        await task(db, id, 1, today - 86400000)
+      await task(db, 'student-a', 2, today - 86400000)
+      await task(db, 'student-a', 3, today - 86400000)
+      expect(await getTeacherDashboard(db, teacher, now)).toMatchObject({
+        totalStudents: 1,
+        attentionStudents: 1,
+        overdueMemorization: 3,
+      })
+      await finishMemorization(db, teacher, { assignmentId: 'student-a-m-1' })
+      expect(
+        (await getTeacherDashboard(db, teacher, now)).overdueMemorization,
+      ).toBe(2)
+      await finishMemorization(db, teacher, {
+        assignmentId: 'student-a-m-2',
+        grade: 'good',
+      })
+      expect(
+        (await getTeacherDashboard(db, teacher, now)).overdueMemorization,
+      ).toBe(1)
+      await setGrade(db, teacher, {
+        studentId: 'student-a',
+        surahNumber: 3,
+        grade: 'good',
+      })
+      expect(await getTeacherDashboard(db, teacher, now)).toMatchObject({
+        attentionStudents: 0,
+        overdueMemorization: 0,
+        students: [],
+      })
+    }))
+  it('caps memorization-only previews without truncating totals and breaks deadline ties deterministically', () =>
+    run(async (db) => {
+      for (let i = 0; i < 25; i++) {
+        const id = `student-${String(i).padStart(2, '0')}`
+        await addUser(db, id)
+        await task(db, id, 1, today - 86400000)
+      }
+      await grade(db, 'student-24', 2)
+      const result = await getTeacherDashboard(db, teacher, now)
+      expect(result).toMatchObject({
+        attentionStudents: 25,
+        overdueMemorization: 25,
+        overdueReviews: 0,
+      })
+      expect(result.students).toHaveLength(20)
+      expect(result.students.slice(0, 3).map((s) => s.studentId)).toEqual([
+        'student-24',
+        'student-00',
+        'student-01',
+      ])
     }))
 })

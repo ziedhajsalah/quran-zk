@@ -6,8 +6,11 @@ import { withDatabase } from '../../src/server/db.server'
 import { user } from '../../src/server/db/schema/auth'
 import { createAccount } from '../../src/server/services/accounts.server'
 import { setGrade } from '../../src/server/services/grades.server'
+import { assignMemorization } from '../../src/server/services/memorization.server'
 import { assignReview } from '../../src/server/services/reviews.server'
 import { gotoApp, loginAs, waitForAppReady } from './helpers/navigation'
+
+test.use({ timezoneId: 'America/Los_Angeles' })
 
 const env = parseEnv(readFileSync('.env.local', 'utf8'))
 const databaseUrl = env.DATABASE_URL ?? ''
@@ -20,6 +23,7 @@ const ids: Array<string> = []
 let teacherName: string
 let adminName: string
 const students = new Map<number, string>()
+let oldestDeadline: number
 test.beforeAll(async () => {
   await withDatabase(databaseUrl, async (db) => {
     const prefix = `staffdash.${Date.now()}`
@@ -53,6 +57,7 @@ test.beforeAll(async () => {
       date.getUTCMonth(),
       date.getUTCDate(),
     )
+    oldestDeadline = today - 86400000 * 3
     for (const width of [390, 1280]) {
       const username = `${prefix}.${width}`
       const student = await createAccount(
@@ -71,6 +76,11 @@ test.beforeAll(async () => {
         studentId: student.id,
         surahNumber: 1,
         grade: 'forgotten',
+      })
+      await assignMemorization(db, teacher, {
+        studentId: student.id,
+        surahNumber: 2,
+        dueAt: today - 86400000 * 3,
       })
       await assignReview(db, teacher, {
         studentId: student.id,
@@ -104,6 +114,15 @@ for (const width of [390, 1280]) {
     await expect(card).toBeVisible()
     await expect(card.getByText(/مراجعات متأخرة/)).toBeVisible()
     await expect(card.getByText(/سور تحتاج مراجعة/)).toBeVisible()
+    await expect(card.getByText(/واجبات حفظ متأخرة/)).toBeVisible()
+    await expect(
+      card.getByText(
+        `أقدم موعد متأخر: ${new Intl.DateTimeFormat('ar', {
+          dateStyle: 'medium',
+          timeZone: 'UTC',
+        }).format(oldestDeadline)}`,
+      ),
+    ).toBeVisible()
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
@@ -114,6 +133,25 @@ for (const width of [390, 1280]) {
         path: testInfo.outputPath('teacher-dashboard-mobile.png'),
         fullPage: true,
       })
+    await card
+      .getByRole('link', { name: 'واجبات حفظ الطالب', exact: true })
+      .click()
+    await expect(
+      page.getByRole('tab', { name: 'حفظ جديد', exact: true }),
+    ).toHaveAttribute('aria-selected', 'true')
+    await page
+      .getByRole('button', { name: 'إلغاء الواجب', exact: true })
+      .click()
+    await page
+      .getByRole('button', { name: 'تأكيد إلغاء الواجب', exact: true })
+      .click()
+    await expect(
+      page.getByText('لا توجد واجبات حفظ جديدة حالياً.'),
+    ).toBeVisible()
+    // Cancellation removes the memorization badge while reviews still need attention.
+    await page.getByRole('link', { name: 'الرئيسية', exact: true }).click()
+    await expect(card).toBeVisible()
+    await expect(card.getByText(/واجبات حفظ متأخرة/)).toHaveCount(0)
     await card
       .getByRole('link', { name: 'ملاحظات الطالب', exact: true })
       .click()

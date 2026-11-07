@@ -39,6 +39,7 @@ export function TeacherDashboard({
     { label: 'الطلاب النشطون', value: data.totalStudents },
     { label: 'طلاب يحتاجون إلى متابعة', value: data.attentionStudents },
     { label: 'المراجعات المتأخرة', value: data.overdueReviews },
+    { label: 'واجبات الحفظ المتأخرة', value: data.overdueMemorization },
     { label: 'طلاب لديهم سور تحتاج مراجعة', value: data.studentsNeedingReview },
   ]
   return (
@@ -76,7 +77,7 @@ export function TeacherDashboard({
           </Stack>
           <Grid gutter="md">
             {stats.map((stat) => (
-              <Grid.Col key={stat.label} span={{ base: 6, md: 3 }}>
+              <Grid.Col key={stat.label} span={{ base: 6, md: 4 }}>
                 <Card withBorder radius="lg" p="lg" h="100%">
                   <Text fw={700} size="xl">
                     {number(stat.value)}
@@ -91,8 +92,8 @@ export function TeacherDashboard({
           <Stack gap="md">
             <Title order={2}>الأولوية للمتابعة</Title>
             <Text size="sm" c="gray.7">
-              الأقدم في المراجعات المتأخرة أولاً، ثم الأكثر سوراً بتقييم «يحتاج
-              مراجعة». المراجعات المستحقة اليوم ليست متأخرة.
+              الأقدم في المراجعات أو واجبات الحفظ المتأخرة أولاً، ثم الأكثر
+              سوراً بتقييم «يحتاج مراجعة». الواجبات المستحقة اليوم ليست متأخرة.
             </Text>
             {data.totalStudents === 0 ? (
               <Card withBorder radius="lg" p="xl">
@@ -104,7 +105,8 @@ export function TeacherDashboard({
             ) : data.attentionStudents === 0 ? (
               <Card withBorder radius="lg" p="xl">
                 <Text>
-                  لا توجد مراجعات متأخرة أو سور بتقييم «يحتاج مراجعة» حالياً.
+                  لا توجد مراجعات أو واجبات حفظ متأخرة أو سور بتقييم «يحتاج
+                  مراجعة» حالياً.
                 </Text>
               </Card>
             ) : (
@@ -136,6 +138,12 @@ export function TeacherDashboard({
                               {number(student.overdueCount)} مراجعات متأخرة
                             </Badge>
                           ) : null}
+                          {student.overdueMemorizationCount > 0 ? (
+                            <Badge color="red" variant="light">
+                              {number(student.overdueMemorizationCount)} واجبات
+                              حفظ متأخرة
+                            </Badge>
+                          ) : null}
                           {student.forgottenCount > 0 ? (
                             <Badge color="yellow" variant="light">
                               {number(student.forgottenCount)} سور تحتاج مراجعة
@@ -149,6 +157,14 @@ export function TeacherDashboard({
                         </Text>
                       ) : null}
                       <Group gap="lg">
+                        <Link
+                          to="/staff/students/$studentId"
+                          params={{ studentId: student.studentId }}
+                          search={{ tab: 'memorization' }}
+                          style={linkStyle}
+                        >
+                          واجبات حفظ الطالب
+                        </Link>
                         <Link
                           to="/staff/students/$studentId"
                           params={{ studentId: student.studentId }}
