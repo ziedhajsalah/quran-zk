@@ -1,7 +1,10 @@
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
-function arabicDate(timestamp: number, options: Intl.DateTimeFormatOptions) {
+export function arabicDate(
+  timestamp: number,
+  options: Intl.DateTimeFormatOptions,
+) {
   return new Intl.DateTimeFormat('ar', {
     numberingSystem: 'latn',
     timeZone: 'UTC',
