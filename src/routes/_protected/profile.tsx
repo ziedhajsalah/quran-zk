@@ -89,7 +89,7 @@ function ProfilePage() {
       >
         <Stack gap="xl">
           <Stack gap="xs">
-            <Text c="primary.6" fw={700} size="sm">
+            <Text c="var(--app-accent-text)" fw={700} size="sm">
               الملف الشخصي
             </Text>
             <Title order={1}>بيانات الحساب</Title>

@@ -24,7 +24,7 @@ export function MemorizationQueue({
   if (!rows.length)
     return (
       <Card withBorder radius="lg" p="lg">
-        <Text c="gray.7">لا توجد واجبات حفظ جديدة حالياً.</Text>
+        <Text c="dimmed">لا توجد واجبات حفظ جديدة حالياً.</Text>
       </Card>
     )
   return (
@@ -44,12 +44,12 @@ export function MemorizationQueue({
               <Title order={3}>{getSurah(row.surahNumber).nameAr}</Title>
               <Badge variant="light">حفظ جديد</Badge>
             </Group>
-            <Text size="sm" c="gray.7">
+            <Text size="sm" c="dimmed">
               {row.dueAt === null
                 ? 'دون موعد محدد'
                 : `الاستحقاق: ${date.format(row.dueAt)}`}
             </Text>
-            <Text size="sm" c="gray.7">
+            <Text size="sm" c="dimmed">
               أُسند في: {date.format(row.assignedAt)}
             </Text>
             {editable ? (

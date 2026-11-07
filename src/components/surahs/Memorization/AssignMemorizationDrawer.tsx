@@ -1,6 +1,7 @@
 import { Alert, Button, Drawer, Select, Stack, Text } from '@mantine/core'
 import { DatePickerInput } from '@mantine/dates'
 import { useState } from 'react'
+import 'dayjs/locale/ar'
 import type { MemorizationInput } from '~/lib/memorization'
 import { SURAHS } from '~/data/surahs'
 import { extractActionErrorMessage } from '~/lib/action-errors'
@@ -69,7 +70,7 @@ export function AssignMemorizationDrawer({
       closeButtonProps={{ 'aria-label': 'إغلاق محدد الحفظ' }}
     >
       <Stack gap="md">
-        <Text size="sm" c="gray.7">
+        <Text size="sm" c="dimmed">
           اختر سورة كاملة لم يُسجّل لها تقييم بعد. السور المسندة للحفظ حالياً
           مستبعدة.
         </Text>
@@ -96,6 +97,8 @@ export function AssignMemorizationDrawer({
           }))}
         />
         <DatePickerInput
+          locale="ar"
+          valueFormat="D MMMM YYYY"
           label="تاريخ الاستحقاق (اختياري)"
           placeholder="اختر تاريخًا"
           value={dueDate}
@@ -114,7 +117,7 @@ export function AssignMemorizationDrawer({
             previousMonth: 'الشهر السابق',
           }}
         />
-        <Text size="sm" c="gray.7">
+        <Text size="sm" c="dimmed">
           الموعد حسب التوقيت العالمي (UTC). اتركه فارغاً للإسناد دون موعد محدد.
         </Text>
         <Button

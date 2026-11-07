@@ -35,7 +35,7 @@ export function WorkQueueList({ rows }: { rows: ReadonlyArray<WorkRow> }) {
                   {row.kind === 'review' ? 'مراجعة' : 'حفظ جديد'}
                 </Badge>
               </Group>
-              <Text dir="ltr" size="sm" c="gray.7">
+              <Text dir="ltr" size="sm" c="dimmed">
                 @{row.username}
               </Text>
               <Text fw={700}>{getSurah(row.surahNumber).nameAr}</Text>

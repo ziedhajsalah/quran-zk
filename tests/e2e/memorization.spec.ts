@@ -16,6 +16,11 @@ import {
   finishMemorization,
 } from '../../src/server/services/memorization.server'
 import { gotoApp, loginAs, waitForAppReady } from './helpers/navigation'
+import {
+  chooseArabicDeadline,
+  clearDeadline,
+  useUtcDeadlineBoundary,
+} from './helpers/deadline'
 import type { Locator, Page } from '@playwright/test'
 import type { Actor } from '../../src/server/auth-guards.server'
 
@@ -102,31 +107,6 @@ async function chooseSurah(page: Page, drawer: Locator, name: string) {
   await input.fill(name)
   await page.getByRole('option', { name, exact: true }).click()
 }
-async function chooseDeadline(page: Page, drawer: Locator) {
-  const now = new Date()
-  const dueAt = Date.UTC(
-    now.getUTCFullYear(),
-    now.getUTCMonth(),
-    now.getUTCDate() + 1,
-  )
-  await drawer.getByLabel('تاريخ الاستحقاق (اختياري)', { exact: true }).click()
-  const label = new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(dueAt)
-  const day = page.getByRole('button', { name: label, exact: true })
-  await expect(
-    page.getByRole('button', { name: 'الشهر التالي', exact: true }),
-  ).toBeVisible()
-  if ((await day.count()) === 0)
-    await page
-      .getByRole('button', { name: 'الشهر التالي', exact: true })
-      .click()
-  await day.click()
-  return dueAt
-}
 for (const width of [390, 1280]) {
   test(`assignment, student dashboard and graded completion work at ${width}px west of UTC`, async ({
     page,
@@ -135,6 +115,7 @@ for (const width of [390, 1280]) {
     const errors: Array<string> = []
     page.on('pageerror', (error) => errors.push(error.message))
     await page.setViewportSize({ width, height: 844 })
+    await useUtcDeadlineBoundary(page)
     const student = await staffPage(page, String(width))
     const drawer = await openDrawer(page)
     await expect(
@@ -148,7 +129,9 @@ for (const width of [390, 1280]) {
       page.getByRole('option', { name: 'البقرة', exact: true }),
     ).toHaveCount(0)
     await chooseSurah(page, drawer, 'الكهف')
-    const dueAt = await chooseDeadline(page, drawer)
+    const dueAt = await chooseArabicDeadline(page, drawer)
+    await clearDeadline(drawer, 'مسح موعد الحفظ')
+    await chooseArabicDeadline(page, drawer)
     let start!: () => void, release!: () => void
     const started = new Promise<void>((resolve) => {
       start = resolve
@@ -279,8 +262,29 @@ for (const width of [390, 1280]) {
     await expect(
       studentPage.getByText('1 واجبات حفظ مفتوحة', { exact: true }),
     ).toBeVisible()
-    expect(errors).toEqual([])
     await studentContext.close()
+    await page.getByRole('tab', { name: 'حفظ جديد', exact: true }).click()
+    const optional = await openDrawer(page)
+    await chooseSurah(page, optional, 'يس')
+    await chooseArabicDeadline(page, optional)
+    await clearDeadline(optional, 'مسح موعد الحفظ')
+    await optional
+      .getByRole('button', { name: 'إسناد الحفظ', exact: true })
+      .click()
+    await expect(optional).not.toBeVisible()
+    await withDatabase(databaseUrl, async (db) => {
+      const [undated] = await db
+        .select()
+        .from(memorizationAssignments)
+        .where(
+          and(
+            eq(memorizationAssignments.studentId, student.id),
+            eq(memorizationAssignments.surahNumber, 36),
+          ),
+        )
+      expect(undated.dueAt).toBeNull()
+    })
+    expect(errors).toEqual([])
   })
 }
 
@@ -337,7 +341,7 @@ test('stale assignment errors preserve the selected surah and date for correctio
   const student = await staffPage(page, 'retry')
   const drawer = await openDrawer(page)
   await chooseSurah(page, drawer, 'الكهف')
-  await chooseDeadline(page, drawer)
+  await chooseArabicDeadline(page, drawer)
   const value = await drawer
     .getByLabel('تاريخ الاستحقاق (اختياري)', { exact: true })
     .textContent()

@@ -28,7 +28,7 @@ export function WorkQueue({
   const query = useQuery(workQueueQuery(filters, cursors[cursors.length - 1]))
   return (
     <Stack gap="lg" ref={start} style={{ scrollMarginTop: '7rem' }}>
-      <Text c="gray.7">
+      <Text c="dimmed">
         واجبات الطلاب النشطين المفتوحة، من أقدم موعد إلى الأحدث، ثم دون موعد.
         التواريخ حسب التوقيت العالمي (UTC).
       </Text>

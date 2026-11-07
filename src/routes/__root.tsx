@@ -15,7 +15,7 @@ import * as React from 'react'
 import type { QueryClient } from '@tanstack/react-query'
 import { fetchAppSession } from '~/lib/auth'
 import appCss from '~/styles/app.css?url'
-import { appTheme } from '~/theme'
+import { appCssVariablesResolver, appTheme } from '~/theme'
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient
@@ -68,7 +68,11 @@ function RootComponent() {
   return (
     <DirectionProvider initialDirection="rtl">
       <RootDocument>
-        <MantineProvider theme={appTheme} defaultColorScheme="auto">
+        <MantineProvider
+          theme={appTheme}
+          cssVariablesResolver={appCssVariablesResolver}
+          defaultColorScheme="auto"
+        >
           <Outlet />
         </MantineProvider>
       </RootDocument>

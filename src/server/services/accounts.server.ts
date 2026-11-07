@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm'
+import { DrizzleQueryError, and, eq, sql } from 'drizzle-orm'
 import { hashPassword } from '../password.server'
 import { account, session, user } from '../db/schema/auth'
 import { accountInput, roles, serializeUser } from '../accounts'
@@ -20,34 +20,59 @@ export async function createAccount(
 ) {
   const normalized = accountInput.parse(input)
   const password = await hashPassword(normalized.password)
-  return db.transaction(async (tx) => {
-    await tx.execute(sql`select pg_advisory_xact_lock(${ADMIN_LOCK})`)
-    if (
-      bootstrap &&
-      (await tx.select({ id: user.id }).from(user).limit(1)).length
-    )
-      fail('Bootstrap is only available before any user exists.')
-    const id = crypto.randomUUID()
-    const [created] = await tx
-      .insert(user)
-      .values({
-        id,
-        username: normalized.username,
-        displayUsername: normalized.username,
-        name: normalized.displayName,
-        email: normalized.email ?? `${normalized.username}@auth.local.invalid`,
-        role: [...new Set(appRoles)].sort().join(','),
+  return db
+    .transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(${ADMIN_LOCK})`)
+      if (
+        bootstrap &&
+        (await tx.select({ id: user.id }).from(user).limit(1)).length
+      )
+        fail('Bootstrap is only available before any user exists.')
+      const id = crypto.randomUUID()
+      const [created] = await tx
+        .insert(user)
+        .values({
+          id,
+          username: normalized.username,
+          displayUsername: normalized.username,
+          name: normalized.displayName,
+          email:
+            normalized.email ?? `${normalized.username}@auth.local.invalid`,
+          role: [...new Set(appRoles)].sort().join(','),
+        })
+        .returning()
+      await tx.insert(account).values({
+        id: crypto.randomUUID(),
+        accountId: id,
+        providerId: 'credential',
+        userId: id,
+        password,
       })
-      .returning()
-    await tx.insert(account).values({
-      id: crypto.randomUUID(),
-      accountId: id,
-      providerId: 'credential',
-      userId: id,
-      password,
+      return serializeUser(created)
     })
-    return serializeUser(created)
-  })
+    .catch((error: unknown) => {
+      const cause = error instanceof DrizzleQueryError ? error.cause : null
+      if (
+        cause &&
+        typeof cause === 'object' &&
+        'code' in cause &&
+        cause.code === '23505' &&
+        'table' in cause &&
+        cause.table === 'user' &&
+        'constraint' in cause
+      ) {
+        if (
+          cause.constraint === 'user_username_unique' ||
+          (cause.constraint === 'user_email_unique' && !normalized.email)
+        )
+          fail('اسم المستخدم مستخدم بالفعل. اختر اسم مستخدم آخر.')
+        if (cause.constraint === 'user_email_unique')
+          fail(
+            'البريد الإلكتروني مستخدم بالفعل. أدخل بريدًا آخر أو اتركه فارغًا.',
+          )
+      }
+      throw error
+    })
 }
 export async function staffCreateStudent(
   db: Database,

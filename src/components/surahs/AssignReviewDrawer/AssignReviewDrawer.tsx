@@ -12,6 +12,7 @@ import {
 import { DatePickerInput } from '@mantine/dates'
 import { IconSearch } from '@tabler/icons-react'
 import { useEffect, useMemo, useState } from 'react'
+import 'dayjs/locale/ar'
 import type {
   BatchReviewInput,
   BatchReviewResult,
@@ -116,7 +117,7 @@ export function AssignReviewDrawer({
       closeButtonProps={{ 'aria-label': 'إغلاق محدد المراجعات' }}
     >
       <Stack gap="md">
-        <Text size="sm" c="gray.7">
+        <Text size="sm" c="dimmed">
           اختر سوراً مسجّلة للطالب. السور ذات المراجعات المفتوحة مستبعدة من
           القائمة.
         </Text>
@@ -159,7 +160,7 @@ export function AssignReviewDrawer({
             </Group>
             <Stack gap="xs" style={{ maxHeight: '40vh', overflowY: 'auto' }}>
               {candidates.length === 0 ? (
-                <Text c="gray.7" ta="center" py="lg">
+                <Text c="dimmed" ta="center" py="lg">
                   {eligible.length === 0
                     ? 'لا توجد سور متاحة للإسناد. أضف سورة أو أغلق مراجعتها المفتوحة أولاً.'
                     : 'لا توجد سور تطابق البحث.'}
@@ -182,7 +183,7 @@ export function AssignReviewDrawer({
                       label={
                         <Stack gap={2}>
                           <Text fw={600}>{surah.nameAr}</Text>
-                          <Text c="gray.7" size="sm">
+                          <Text c="dimmed" size="sm">
                             {formatArabicNumber(surah.number)} · {surah.nameEn}
                           </Text>
                         </Stack>
@@ -218,12 +219,19 @@ export function AssignReviewDrawer({
               ))}
             </Stack>
             <DatePickerInput
+              locale="ar"
+              valueFormat="D MMMM YYYY"
               label="تاريخ الاستحقاق (اختياري)"
               placeholder="اختر تاريخًا"
               value={dueDate}
               onChange={setDueDate}
               minDate={new Date().toISOString().slice(0, 10)}
               clearable
+              clearButtonProps={{
+                'aria-label': 'مسح موعد المراجعة',
+                'aria-hidden': false,
+                tabIndex: 0,
+              }}
               popoverProps={{ withinPortal: false }}
               ariaLabels={{
                 nextMonth: 'الشهر التالي',
@@ -231,7 +239,7 @@ export function AssignReviewDrawer({
               }}
               disabled={submitting}
             />
-            <Text size="sm" c="gray.7">
+            <Text size="sm" c="dimmed">
               يُطبّق الموعد نفسه على جميع السور المختارة. دون تاريخ، تُسند
               المراجعات بلا موعد محدد.
             </Text>

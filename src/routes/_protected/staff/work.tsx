@@ -43,7 +43,9 @@ function StaffWorkPage() {
         <Stack gap="xl">
           <Group justify="space-between">
             <Title order={1}>قائمة الواجبات</Title>
-            <Link to="/">العودة للرئيسية</Link>
+            <Link to="/" style={{ color: 'var(--app-accent-text)' }}>
+              العودة للرئيسية
+            </Link>
           </Group>
           <WorkQueue
             key={JSON.stringify(filters)}

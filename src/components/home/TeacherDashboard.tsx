@@ -32,7 +32,7 @@ export function TeacherDashboard({
   const theme = useMantineTheme()
   const chrome = createHomeDashboardData(displayName)
   const linkStyle = {
-    color: theme.colors.primary[7],
+    color: 'var(--app-accent-text)',
     textUnderlineOffset: '0.2em',
   }
   const stats = [
@@ -63,11 +63,11 @@ export function TeacherDashboard({
       >
         <Stack gap="xl">
           <Stack gap="xs">
-            <Text c="primary.7" fw={700}>
+            <Text c="var(--app-accent-text)" fw={700}>
               أهلاً بك، {displayName}
             </Text>
             <Title order={1}>متابعة الطلاب</Title>
-            <Text c="gray.7">
+            <Text c="dimmed">
               نظرة على جميع الطلاب النشطين في المدرسة، لمساعدتك على تحديد من
               يحتاج إلى دعم اليوم.
             </Text>
@@ -91,7 +91,7 @@ export function TeacherDashboard({
                   <Text fw={700} size="xl">
                     {number(stat.value)}
                   </Text>
-                  <Text size="sm" c="gray.7">
+                  <Text size="sm" c="dimmed">
                     {stat.label}
                   </Text>
                 </Card>
@@ -100,7 +100,7 @@ export function TeacherDashboard({
           </Grid>
           <Stack gap="md">
             <Title order={2}>الأولوية للمتابعة</Title>
-            <Text size="sm" c="gray.7">
+            <Text size="sm" c="dimmed">
               الأقدم في المراجعات أو واجبات الحفظ المتأخرة أولاً، ثم الأكثر
               سوراً بتقييم «يحتاج مراجعة». الواجبات المستحقة اليوم ليست متأخرة.
             </Text>
@@ -120,7 +120,7 @@ export function TeacherDashboard({
               </Card>
             ) : (
               <>
-                <Text size="sm" c="gray.7">
+                <Text size="sm" c="dimmed">
                   عرض {number(data.students.length)} من{' '}
                   {number(data.attentionStudents)} طالب يحتاج إلى متابعة.
                 </Text>
@@ -137,7 +137,7 @@ export function TeacherDashboard({
                       <Group justify="space-between" align="flex-start">
                         <Stack gap={2}>
                           <Title order={3}>{student.displayName}</Title>
-                          <Text size="sm" c="gray.7" dir="ltr">
+                          <Text size="sm" c="dimmed" dir="ltr">
                             @{student.username}
                           </Text>
                         </Stack>
@@ -161,7 +161,7 @@ export function TeacherDashboard({
                         </Group>
                       </Group>
                       {student.oldestDueAt !== null ? (
-                        <Text size="sm" c="gray.7">
+                        <Text size="sm" c="dimmed">
                           أقدم موعد متأخر: {date.format(student.oldestDueAt)}
                         </Text>
                       ) : null}
