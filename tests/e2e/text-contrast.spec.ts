@@ -1,21 +1,77 @@
 import { readFileSync } from 'node:fs'
 import { parseEnv } from 'node:util'
 import { expect, test } from '@playwright/test'
+import { inArray } from 'drizzle-orm'
+import { withDatabase } from '../../src/server/db.server'
+import { user } from '../../src/server/db/schema/auth'
+import { createAccount } from '../../src/server/services/accounts.server'
 import { contrastRatio } from '../contrast'
 import { gotoApp, loginAs } from './helpers/navigation'
 import type { Locator } from '@playwright/test'
 
 const env = parseEnv(readFileSync('.env.local', 'utf8'))
-const password = process.env.DEV_SEED_PASSWORD ?? env.DEV_SEED_PASSWORD
-if (!password)
-  throw new Error('Set DEV_SEED_PASSWORD for the local seed accounts.')
-if (
-  !['localhost', '127.0.0.1'].includes(new URL(env.DATABASE_URL ?? '').hostname)
-)
+const databaseUrl = env.DATABASE_URL ?? ''
+if (!['localhost', '127.0.0.1'].includes(new URL(databaseUrl).hostname))
   throw new Error('Contrast browser tests require local PostgreSQL.')
+const password = env.DEV_SEED_PASSWORD
+if (!password) throw new Error('Set DEV_SEED_PASSWORD for local fixtures.')
+const schemes = ['light', 'dark'] as const
+const widths = [390, 1280]
+const ids: Array<string> = []
+const teachers = new Map<string, string>()
+let studentName: string
+
+// One account per test keeps logins below the per-account sign-in limit.
+test.beforeAll(async () => {
+  await withDatabase(databaseUrl, async (db) => {
+    const prefix = `contrast.${Date.now().toString(36)}`
+    studentName = `${prefix}.student`
+    const student = await createAccount(
+      db,
+      {
+        username: studentName,
+        displayName: 'طالب التباين',
+        email: null,
+        password,
+      },
+      ['student'],
+    )
+    ids.push(student.id)
+    for (const scheme of schemes)
+      for (const width of widths) {
+        const username = `${prefix}.${scheme}.${width}`
+        const teacher = await createAccount(
+          db,
+          { username, displayName: 'معلم التباين', email: null, password },
+          ['teacher'],
+        )
+        ids.push(teacher.id)
+        teachers.set(`${scheme}:${width}`, username)
+      }
+  })
+})
+
+test.afterAll(async () => {
+  if (ids.length)
+    await withDatabase(databaseUrl, async (db) => {
+      await db.delete(user).where(inArray(user.id, ids))
+    })
+})
 
 async function measureText(locator: Locator, pseudo: string | null = null) {
   await expect(locator).toBeVisible()
+  // Measure settled UI, not the opacity of an opening drawer/dialog transition.
+  await locator
+    .page()
+    .waitForFunction(() =>
+      document
+        .getAnimations()
+        .every(
+          (animation) =>
+            animation.playState !== 'running' ||
+            animation.effect?.getComputedTiming().iterations === Infinity,
+        ),
+    )
   const colors = await locator.evaluate((element, pseudoElement) => {
     function rgba(value: string) {
       if (!value.startsWith('rgb'))
@@ -48,8 +104,8 @@ async function measureText(locator: Locator, pseudo: string | null = null) {
   }
 }
 
-for (const scheme of ['light', 'dark'] as const) {
-  for (const width of [390, 1280]) {
+for (const scheme of schemes) {
+  for (const width of widths) {
     test(`enabled secondary text meets AA in ${scheme} at ${width}px`, async ({
       page,
     }, testInfo) => {
@@ -68,7 +124,8 @@ for (const scheme of ['light', 'dark'] as const) {
           `${label}: ${JSON.stringify(measurement)}`,
         ).toBeGreaterThanOrEqual(4.5)
       }
-      await loginAs(page, 'qa.teacher.oct13', password)
+      const teacherName = teachers.get(`${scheme}:${width}`)!
+      await loginAs(page, teacherName, password)
       await expect(page.locator('html')).toHaveAttribute(
         'data-mantine-color-scheme',
         scheme,
@@ -88,7 +145,7 @@ for (const scheme of ['light', 'dark'] as const) {
         'profile instructions',
       )
       await check(
-        page.getByText('@qa.teacher.oct13', { exact: true }).first(),
+        page.getByText(`@${teacherName}`, { exact: true }).first(),
         'profile username on paper',
       )
       for (const label of [
@@ -109,8 +166,8 @@ for (const scheme of ['light', 'dark'] as const) {
       )
       const student = page
         .getByRole('button')
-        .filter({ hasText: '@qa.student.oct13' })
-      const username = student.getByText('@qa.student.oct13', { exact: true })
+        .filter({ hasText: `@${studentName}` })
+      const username = student.getByText(`@${studentName}`, { exact: true })
       await check(username, 'student username: normal')
       await student.hover()
       await check(username, 'student username: hover')
