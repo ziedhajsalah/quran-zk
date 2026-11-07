@@ -30,8 +30,8 @@ const today = Date.UTC(
   instant.getUTCMonth(),
   instant.getUTCDate(),
 )
-function rpcDefinition(url: string) {
-  const encoded = new URL(url).pathname.split('/').at(-1) ?? ''
+function rpcDefinition(requestUrl: string) {
+  const encoded = new URL(requestUrl).pathname.split('/').at(-1) ?? ''
   return Buffer.from(decodeURIComponent(encoded), 'base64url').toString()
 }
 test.beforeAll(async () => {
