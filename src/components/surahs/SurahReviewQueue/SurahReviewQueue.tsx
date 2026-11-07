@@ -12,6 +12,7 @@ export interface SurahReviewQueueItem {
 export interface SurahReviewQueueProps {
   rows: ReadonlyArray<SurahReviewQueueItem>
   editable?: boolean
+  onReschedule?: (assignmentId: string) => void
   onClose?: (assignmentId: string) => void
   onCancel?: (assignmentId: string) => void
 }
@@ -19,6 +20,7 @@ export interface SurahReviewQueueProps {
 export function SurahReviewQueue({
   rows,
   editable = false,
+  onReschedule,
   onClose,
   onCancel,
 }: SurahReviewQueueProps) {
@@ -44,6 +46,9 @@ export function SurahReviewQueue({
             assignedAt={row.assignedAt}
             dueAt={row.dueAt}
             editable={editable}
+            onReschedule={
+              onReschedule ? () => onReschedule(row.assignmentId) : undefined
+            }
             onClose={() => onClose?.(row.assignmentId)}
             onCancel={() => onCancel?.(row.assignmentId)}
           />

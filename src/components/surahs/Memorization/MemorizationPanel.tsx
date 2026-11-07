@@ -10,10 +10,12 @@ import {
 } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
+import { AssignmentDeadlineDialog } from '../AssignmentDeadlineDialog'
 import { AssignMemorizationDrawer } from './AssignMemorizationDrawer'
 import { AssessMemorizationDialog } from './AssessMemorizationDialog'
 import { MemorizationHistoryPanel } from './MemorizationHistoryPanel'
 import { MemorizationQueue } from './MemorizationQueue'
+import type { AssignmentDeadline } from '~/lib/assignment-deadline'
 import type { MemorizationRow } from '~/lib/memorization'
 import { memorizationQuery, useAppMutation } from '~/lib/queries'
 import * as functions from '~/server/functions/memorization'
@@ -30,6 +32,10 @@ export function MemorizationPanel({
   editable?: boolean
 }) {
   const query = useQuery(memorizationQuery(studentId))
+  const [rescheduling, setRescheduling] = useState<AssignmentDeadline | null>(
+    null,
+  )
+  const reschedule = useAppMutation(functions.reschedule, ['memorization'])
   const assign = useAppMutation(functions.assign, ['memorization'])
   const assess = useAppMutation(functions.assess, ['memorization', 'grades'])
   const cancel = useAppMutation(functions.cancel, ['memorization'])
@@ -95,6 +101,13 @@ export function MemorizationPanel({
           editable={editable}
           busy={pending}
           onAssess={setAssessing}
+          onReschedule={(row) =>
+            setRescheduling({
+              assignmentId: row._id,
+              surahNumber: row.surahNumber,
+              dueAt: row.dueAt,
+            })
+          }
           onCancel={(row) => {
             setError(null)
             setCancelling(row)
@@ -116,6 +129,19 @@ export function MemorizationPanel({
       ) : null}
       {editable ? (
         <>
+          {rescheduling ? (
+            <AssignmentDeadlineDialog
+              key={rescheduling.assignmentId}
+              assignment={rescheduling}
+              onClose={() => setRescheduling(null)}
+              onSubmit={(change) =>
+                reschedule({
+                  assignmentId: rescheduling.assignmentId,
+                  ...change,
+                })
+              }
+            />
+          ) : null}
           <AssignMemorizationDrawer
             opened={assigning}
             onClose={() => setAssigning(false)}
