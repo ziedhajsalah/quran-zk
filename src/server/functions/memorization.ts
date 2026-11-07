@@ -4,6 +4,7 @@ import * as service from '../services/memorization.server'
 import {
   assessMemorizationInput,
   assignmentInput,
+  memorizationHistoryInput,
   memorizationInput,
   studentInput,
 } from './validation'
@@ -29,4 +30,12 @@ export const cancel = createServerFn({ method: 'POST' })
   .validator(assignmentInput)
   .handler(({ data }) =>
     withRuntime(({ db, actor }) => service.finishMemorization(db, actor, data)),
+  )
+
+export const listHistoryForStudent = createServerFn({ method: 'GET' })
+  .validator(memorizationHistoryInput)
+  .handler(({ data }) =>
+    withRuntime(({ db, actor }) =>
+      service.listMemorizationHistory(db, actor, data),
+    ),
   )

@@ -14,3 +14,22 @@ export interface MemorizationAssessment {
   assignmentId: string
   grade: SurahGrade
 }
+
+export type MemorizationHistoryStatus = 'all' | 'closed' | 'cancelled'
+export interface MemorizationHistoryCursor {
+  closedAt: number
+  id: string
+}
+export interface MemorizationHistoryRow {
+  id: string
+  surahNumber: number
+  status: 'closed' | 'cancelled'
+  assignedAt: number
+  dueAt: number | null
+  closedAt: number
+  closingGrade: SurahGrade | null
+}
+export interface MemorizationHistoryPage {
+  rows: Array<MemorizationHistoryRow>
+  nextCursor: MemorizationHistoryCursor | null
+}

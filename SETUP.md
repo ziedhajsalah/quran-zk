@@ -107,3 +107,5 @@ Apply committed migration `0002_grade_history.sql` with `npm run db:migrate` aga
 ## New memorization assignments
 
 Apply committed migration `0003_memorization_assignments.sql` before deploying this app version. It only adds a table and indexes. Teachers use **حفظ جديد** on a student page to assign an unrecorded whole surah with an optional UTC calendar deadline. Students see it in the same tab and the **ماذا أحفظ؟** dashboard card. Assignment alone does not change progress. Assessing with a grade adds the surah and a progress-history entry, then completes the assignment in one transaction. Recording the grade through the existing add-surah flow also completes matching open work. Cancellation creates no grade. Existing reviews remain separate. No new service/subscription is required.
+
+Completed and cancelled new memorization assignments are available through **عرض سجل الحفظ** inside **حفظ جديد** for students and staff. The history offers status filters and 20-row pages, showing the saved completion grade and UTC dates. It uses existing migration `0003` data and needs no additional migration or service.
