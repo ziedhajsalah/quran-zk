@@ -1,8 +1,10 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
+import { rescheduleAssignment } from '../services/assignment-deadline.server'
 import { withRuntime } from '../runtime.server'
 import * as service from '../services/reviews.server'
 import {
+  assignmentDeadlineInput,
   assignmentInput,
   batchReviewInput,
   gradeSchema,
@@ -46,4 +48,12 @@ export const cancel = createServerFn({ method: 'POST' })
   .validator(assignmentInput)
   .handler(({ data }) =>
     withRuntime(({ db, actor }) => service.finishReview(db, actor, data, true)),
+  )
+
+export const reschedule = createServerFn({ method: 'POST' })
+  .validator(assignmentDeadlineInput)
+  .handler(({ data }) =>
+    withRuntime(({ db, actor }) =>
+      rescheduleAssignment(db, actor, 'review', data),
+    ),
   )
