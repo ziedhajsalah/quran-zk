@@ -12,6 +12,7 @@ import {
 import { DatePickerInput } from '@mantine/dates'
 import { IconSearch } from '@tabler/icons-react'
 import { useEffect, useMemo, useState } from 'react'
+import 'dayjs/locale/ar'
 import type {
   BatchReviewInput,
   BatchReviewResult,
@@ -218,12 +219,19 @@ export function AssignReviewDrawer({
               ))}
             </Stack>
             <DatePickerInput
+              locale="ar"
+              valueFormat="D MMMM YYYY"
               label="تاريخ الاستحقاق (اختياري)"
               placeholder="اختر تاريخًا"
               value={dueDate}
               onChange={setDueDate}
               minDate={new Date().toISOString().slice(0, 10)}
               clearable
+              clearButtonProps={{
+                'aria-label': 'مسح موعد المراجعة',
+                'aria-hidden': false,
+                tabIndex: 0,
+              }}
               popoverProps={{ withinPortal: false }}
               ariaLabels={{
                 nextMonth: 'الشهر التالي',

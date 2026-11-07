@@ -9,6 +9,11 @@ import { createAccount } from '../../src/server/services/accounts.server'
 import { removeGrade, setGrade } from '../../src/server/services/grades.server'
 import { assignReview } from '../../src/server/services/reviews.server'
 import { gotoApp, loginAs } from './helpers/navigation'
+import {
+  chooseArabicDeadline,
+  clearDeadline,
+  useUtcDeadlineBoundary,
+} from './helpers/deadline'
 import type { Locator, Page } from '@playwright/test'
 import type { Actor } from '../../src/server/auth-guards.server'
 
@@ -68,7 +73,10 @@ test.beforeAll(async () => {
           surahNumber,
           grade: 'medium',
         })
-      await assignReview(db, teacher, { studentId: student.id, surahNumber: 2 })
+      await assignReview(db, teacher, {
+        studentId: student.id,
+        surahNumber: 2,
+      })
     }
   })
 })
@@ -107,44 +115,20 @@ async function selectTwo(drawer: Locator) {
   await expect(drawer.getByRole('checkbox', { name: /يس/ })).not.toBeChecked()
   await drawer.getByRole('button', { name: 'متابعة', exact: true }).click()
 }
-async function pickSharedDate(page: Page, drawer: Locator) {
-  const dueAt = await page.evaluate(() => {
-    const now = new Date()
-    return Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate() + 1,
-    )
-  })
-  await drawer.getByLabel('تاريخ الاستحقاق (اختياري)', { exact: true }).click()
-  const label = new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(dueAt)
-  const day = page.getByRole('button', { name: label, exact: true })
-  await expect(
-    page.getByRole('button', { name: 'الشهر التالي', exact: true }),
-  ).toBeVisible()
-  if ((await day.count()) === 0)
-    await page
-      .getByRole('button', { name: 'الشهر التالي', exact: true })
-      .click()
-  await day.click()
-  return dueAt
-}
 for (const width of [390, 1280]) {
   test(`batch selection, shared date and pending state work at ${width}px`, async ({
     page,
   }, testInfo) => {
     await page.setViewportSize({ width, height: 844 })
+    await useUtcDeadlineBoundary(page)
     const drawer = await openDrawer(page, String(width))
     await selectTwo(drawer)
     await drawer.getByRole('button', { name: 'تعديل الاختيار' }).click()
     await expect(drawer.getByRole('checkbox', { name: /الكهف/ })).toBeChecked()
     await drawer.getByRole('button', { name: 'متابعة', exact: true }).click()
-    const dueAt = await pickSharedDate(page, drawer)
+    const dueAt = await chooseArabicDeadline(page, drawer)
+    await clearDeadline(drawer, 'مسح موعد المراجعة')
+    await chooseArabicDeadline(page, drawer)
     if (width === 390)
       await page.screenshot({
         path: testInfo.outputPath('batch-confirmation-mobile.png'),
@@ -208,7 +192,19 @@ for (const width of [390, 1280]) {
       .click()
     await expect(drawer.getByRole('checkbox')).toHaveCount(1)
     await expect(drawer.getByRole('checkbox', { name: /يس/ })).not.toBeChecked()
-    await drawer.getByRole('button', { name: 'إغلاق محدد المراجعات' }).click()
+    await drawer.getByRole('checkbox', { name: /يس/ }).check()
+    await drawer.getByRole('button', { name: 'متابعة', exact: true }).click()
+    await chooseArabicDeadline(page, drawer)
+    await clearDeadline(drawer, 'مسح موعد المراجعة')
+    await drawer.getByRole('button', { name: 'إسناد', exact: true }).click()
+    await expect(drawer).not.toBeVisible()
+    await withDatabase(databaseUrl, async (db) => {
+      const rows = await db
+        .select()
+        .from(reviews)
+        .where(eq(reviews.studentId, students.get(String(width))!))
+      expect(rows.find((row) => row.surahNumber === 36)?.dueAt).toBeNull()
+    })
   })
 }
 
@@ -243,7 +239,7 @@ test('retains selection and date after a real server rejection and can retry', a
 }) => {
   const drawer = await openDrawer(page, 'retry')
   await selectTwo(drawer)
-  const dueAt = await pickSharedDate(page, drawer)
+  const dueAt = await chooseArabicDeadline(page, drawer)
   const dateText = await drawer
     .getByLabel('تاريخ الاستحقاق (اختياري)', { exact: true })
     .innerText()
