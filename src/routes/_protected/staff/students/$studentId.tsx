@@ -42,7 +42,7 @@ import {
 } from '~/components/home'
 import { SurahGradeList } from '~/components/surahs/SurahGradeList'
 import { AddSurahDrawer } from '~/components/surahs/AddSurahDrawer'
-import { SurahReviewQueue } from '~/components/surahs/SurahReviewQueue'
+import { EditableReviewQueue } from '~/components/surahs/EditableReviewQueue'
 import { AssignReviewDrawer } from '~/components/surahs/AssignReviewDrawer'
 import { CloseAssignmentDialog } from '~/components/surahs/CloseAssignmentDialog'
 import { StudentNotesList } from '~/components/staff/StudentNotesList'
@@ -340,14 +340,14 @@ function StaffStudentGradingPage() {
                     إسناد مراجعة
                   </Button>
                 </Group>
-                <SurahReviewQueue
+                <EditableReviewQueue
+                  key={studentId}
                   rows={openAssignments.map((a) => ({
                     assignmentId: String(a._id),
                     surahNumber: a.surahNumber,
                     assignedAt: a.assignedAt,
                     dueAt: a.dueAt,
                   }))}
-                  editable
                   onClose={(assignmentId) =>
                     setClosingAssignmentId(assignmentId)
                   }

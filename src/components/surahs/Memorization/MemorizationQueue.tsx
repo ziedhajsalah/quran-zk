@@ -10,12 +10,14 @@ export function MemorizationQueue({
   rows,
   editable = false,
   busy = false,
+  onReschedule,
   onAssess,
   onCancel,
 }: {
   rows: ReadonlyArray<MemorizationRow>
   editable?: boolean
   busy?: boolean
+  onReschedule?: (row: MemorizationRow) => void
   onAssess?: (row: MemorizationRow) => void
   onCancel?: (row: MemorizationRow) => void
 }) {
@@ -52,6 +54,15 @@ export function MemorizationQueue({
             </Text>
             {editable ? (
               <Group wrap="wrap">
+                {onReschedule ? (
+                  <Button
+                    variant="light"
+                    disabled={busy}
+                    onClick={() => onReschedule(row)}
+                  >
+                    تعديل الموعد
+                  </Button>
+                ) : null}
                 <Button
                   variant="light"
                   disabled={busy}

@@ -1,5 +1,5 @@
 import { ActionIcon, Badge, Group, Stack, Text, Tooltip } from '@mantine/core'
-import { IconCheck, IconX } from '@tabler/icons-react'
+import { IconCalendar, IconCheck, IconX } from '@tabler/icons-react'
 import type { Surah } from '~/data/surahs'
 import { formatArabicNumber } from '~/components/home/home-formatters'
 import { formatArabicRelative } from '~/lib/arabic-time'
@@ -9,6 +9,7 @@ export interface SurahReviewRowProps {
   assignedAt: number
   dueAt: number | null
   editable?: boolean
+  onReschedule?: () => void
   onClose?: () => void
   onCancel?: () => void
 }
@@ -18,6 +19,7 @@ export function SurahReviewRow({
   assignedAt,
   dueAt,
   editable = false,
+  onReschedule,
   onClose,
   onCancel,
 }: SurahReviewRowProps) {
@@ -43,7 +45,20 @@ export function SurahReviewRow({
       </Stack>
 
       {editable ? (
-        <Group gap="xs" wrap="nowrap">
+        <Group gap="xs" wrap="wrap" justify="flex-end">
+          {onReschedule ? (
+            <Tooltip label="تعديل الموعد">
+              <ActionIcon
+                variant="light"
+                size="lg"
+                radius="xl"
+                onClick={onReschedule}
+                aria-label="تعديل الموعد"
+              >
+                <IconCalendar size={18} />
+              </ActionIcon>
+            </Tooltip>
+          ) : null}
           <Tooltip label="إغلاق">
             <ActionIcon
               variant="light"
