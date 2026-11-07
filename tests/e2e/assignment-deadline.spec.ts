@@ -19,6 +19,7 @@ import {
   finishMemorization,
 } from '../../src/server/services/memorization.server'
 import { rescheduleAssignment } from '../../src/server/services/assignment-deadline.server'
+import { arabicDate, expectRtlMonthArrows } from './helpers/deadline'
 import { gotoApp, loginAs } from './helpers/navigation'
 import type { Locator, Page } from '@playwright/test'
 import type { Actor } from '../../src/server/auth-guards.server'
@@ -96,12 +97,11 @@ test.afterAll(async () => {
 })
 async function pickDate(page: Page, dialog: Locator, screenshotPath?: string) {
   await dialog.getByLabel('تاريخ استحقاق الواجب', { exact: true }).click()
-  const label = new Intl.DateTimeFormat('en-GB', {
+  const label = arabicDate(future, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
-    timeZone: 'UTC',
-  }).format(future)
+  })
   await expect(
     page.getByRole('button', { name: 'الشهر التالي', exact: true }),
   ).toBeVisible()
@@ -111,9 +111,28 @@ async function pickDate(page: Page, dialog: Locator, screenshotPath?: string) {
       .getByRole('button', { name: 'الشهر التالي', exact: true })
       .click()
   await expect(day).toBeVisible()
+  await expect(
+    page.getByRole('button', {
+      name: arabicDate(future, { month: 'long', year: 'numeric' }),
+      exact: true,
+    }),
+  ).toBeVisible()
+  await expectRtlMonthArrows(page)
+  await expect(page.getByRole('columnheader')).toHaveText([
+    'ن',
+    'ث',
+    'ر',
+    'خ',
+    'ج',
+    'س',
+    'ح',
+  ])
   if (screenshotPath)
     await page.screenshot({ path: screenshotPath, animations: 'disabled' })
   await day.click()
+  await expect(
+    dialog.getByLabel('تاريخ استحقاق الواجب', { exact: true }),
+  ).toHaveText(label)
 }
 async function assignment(studentId: string, kind: (typeof kinds)[number]) {
   const table = tableFor(kind)

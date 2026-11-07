@@ -1,5 +1,6 @@
 import { Alert, Button, Group, Modal, Stack, Text } from '@mantine/core'
 import { DatePickerInput } from '@mantine/dates'
+import 'dayjs/locale/ar'
 import { useState } from 'react'
 import type {
   AssignmentDeadline,
@@ -66,6 +67,8 @@ export function AssignmentDeadlineDialog({
           </Alert>
         ) : null}
         <DatePickerInput
+          locale="ar"
+          valueFormat="D MMMM YYYY"
           label="تاريخ استحقاق الواجب"
           placeholder="دون موعد محدد"
           value={date}

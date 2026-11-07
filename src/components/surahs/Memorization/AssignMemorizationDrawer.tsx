@@ -1,6 +1,7 @@
 import { Alert, Button, Drawer, Select, Stack, Text } from '@mantine/core'
 import { DatePickerInput } from '@mantine/dates'
 import { useState } from 'react'
+import 'dayjs/locale/ar'
 import type { MemorizationInput } from '~/lib/memorization'
 import { SURAHS } from '~/data/surahs'
 import { extractActionErrorMessage } from '~/lib/action-errors'
@@ -96,6 +97,8 @@ export function AssignMemorizationDrawer({
           }))}
         />
         <DatePickerInput
+          locale="ar"
+          valueFormat="D MMMM YYYY"
           label="تاريخ الاستحقاق (اختياري)"
           placeholder="اختر تاريخًا"
           value={dueDate}

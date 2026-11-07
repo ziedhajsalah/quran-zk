@@ -11,6 +11,7 @@ Add `assignmentDeadlineInput` to `src/server/functions/validation.ts` and shared
 
 ### Task 2: Interface
 Create shared `src/components/surahs/AssignmentDeadlineDialog.tsx` with UTC date picker, explicit clearing, pending dismissal/duplicate protection and input-preserving inline errors plus stories. Add a staff-only edit control to review rows/queue and memorize queue. Connect the modal to the staff detail route and memorization panel; preserve students' read-only views and Arabic RTL.
+- QA-03 localization follow-up implemented: the deadline-edit calendar, weekday headings and selected date use Arabic, matching the assignment drawers; UTC values and clearing are unchanged. Browser regressions assert the Arabic calendar and selected date.
 
 ### Task 3: Verification and delivery
 Create local browser regressions for mobile/desktop, both assignment types, student/dashboard date refresh, clearing, pending requests and stale/terminal rejection. Run integration tests, lint, Worker/Storybook builds and full browser suite. Update SETUP/architecture, commit and open PR against develop, verify CI. Preserve the main checkout's UI changes and avoid hosted/production data or paid services.
