@@ -110,6 +110,7 @@ for (const width of [390, 1280]) {
   }, testInfo) => {
     const student = fixtures.get(width)!
     await page.setViewportSize({ width, height: 844 })
+    await page.emulateMedia({ colorScheme: width === 1280 ? 'dark' : 'light' })
     await loginAs(page, teacher.username, password)
     await page
       .getByRole('link', { name: 'قائمة الواجبات', exact: true })
@@ -151,11 +152,12 @@ for (const width of [390, 1280]) {
             }).format(due),
       )
     }
-    if (width === 390)
-      await page.screenshot({
-        path: testInfo.outputPath('work-queue-mobile.png'),
-        fullPage: true,
-      })
+    await page.screenshot({
+      path: testInfo.outputPath(
+        width === 390 ? 'work-queue-mobile.png' : 'work-queue-dark.png',
+      ),
+      fullPage: true,
+    })
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth,

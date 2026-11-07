@@ -50,6 +50,7 @@ export function WorkQueueList({ rows }: { rows: ReadonlyArray<WorkRow> }) {
                 search={{
                   tab: row.kind === 'review' ? 'reviews' : 'memorization',
                 }}
+                style={{ color: 'var(--app-accent-text)' }}
                 hash={`${row.kind === 'review' ? 'review' : 'memorization'}-${row.id}`}
               >
                 فتح الواجب
