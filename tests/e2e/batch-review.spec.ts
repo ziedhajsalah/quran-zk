@@ -199,11 +199,13 @@ for (const width of [390, 1280]) {
     await drawer.getByRole('button', { name: 'إسناد', exact: true }).click()
     await expect(drawer).not.toBeVisible()
     await withDatabase(databaseUrl, async (db) => {
-      const rows = await db
+      const undatedRows = await db
         .select()
         .from(reviews)
         .where(eq(reviews.studentId, students.get(String(width))!))
-      expect(rows.find((row) => row.surahNumber === 36)?.dueAt).toBeNull()
+      expect(
+        undatedRows.find((row) => row.surahNumber === 36)?.dueAt,
+      ).toBeNull()
     })
   })
 }
