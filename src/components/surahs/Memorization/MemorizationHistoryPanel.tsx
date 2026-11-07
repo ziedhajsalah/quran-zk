@@ -30,7 +30,7 @@ export function MemorizationHistoryPanel({ studentId }: { studentId: string }) {
   return (
     <Stack ref={start} gap="md" style={{ scrollMarginTop: '7rem' }}>
       <Title order={2}>سجل الحفظ الجديد</Title>
-      <Text size="sm" c="gray.7">
+      <Text size="sm" c="dimmed">
         واجبات الحفظ المكتملة والملغاة، مع التقييم المسجّل عند الإنجاز. التواريخ
         حسب التوقيت العالمي (UTC).
       </Text>
@@ -78,7 +78,7 @@ export function MemorizationHistoryPanel({ studentId }: { studentId: string }) {
         >
           الأحدث
         </Button>
-        <Text size="sm" c="gray.7" aria-live="polite">
+        <Text size="sm" c="dimmed" aria-live="polite">
           الصفحة {formatArabicNumber(cursors.length)}
         </Text>
         <Button

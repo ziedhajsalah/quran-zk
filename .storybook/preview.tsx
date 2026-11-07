@@ -1,5 +1,5 @@
 import { DirectionProvider, MantineProvider } from '@mantine/core'
-import { appTheme } from '../src/theme'
+import { appCssVariablesResolver, appTheme } from '../src/theme'
 import type { Preview } from '@storybook/react-vite'
 import '../src/styles/app.css'
 
@@ -7,7 +7,11 @@ const preview: Preview = {
   decorators: [
     (Story) => (
       <DirectionProvider initialDirection="rtl">
-        <MantineProvider theme={appTheme} defaultColorScheme="light">
+        <MantineProvider
+          theme={appTheme}
+          cssVariablesResolver={appCssVariablesResolver}
+          defaultColorScheme="light"
+        >
           <div style={{ padding: '1rem' }} lang="ar" dir="rtl">
             <Story />
           </div>
