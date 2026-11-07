@@ -263,6 +263,7 @@ for (const width of [390, 1280]) {
       studentPage.getByText('1 واجبات حفظ مفتوحة', { exact: true }),
     ).toBeVisible()
     await studentContext.close()
+    await page.getByRole('tab', { name: 'حفظ جديد', exact: true }).click()
     const optional = await openDrawer(page)
     await chooseSurah(page, optional, 'يس')
     await chooseArabicDeadline(page, optional)
