@@ -161,7 +161,7 @@ export function StudentDashboard({
                           <Box key={review._id}>
                             <Link
                               style={{
-                                color: theme.colors.primary[7],
+                                color: 'var(--app-accent-text)',
                                 textUnderlineOffset: '0.2em',
                               }}
                               to="/surahs"

@@ -11,10 +11,19 @@ import {
 
 const theme = mergeMantineTheme(DEFAULT_THEME, appTheme)
 const variables = appCssVariablesResolver(theme)
-const secondaryTextVariables = [
-  '--mantine-color-dimmed',
-  '--mantine-color-placeholder',
-] as const
+const textVariables = {
+  light: [
+    '--mantine-color-dimmed',
+    '--mantine-color-placeholder',
+    '--app-accent-text',
+    '--mantine-color-gray-light-color',
+  ],
+  dark: [
+    '--mantine-color-dimmed',
+    '--mantine-color-placeholder',
+    '--app-accent-text',
+  ],
+} as const
 
 describe('secondary text semantics', () => {
   it.each([
@@ -27,9 +36,10 @@ describe('secondary text semantics', () => {
     componentTokens.inputs.background,
     theme.colors.primary[0],
   ])('meets normal-text AA on light neutral surface %s', (background) => {
-    for (const name of secondaryTextVariables) {
+    for (const name of textVariables.light) {
       expect(
         contrastRatio(hexRgb(variables.light[name]), hexRgb(background)),
+        name,
       ).toBeGreaterThanOrEqual(4.5)
     }
   })
@@ -37,12 +47,13 @@ describe('secondary text semantics', () => {
   it.each([4, 5, 6, 7, 8])(
     'meets normal-text AA on dark surface %s',
     (shade) => {
-      for (const name of secondaryTextVariables) {
+      for (const name of textVariables.dark) {
         expect(
           contrastRatio(
             hexRgb(variables.dark[name]),
             hexRgb(theme.colors.dark[shade]),
           ),
+          name,
         ).toBeGreaterThanOrEqual(4.5)
       }
     },
@@ -55,12 +66,13 @@ describe('secondary text semantics', () => {
     expect(semanticColors.outlineVariant).toBe('#bec9be')
     expect(variables.variables).toEqual({})
     for (const scheme of ['light', 'dark'] as const) {
-      expect(Object.keys(variables[scheme]).sort()).toEqual([
-        '--app-input-background',
-        '--app-page-background',
-        '--mantine-color-dimmed',
-        '--mantine-color-placeholder',
-      ])
+      expect(Object.keys(variables[scheme]).sort()).toEqual(
+        [
+          '--app-input-background',
+          '--app-page-background',
+          ...textVariables[scheme],
+        ].sort(),
+      )
     }
     expect(variables.light['--app-page-background']).toBe(
       semanticColors.background,

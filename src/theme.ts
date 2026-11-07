@@ -309,6 +309,8 @@ export const mantineThemeOverrides: MantineThemeOverride = {
     semanticColors: {
       ...semanticColors,
       background: 'var(--app-page-background)',
+      // Accent text on scheme-aware surfaces (pages, papers, cards).
+      accentText: 'var(--app-accent-text)',
     },
     typography,
     glass,
@@ -326,11 +328,17 @@ export const appCssVariablesResolver: CSSVariablesResolver = (theme) => ({
     '--mantine-color-placeholder': semanticColors.onSurfaceVariant,
     '--app-page-background': semanticColors.background,
     '--app-input-background': componentTokens.inputs.background,
+    '--app-accent-text': primary[6],
+    // Gray light/subtle variants (buttons, badges, action icons) otherwise use
+    // gray[6], the outlineVariant border shade, as their text color.
+    '--mantine-color-gray-light-color': semanticColors.onSurfaceVariant,
   },
   dark: {
     '--mantine-color-dimmed': theme.colors.dark[1],
     '--mantine-color-placeholder': theme.colors.dark[1],
     '--app-page-background': theme.colors.dark[7],
     '--app-input-background': theme.colors.dark[6],
+    // primary[6]/[7] fall below 1.6:1 on dark surfaces.
+    '--app-accent-text': primary[3],
   },
 })

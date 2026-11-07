@@ -72,8 +72,26 @@ async function measureText(locator: Locator, pseudo: string | null = null) {
             animation.effect?.getComputedTiming().iterations === Infinity,
         ),
     )
+  // A transition can still be at its opacity: 0 start frame before it runs.
+  await locator.evaluate(
+    (element) =>
+      new Promise<void>((resolve) => {
+        const opaque = () => {
+          for (let node: Element | null = element; node; node = node.parentElement)
+            if (getComputedStyle(node).opacity !== '1') return false
+          return true
+        }
+        const poll = () => (opaque() ? resolve() : requestAnimationFrame(poll))
+        poll()
+      }),
+  )
   const colors = await locator.evaluate((element, pseudoElement) => {
     function rgba(value: string) {
+      // color-mix() glass surfaces compute to color(srgb r g b / a), 0–1 channels.
+      if (value.startsWith('color(srgb ')) {
+        const channels = value.match(/[\d.]+/g)!.map(Number)
+        return [...channels.slice(0, 3).map((c) => c * 255), channels[3] ?? 1]
+      }
       if (!value.startsWith('rgb'))
         throw new Error(`Unsupported color: ${value}`)
       const channels = value.match(/[\d.]+/g)!.map(Number)
@@ -136,6 +154,23 @@ for (const scheme of schemes) {
         ),
         'dashboard instructions',
       )
+      await check(
+        page.getByText('أهلاً بك، معلم التباين', { exact: true }),
+        'dashboard accent greeting',
+      )
+      await check(
+        page.getByRole('link', { name: 'عرض جميع الطلاب', exact: true }),
+        'dashboard accent link',
+      )
+      // The top bar and bottom nav stay light glass in both schemes.
+      await check(
+        page.locator('header').getByText('قر', { exact: true }),
+        'top bar brand mark',
+      )
+      await check(
+        page.getByText('الملف الشخصي', { exact: true }),
+        'inactive bottom nav label',
+      )
 
       await gotoApp(page, '/profile')
       await check(
@@ -163,6 +198,10 @@ for (const scheme of schemes) {
       await check(
         page.getByText('اختر طالبًا لعرض السور التي حفظها وتقييمه.'),
         'staff instructions',
+      )
+      await check(
+        page.getByText('إدارة الطلاب', { exact: true }),
+        'staff accent eyebrow',
       )
       const student = page
         .getByRole('button')

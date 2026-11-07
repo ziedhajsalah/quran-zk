@@ -30,7 +30,7 @@ export function SurahReviewQueue({
 
   return (
     <Stack gap="sm">
-      <Text c="primary.7" fw={700} size="sm">
+      <Text c="var(--app-accent-text)" fw={700} size="sm">
         للمراجعة
       </Text>
       {rows.map((row) => (

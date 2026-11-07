@@ -85,7 +85,7 @@ function StudentSurahsPage() {
       >
         <Stack gap="xl">
           <Stack gap="xs">
-            <Text c="primary.6" fw={700} size="sm">
+            <Text c="var(--app-accent-text)" fw={700} size="sm">
               حفظي
             </Text>
             <Title order={1}>السور التي حفظتها</Title>

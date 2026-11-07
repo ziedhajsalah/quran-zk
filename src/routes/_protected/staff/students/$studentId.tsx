@@ -253,7 +253,7 @@ function StaffStudentGradingPage() {
               {getInitials(student?.displayName ?? '')}
             </Avatar>
             <Stack gap={4} style={{ minWidth: 0 }}>
-              <Text c="primary.6" fw={700} size="sm">
+              <Text c="var(--app-accent-text)" fw={700} size="sm">
                 تقييم الطالب
               </Text>
               <Title order={1} lineClamp={1}>

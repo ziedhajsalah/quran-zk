@@ -32,7 +32,7 @@ export function TeacherDashboard({
   const theme = useMantineTheme()
   const chrome = createHomeDashboardData(displayName)
   const linkStyle = {
-    color: theme.colors.primary[7],
+    color: 'var(--app-accent-text)',
     textUnderlineOffset: '0.2em',
   }
   const stats = [
@@ -63,7 +63,7 @@ export function TeacherDashboard({
       >
         <Stack gap="xl">
           <Stack gap="xs">
-            <Text c="primary.7" fw={700}>
+            <Text c="var(--app-accent-text)" fw={700}>
               أهلاً بك، {displayName}
             </Text>
             <Title order={1}>متابعة الطلاب</Title>
