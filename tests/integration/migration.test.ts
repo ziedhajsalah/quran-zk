@@ -35,6 +35,7 @@ import {
   redeemCode,
 } from '../../src/server/services/reset-codes.server'
 import { serializeUser } from '../../src/server/accounts'
+import { AppError } from '../../src/server/errors'
 import type { Actor } from '../../src/server/auth-guards.server'
 import type { Database } from '../../src/server/db.server'
 
@@ -237,6 +238,148 @@ describe('auth and account permissions', () => {
         }),
       ),
     ).rejects.toThrow()
+  })
+  it.each([
+    { email: null, duplicateEmail: null },
+    {
+      email: 'first@example.com',
+      duplicateEmail: 'different@example.com',
+    },
+  ])(
+    'reports canonical username conflicts safely with email $email, and permits correction',
+    async ({ email, duplicateEmail }) => {
+      const input = {
+        username: 'new.student',
+        displayName: 'test',
+        email,
+        password,
+      }
+      const existing = await dbRun((db) =>
+        staffCreateStudent(db, teacher, input),
+      )
+      await expect(
+        dbRun((db) =>
+          staffCreateStudent(db, teacher, {
+            ...input,
+            username: ' NEW.STUDENT ',
+            email: duplicateEmail,
+          }),
+        ),
+      ).rejects.toEqual(
+        new AppError('اسم المستخدم مستخدم بالفعل. اختر اسم مستخدم آخر.'),
+      )
+      await dbRun(async (db) => {
+        expect(
+          await db.select().from(user).where(eq(user.username, 'new.student')),
+        ).toHaveLength(1)
+        const credentials = await db.select().from(account)
+        expect(credentials).toHaveLength(1)
+        expect(credentials[0].userId).toBe(existing.id)
+      })
+      const corrected = await dbRun((db) =>
+        staffCreateStudent(db, teacher, {
+          ...input,
+          username: 'corrected.student',
+          email: duplicateEmail,
+        }),
+      )
+      expect(corrected.username).toBe('corrected.student')
+    },
+  )
+  it('reports normalized email conflicts safely and allows retry without the optional email', async () => {
+    const input = {
+      username: 'first.student',
+      displayName: 'test',
+      email: 'First@Example.com',
+      password,
+    }
+    await dbRun((db) => staffCreateStudent(db, teacher, input))
+    await expect(
+      dbRun((db) =>
+        staffCreateStudent(db, teacher, {
+          ...input,
+          username: 'second.student',
+          email: ' FIRST@EXAMPLE.COM ',
+        }),
+      ),
+    ).rejects.toEqual(
+      new AppError(
+        'البريد الإلكتروني مستخدم بالفعل. أدخل بريدًا آخر أو اتركه فارغًا.',
+      ),
+    )
+    await dbRun(async (db) => {
+      expect(
+        await db.select().from(user).where(eq(user.username, 'second.student')),
+      ).toHaveLength(0)
+      expect(await db.select().from(account)).toHaveLength(1)
+    })
+    const corrected = await dbRun((db) =>
+      staffCreateStudent(db, teacher, {
+        ...input,
+        username: 'second.student',
+        email: null,
+      }),
+    )
+    expect(corrected.email).toBeNull()
+  })
+  it('keeps concurrent canonical username creation unique with a safe conflict', async () => {
+    const input = {
+      username: 'race.student',
+      displayName: 'test',
+      email: null,
+      password,
+    }
+    const outcomes = await Promise.allSettled([
+      dbRun((db) => staffCreateStudent(db, teacher, input)),
+      dbRun((db) =>
+        staffCreateStudent(db, teacher, {
+          ...input,
+          username: 'RACE.STUDENT',
+        }),
+      ),
+    ])
+    expect(
+      outcomes.filter((result) => result.status === 'fulfilled'),
+    ).toHaveLength(1)
+    const rejected = outcomes.find((result) => result.status === 'rejected')
+    expect(rejected?.reason).toEqual(
+      new AppError('اسم المستخدم مستخدم بالفعل. اختر اسم مستخدم آخر.'),
+    )
+    await dbRun(async (db) => {
+      expect(
+        await db.select().from(user).where(eq(user.username, input.username)),
+      ).toHaveLength(1)
+      expect(await db.select().from(account)).toHaveLength(1)
+    })
+  })
+  it('does not map unrelated credential constraints, and rolls back the user insert', async () => {
+    await dbRun(async (db) => {
+      await db.execute(
+        sql`create function pg_temp.reject_account() returns trigger language plpgsql as $$ begin raise exception 'private database detail' using errcode = '23505', table = 'account', constraint = 'account_provider_unique'; end $$`,
+      )
+      await db.execute(
+        sql`create trigger reject_account before insert on account for each row execute function pg_temp.reject_account()`,
+      )
+      try {
+        const error = await staffCreateStudent(db, teacher, {
+          username: 'rollback.student',
+          displayName: 'test',
+          email: null,
+          password,
+        }).catch((cause: unknown) => cause)
+        expect(error).toBeInstanceOf(Error)
+        expect(error).not.toBeInstanceOf(AppError)
+        expect(
+          await db
+            .select()
+            .from(user)
+            .where(eq(user.username, 'rollback.student')),
+        ).toHaveLength(0)
+        expect(await db.select().from(account)).toHaveLength(0)
+      } finally {
+        await db.execute(sql`drop trigger reject_account on account`)
+      }
+    })
   })
   it('serializes simultaneous demotions and retains the last active admin', async () => {
     await dbRun((db) =>
