@@ -5,7 +5,6 @@ import {
   Button,
   Container,
   Group,
-  Notification,
   Stack,
   Text,
   Title,
@@ -16,7 +15,6 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import * as accounts from '~/server/functions/accounts'
 import { studentsQuery, useAppMutation } from '~/lib/queries'
-import { extractActionErrorMessage } from '~/lib/action-errors'
 import { currentUserQuery } from '~/lib/auth-queries'
 import {
   BottomNav,
@@ -42,7 +40,6 @@ function StaffStudentsPage() {
     'students',
   ])
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const homeDashboardData = useMemo(
     () => createHomeDashboardData(me.displayName),
@@ -55,14 +52,7 @@ function StaffStudentsPage() {
     email: string | null
     password: string
   }) {
-    setErrorMessage(null)
-    try {
-      await createStudent(input)
-    } catch (error) {
-      const message = extractActionErrorMessage(error, 'تعذر إنشاء الحساب.')
-      setErrorMessage(message)
-      throw error
-    }
+    await createStudent(input)
   }
 
   return (
@@ -100,16 +90,6 @@ function StaffStudentsPage() {
               طالب جديد
             </Button>
           </Group>
-
-          {errorMessage ? (
-            <Notification
-              color="red"
-              title="حدث خطأ"
-              onClose={() => setErrorMessage(null)}
-            >
-              {errorMessage}
-            </Notification>
-          ) : null}
 
           <StudentsPicker
             students={students.map((s) => ({
