@@ -50,7 +50,7 @@ function StaffWorkPage() {
           <WorkQueue
             key={JSON.stringify(filters)}
             filters={filters}
-            onFilter={(search) => void navigate({ search })}
+            onFilter={(search) => navigate({ search })}
           />
         </Stack>
       </Container>

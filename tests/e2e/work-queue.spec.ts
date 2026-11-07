@@ -30,6 +30,10 @@ const today = Date.UTC(
   instant.getUTCMonth(),
   instant.getUTCDate(),
 )
+function rpcDefinition(url: string) {
+  const encoded = new URL(url).pathname.split('/').at(-1) ?? ''
+  return Buffer.from(decodeURIComponent(encoded), 'base64url').toString()
+}
 test.beforeAll(async () => {
   await withDatabase(url, async (db) => {
     const prefix = `work.${Date.now()}`
@@ -119,7 +123,38 @@ for (const width of [390, 1280]) {
       page.getByRole('heading', { name: 'قائمة الواجبات', exact: true }),
     ).toBeVisible()
     await page.getByLabel('البحث عن طالب').fill(student.username)
-    await page.getByRole('button', { name: 'بحث', exact: true }).click()
+    let searchRequested = false
+    let releaseSearch!: () => void
+    const searchHeld = new Promise<void>((resolve) => {
+      releaseSearch = resolve
+    })
+    const navigationEndpoint = '**/_serverFn/**'
+    await page.route(navigationEndpoint, async (route) => {
+      if (rpcDefinition(route.request().url()).includes('fetchAppSession')) {
+        searchRequested = true
+        await searchHeld
+      }
+      await route.continue()
+    })
+    const submitting = page
+      .getByRole('button', { name: 'بحث', exact: true })
+      .click()
+    try {
+      await expect.poll(() => searchRequested).toBe(true)
+      await expect(
+        page.getByRole('textbox', { name: 'نوع الواجب', exact: true }),
+      ).toBeDisabled()
+      await expect(
+        page.getByRole('button', { name: 'التالي', exact: true }),
+      ).toBeDisabled()
+    } finally {
+      releaseSearch()
+    }
+    await submitting
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get('q'))
+      .toBe(student.username)
+    await page.unroute(navigationEndpoint)
     const rows = page.getByRole('article')
     await expect(rows).toHaveCount(20)
     await expect(rows.first()).toContainText(student.displayName)

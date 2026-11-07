@@ -20,9 +20,23 @@ export function WorkQueue({
   onFilter,
 }: {
   filters: WorkFilters
-  onFilter: (filters: WorkFilters) => void
+  onFilter: (filters: WorkFilters) => Promise<void>
 }) {
   const [search, setSearch] = useState(filters.q)
+  const [filtering, setFiltering] = useState(false)
+  const [filterError, setFilterError] = useState(false)
+  async function changeFilters(next: WorkFilters) {
+    if (filtering) return
+    setFiltering(true)
+    setFilterError(false)
+    try {
+      await onFilter(next)
+    } catch {
+      setFilterError(true)
+    } finally {
+      setFiltering(false)
+    }
+  }
   const [cursors, setCursors] = useState<Array<WorkCursor | null>>([null])
   const start = useRef<HTMLDivElement>(null)
   const query = useQuery(workQueueQuery(filters, cursors[cursors.length - 1]))
@@ -35,7 +49,7 @@ export function WorkQueue({
       <form
         onSubmit={(event) => {
           event.preventDefault()
-          onFilter({ ...filters, q: search.trim() })
+          void changeFilters({ ...filters, q: search.trim() })
         }}
       >
         <Group align="flex-end">
@@ -44,10 +58,13 @@ export function WorkQueue({
             placeholder="الاسم أو اسم المستخدم"
             value={search}
             maxLength={100}
+            disabled={filtering}
             onChange={(event) => setSearch(event.currentTarget.value)}
             style={{ flex: '1 1 14rem' }}
           />
-          <Button type="submit">بحث</Button>
+          <Button type="submit" loading={filtering}>
+            بحث
+          </Button>
         </Group>
       </form>
       <Group grow align="flex-start">
@@ -55,6 +72,7 @@ export function WorkQueue({
           label="نوع الواجب"
           value={filters.kind}
           allowDeselect={false}
+          disabled={filtering}
           data={[
             { value: 'all', label: 'كل الواجبات' },
             { value: 'review', label: 'مراجعة' },
@@ -66,13 +84,14 @@ export function WorkQueue({
               value === 'review' ||
               value === 'memorization'
             )
-              onFilter({ ...filters, kind: value })
+              void changeFilters({ ...filters, kind: value })
           }}
         />
         <Select
           label="موعد الاستحقاق"
           value={filters.deadline}
           allowDeselect={false}
+          disabled={filtering}
           data={[
             { value: 'all', label: 'كل المواعيد' },
             { value: 'overdue', label: 'متأخرة' },
@@ -88,10 +107,13 @@ export function WorkQueue({
               value === 'upcoming' ||
               value === 'undated'
             )
-              onFilter({ ...filters, deadline: value })
+              void changeFilters({ ...filters, deadline: value })
           }}
         />
       </Group>
+      {filterError ? (
+        <Alert color="red">تعذر تحديث البحث. حاول مرة أخرى.</Alert>
+      ) : null}
       {query.isPending ? (
         <Group role="status">
           <Loader size="sm" />
@@ -110,7 +132,7 @@ export function WorkQueue({
       <Group justify="space-between">
         <Button
           variant="light"
-          disabled={cursors.length === 1 || query.isFetching}
+          disabled={filtering || cursors.length === 1 || query.isFetching}
           onClick={() => {
             setCursors((previous) => previous.slice(0, -1))
             start.current?.scrollIntoView({ block: 'start' })
@@ -124,7 +146,10 @@ export function WorkQueue({
         <Button
           variant="light"
           disabled={
-            !query.data?.nextCursor || query.isFetching || query.isError
+            filtering ||
+            !query.data?.nextCursor ||
+            query.isFetching ||
+            query.isError
           }
           onClick={() => {
             if (query.data?.nextCursor) {
