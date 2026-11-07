@@ -9,6 +9,7 @@ import {
   Title,
 } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
+import { useHydrated } from '@tanstack/react-router'
 import { useState } from 'react'
 import { AssignmentDeadlineDialog } from '../AssignmentDeadlineDialog'
 import { AssignMemorizationDrawer } from './AssignMemorizationDrawer'
@@ -31,6 +32,7 @@ export function MemorizationPanel({
   recordedSurahNumbers: ReadonlyArray<number>
   editable?: boolean
 }) {
+  const hydrated = useHydrated()
   const query = useQuery(memorizationQuery(studentId))
   const [rescheduling, setRescheduling] = useState<AssignmentDeadline | null>(
     null,
@@ -70,7 +72,7 @@ export function MemorizationPanel({
         {editable ? (
           <Button
             variant="light"
-            disabled={!query.isSuccess || query.isFetching}
+            disabled={!hydrated || !query.isSuccess || query.isFetching}
             onClick={() => setAssigning(true)}
           >
             إسناد حفظ جديد
