@@ -21,10 +21,13 @@ const meta = {
     },
   ],
   args: {
+    busy: false,
+    onAction: () => {},
     rows: [
       {
         id: 'review-one',
         kind: 'review',
+        currentGrade: 'medium',
         studentId: 'one',
         displayName: 'أحمد محمد',
         username: 'ahmed',
@@ -34,6 +37,7 @@ const meta = {
       {
         id: 'memorization-one',
         kind: 'memorization',
+        currentGrade: null,
         studentId: 'two',
         displayName: 'فاطمة علي',
         username: 'fatima',
@@ -47,3 +51,5 @@ export default meta
 type Story = StoryObj<typeof meta>
 export const MixedWork: Story = {}
 export const Empty: Story = { args: { rows: [] } }
+
+export const Busy: Story = { args: { busy: true } }

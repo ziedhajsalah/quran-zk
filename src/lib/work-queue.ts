@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { SurahGrade } from '~/data/grades'
 
 export const workKindSchema = z.enum(['review', 'memorization'])
 export const workFilterSchema = z.object({
@@ -48,5 +49,6 @@ export type WorkRow = WorkCursor & {
   displayName: string
   username: string
   surahNumber: number
+  currentGrade: SurahGrade | null
 }
 export type WorkPage = { rows: Array<WorkRow>; nextCursor: WorkCursor | null }

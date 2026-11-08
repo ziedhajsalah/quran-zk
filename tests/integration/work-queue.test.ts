@@ -4,6 +4,7 @@ import { eq, sql } from 'drizzle-orm'
 import { withDatabase } from '../../src/server/db.server'
 import { user } from '../../src/server/db/schema/auth'
 import {
+  grades,
   memorizationAssignments,
   reviews,
 } from '../../src/server/db/schema/app'
@@ -131,6 +132,7 @@ describe('staff work queue', () => {
       ])
       expect(Object.keys(page.rows[0]).sort()).toEqual(
         [
+          'currentGrade',
           'displayName',
           'dueAt',
           'id',
@@ -140,6 +142,48 @@ describe('staff work queue', () => {
           'username',
         ].sort(),
       )
+    }))
+  it('returns the current grade only for the matching student and surah', () =>
+    run(async (db) => {
+      await account(db, 'student')
+      await account(db, 'other')
+      await task(db, 'r', 'student', 'review', null, 1)
+      await task(db, 'm', 'student', 'memorization', null, 2)
+      await db.insert(grades).values([
+        {
+          id: 'g',
+          studentId: 'student',
+          surahNumber: 1,
+          grade: 'medium',
+          updatedAt: now,
+        },
+        {
+          id: 'other-g',
+          studentId: 'other',
+          surahNumber: 2,
+          grade: 'good',
+          updatedAt: now,
+        },
+      ])
+      const page = await listWorkQueue(db, staff, { deadline: 'all' }, now)
+      expect(page.rows.map((row) => [row.id, row.currentGrade])).toEqual([
+        ['m', null],
+        ['r', 'medium'],
+      ])
+      await db
+        .update(grades)
+        .set({ grade: 'forgotten' })
+        .where(eq(grades.id, 'g'))
+      expect(
+        (
+          await listWorkQueue(
+            db,
+            staff,
+            { kind: 'review', deadline: 'all' },
+            now,
+          )
+        ).rows[0].currentGrade,
+      ).toBe('forgotten')
     }))
   it('uses UTC day boundaries including legacy times of day and all deadline/type filters', () =>
     run(async (db) => {

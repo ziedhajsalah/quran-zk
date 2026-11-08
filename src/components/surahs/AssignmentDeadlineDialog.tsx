@@ -12,10 +12,12 @@ import { getSurah } from '~/data/surahs'
 // Mount with a key for the selected assignment so unsaved values never cross targets.
 export function AssignmentDeadlineDialog({
   assignment,
+  studentLabel,
   onClose,
   onSubmit,
 }: {
   assignment: AssignmentDeadline
+  studentLabel?: string
   onClose: () => void
   onSubmit: (change: AssignmentDeadlineChange) => Promise<unknown>
 }) {
@@ -56,6 +58,9 @@ export function AssignmentDeadlineDialog({
       closeButtonProps={{ 'aria-label': 'إغلاق تعديل الموعد' }}
     >
       <Stack gap="md">
+        {studentLabel ? (
+          <Text style={{ overflowWrap: 'anywhere' }}>{studentLabel}</Text>
+        ) : null}
         <Text fw={700}>{getSurah(assignment.surahNumber).nameAr}</Text>
         <Text size="sm">
           عدّل تاريخ الاستحقاق أو امسحه لإبقاء الواجب دون موعد محدد. التواريخ

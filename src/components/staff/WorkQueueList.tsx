@@ -1,6 +1,8 @@
-import { Badge, Card, Group, Stack, Text, Title } from '@mantine/core'
+import { Badge, Button, Card, Group, Stack, Text, Title } from '@mantine/core'
 import { Link } from '@tanstack/react-router'
+import type { WorkAction } from './WorkQueueActionDialog'
 import type { WorkRow } from '~/lib/work-queue'
+import { GRADE_LABELS } from '~/data/grades'
 import { getSurah } from '~/data/surahs'
 
 const date = new Intl.DateTimeFormat('ar', {
@@ -8,11 +10,23 @@ const date = new Intl.DateTimeFormat('ar', {
   timeZone: 'UTC',
 })
 
-export function WorkQueueList({ rows }: { rows: ReadonlyArray<WorkRow> }) {
+export function WorkQueueList({
+  rows,
+  busy = true,
+  emptyMessage,
+  onAction,
+}: {
+  rows: ReadonlyArray<WorkRow>
+  busy?: boolean
+  emptyMessage?: string
+  onAction?: (row: WorkRow, action: WorkAction) => void
+}) {
   return (
     <Stack gap="md" aria-label="قائمة الواجبات">
       {!rows.length ? (
-        <Text role="status">لا توجد واجبات تطابق البحث والفلاتر.</Text>
+        <Text role="status">
+          {emptyMessage ?? 'لا توجد واجبات تطابق البحث والفلاتر.'}
+        </Text>
       ) : (
         rows.map((row) => (
           <Card
@@ -44,6 +58,37 @@ export function WorkQueueList({ rows }: { rows: ReadonlyArray<WorkRow> }) {
                   ? 'دون موعد محدد'
                   : `الاستحقاق: ${date.format(row.dueAt)}`}
               </Text>
+              <Text size="sm" c="dimmed">
+                التقييم الحالي:{' '}
+                {row.currentGrade === null
+                  ? 'غير مسجّل'
+                  : GRADE_LABELS[row.currentGrade]}
+              </Text>
+              {onAction ? (
+                <Group gap="xs">
+                  <Button
+                    disabled={busy}
+                    onClick={() => onAction(row, 'assess')}
+                  >
+                    {row.kind === 'review' ? 'إتمام المراجعة' : 'تقييم الحفظ'}
+                  </Button>
+                  <Button
+                    variant="light"
+                    disabled={busy}
+                    onClick={() => onAction(row, 'reschedule')}
+                  >
+                    تعديل الموعد
+                  </Button>
+                  <Button
+                    variant="subtle"
+                    color="red"
+                    disabled={busy}
+                    onClick={() => onAction(row, 'cancel')}
+                  >
+                    إلغاء الواجب
+                  </Button>
+                </Group>
+              ) : null}
               <Link
                 to="/staff/students/$studentId"
                 params={{ studentId: row.studentId }}

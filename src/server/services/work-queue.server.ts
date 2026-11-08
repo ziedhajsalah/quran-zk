@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { requireStaff } from '../auth-guards.server'
-import { memorizationAssignments, reviews } from '../db/schema/app'
+import { grades, memorizationAssignments, reviews } from '../db/schema/app'
 import { user } from '../db/schema/auth'
 import { workQueueInput } from '../functions/validation'
 import type { Actor } from '../auth-guards.server'
@@ -51,8 +51,10 @@ export async function listWorkQueue(
     )
     select w.id, w.kind, w.student_id as "studentId", w.surah_number as "surahNumber",
       (extract(epoch from w.due_at) * 1000)::float8 as "dueAt",
-      u.name as "displayName", coalesce(u.username, '') as username
+      u.name as "displayName", coalesce(u.username, '') as username,
+      g.grade as "currentGrade"
     from work w join ${user} u on u.id = w.student_id
+    left join ${grades} g on g.student_id = w.student_id and g.surah_number = w.surah_number
     where u.banned = false and 'student' = any(string_to_array(u.role, ','))
       and (${kind} = 'all' or w.kind = ${kind})
       and (u.name ilike ${pattern} or coalesce(u.username, '') ilike ${pattern})
