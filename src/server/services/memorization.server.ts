@@ -8,11 +8,11 @@ import {
 } from '../auth-guards.server'
 import { fail } from '../errors'
 import {
-  assignmentInput,
-  gradeSchema,
+  finishMemorizationInput,
   memorizationHistoryInput,
   memorizationInput,
 } from '../functions/validation'
+import { scheduleFollowUpReview } from './follow-up-review.server'
 import { writeStudentGrade } from './grades.server'
 import type { Actor } from '../auth-guards.server'
 import type { Database } from '../db.server'
@@ -104,11 +104,16 @@ export async function assignMemorization(
 export async function finishMemorization(
   db: Database,
   actor: Actor | null,
-  input: { assignmentId: string; grade?: 'good' | 'medium' | 'forgotten' },
+  input: {
+    assignmentId: string
+    grade?: 'good' | 'medium' | 'forgotten'
+    nextReviewDueAt?: number
+  },
 ) {
   const staff = requireStaff(actor)
-  assignmentInput.parse(input)
-  if (input.grade !== undefined) gradeSchema.parse(input.grade)
+  finishMemorizationInput.parse(input)
+  if (input.grade === undefined && input.nextReviewDueAt !== undefined)
+    fail('لا يمكن إسناد مراجعة تالية عند إلغاء الواجب.')
   await db.transaction(async (tx) => {
     const candidate = (
       await tx
@@ -154,6 +159,14 @@ export async function finishMemorization(
         surahNumber: row.surahNumber,
         grade: input.grade,
       })
+      if (input.nextReviewDueAt !== undefined)
+        await scheduleFollowUpReview(
+          tx,
+          staff.id,
+          row.studentId,
+          row.surahNumber,
+          input.nextReviewDueAt,
+        )
     } else {
       await tx
         .update(memorizationAssignments)

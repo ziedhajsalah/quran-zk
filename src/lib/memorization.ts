@@ -11,6 +11,7 @@ export interface MemorizationInput {
   dueAt?: number
 }
 export interface MemorizationAssessment {
+  nextReviewDueAt?: number
   assignmentId: string
   grade: SurahGrade
 }

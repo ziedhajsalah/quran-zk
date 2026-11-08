@@ -121,3 +121,9 @@ Teachers and admins open **قائمة الواجبات** from the home dashboard
 On **قائمة الواجبات**, staff can complete a review, assess new memorization, edit a deadline or confirm cancellation without opening a student page. Each dialog identifies the student and surah. Reviews allow keeping the current grade or selecting a new one; new memorization requires a grade. **حفظ والتالي** saves the assessment and opens the next available item at the same position in the refreshed page, when available. Inputs remain open after failed mutations; controls prevent dismissal and duplicate submission while saving.
 
 Actions retain the queue's URL filters and current cursor page. Completed/cancelled work disappears; changed deadlines can move work elsewhere in the filtered ordering. An empty later page keeps **السابق** available. **تحديث القائمة** refreshes the current page and invalidates cached pages for the current filters for recovery after another teacher changes work. Pagination remains a live view, not a snapshot. No migration, polling or new paid service is required.
+
+## Next review at assessment
+
+Staff can optionally enable **إسناد المراجعة التالية** when completing a review or assessing memorization, both on a student page and in the staff queue. Choose today or a later UTC date. The assessment, grade/history changes and new review save together. Follow-up is off by default and resets between assignments; cancelling work creates no follow-up.
+
+If an open review already exists, the save reports a conflict and leaves the assessment and existing review unchanged. Refresh the list or turn off the next-review option before retrying. Failed submissions retain choices; pending submissions block dismissal and duplicate saves. The new assignment appears through the existing student dashboard, review list and staff queue. No migration, background job or new paid service is required.

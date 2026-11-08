@@ -1,7 +1,10 @@
 import { Alert, Button, Modal, Radio, Stack, Text } from '@mantine/core'
 import { useState } from 'react'
+import { NextReviewField } from '../NextReviewField'
+import type { FollowUpReview } from '~/lib/follow-up-review'
 import type { MemorizationRow } from '~/lib/memorization'
 import type { SurahGrade } from '~/data/grades'
+import { followUpReviewInput } from '~/lib/follow-up-review'
 import { GRADE_LABELS, GRADE_ORDER } from '~/data/grades'
 import { getSurah } from '~/data/surahs'
 import { extractActionErrorMessage } from '~/lib/action-errors'
@@ -13,17 +16,18 @@ export function AssessMemorizationDialog({
 }: {
   assignment: MemorizationRow
   onClose: () => void
-  onSubmit: (grade: SurahGrade) => Promise<unknown>
+  onSubmit: (grade: SurahGrade, followUp: FollowUpReview) => Promise<unknown>
 }) {
   const [grade, setGrade] = useState<SurahGrade | null>(null)
+  const [nextReview, setNextReview] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   async function submit() {
-    if (pending || grade === null) return
+    if (pending || grade === null || nextReview === '') return
     setPending(true)
     setError(null)
     try {
-      await onSubmit(grade)
+      await onSubmit(grade, followUpReviewInput(nextReview))
       onClose()
     } catch (cause) {
       setError(
@@ -78,9 +82,14 @@ export function AssessMemorizationDialog({
             ))}
           </Stack>
         </Radio.Group>
+        <NextReviewField
+          value={nextReview}
+          onChange={setNextReview}
+          disabled={pending}
+        />
         <Button
           loading={pending}
-          disabled={grade === null}
+          disabled={grade === null || nextReview === ''}
           onClick={() => void submit()}
         >
           حفظ تقييم الحفظ

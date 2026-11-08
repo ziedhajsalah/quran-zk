@@ -3,6 +3,9 @@ import { useState } from 'react'
 import type { AssignmentDeadlineChange } from '~/lib/assignment-deadline'
 import type { WorkRow } from '~/lib/work-queue'
 import type { SurahGrade } from '~/data/grades'
+import type { FollowUpReview } from '~/lib/follow-up-review'
+import { NextReviewField } from '~/components/surahs/NextReviewField'
+import { followUpReviewInput } from '~/lib/follow-up-review'
 import { AssignmentDeadlineDialog } from '~/components/surahs/AssignmentDeadlineDialog'
 import { GRADE_LABELS, GRADE_ORDER } from '~/data/grades'
 import { getSurah } from '~/data/surahs'
@@ -10,7 +13,7 @@ import { extractActionErrorMessage } from '~/lib/action-errors'
 
 export type WorkAction = 'assess' | 'reschedule' | 'cancel'
 export type WorkActionInput =
-  | { action: 'assess'; grade?: SurahGrade; next: boolean }
+  | ({ action: 'assess'; grade?: SurahGrade; next: boolean } & FollowUpReview)
   | { action: 'reschedule'; change: AssignmentDeadlineChange }
   | { action: 'cancel' }
 
@@ -28,6 +31,7 @@ export function WorkQueueActionDialog({
   onSubmit: (input: WorkActionInput) => Promise<unknown>
 }) {
   const [selection, setSelection] = useState('')
+  const [nextReview, setNextReview] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const studentLabel = `${row.displayName} (@${row.username})`
@@ -51,14 +55,23 @@ export function WorkQueueActionDialog({
       ? 'إتمام المراجعة'
       : 'تقييم واجب الحفظ'
   const grade = GRADE_ORDER.find((value) => value === selection)
-  const canSave = cancelling || grade !== undefined || selection === 'keep'
+  const canSave =
+    cancelling ||
+    ((grade !== undefined || selection === 'keep') && nextReview !== '')
   async function submit(next: boolean) {
     if (pending || !canSave) return
     setPending(true)
     setError(null)
     try {
       await onSubmit(
-        cancelling ? { action: 'cancel' } : { action: 'assess', grade, next },
+        cancelling
+          ? { action: 'cancel' }
+          : {
+              action: 'assess',
+              grade,
+              next,
+              ...followUpReviewInput(nextReview),
+            },
       )
     } catch (cause) {
       setError(
@@ -130,6 +143,11 @@ export function WorkQueueActionDialog({
                 ))}
               </Stack>
             </Radio.Group>
+            <NextReviewField
+              value={nextReview}
+              onChange={setNextReview}
+              disabled={pending}
+            />
           </>
         )}
         <Group justify="space-between">

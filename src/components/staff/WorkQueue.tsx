@@ -45,6 +45,7 @@ export function WorkQueue({
   const assessMemorization = useAppMutation(memorization.assess, [
     'memorization',
     'grades',
+    'reviews',
   ])
   const cancelReview = useAppMutation(reviews.cancel, ['reviews'])
   const cancelMemorization = useAppMutation(memorization.cancel, [
@@ -85,10 +86,18 @@ export function WorkQueue({
       const assignmentId = row.id
       if (input.action === 'assess') {
         if (row.kind === 'review')
-          await closeReview({ assignmentId, newGrade: input.grade })
+          await closeReview({
+            assignmentId,
+            newGrade: input.grade,
+            nextReviewDueAt: input.nextReviewDueAt,
+          })
         else {
           if (!input.grade) throw new Error('اختر تقييماً للحفظ قبل الحفظ.')
-          await assessMemorization({ assignmentId, grade: input.grade })
+          await assessMemorization({
+            assignmentId,
+            grade: input.grade,
+            nextReviewDueAt: input.nextReviewDueAt,
+          })
         }
       } else if (input.action === 'cancel') {
         await (row.kind === 'review' ? cancelReview : cancelMemorization)({
@@ -104,7 +113,9 @@ export function WorkQueue({
           ? 'تم إلغاء الواجب.'
           : input.action === 'reschedule'
             ? 'تم تعديل الموعد. قد ينتقل الواجب بحسب الفلاتر والترتيب.'
-            : 'تم حفظ التقييم وإتمام الواجب.',
+            : input.nextReviewDueAt !== undefined
+              ? 'تم حفظ التقييم وإسناد المراجعة التالية.'
+              : 'تم حفظ التقييم وإتمام الواجب.',
       )
       const key = workQueueQuery(filters, pages.cursor).queryKey
       const refreshed = client.getQueryData(key)

@@ -1,7 +1,20 @@
-import { Badge, Button, Chip, Group, Modal, Stack, Text } from '@mantine/core'
+import {
+  Alert,
+  Badge,
+  Button,
+  Chip,
+  Group,
+  Modal,
+  Stack,
+  Text,
+} from '@mantine/core'
 import { useEffect, useState } from 'react'
+import { NextReviewField } from '../NextReviewField'
+import type { FollowUpReview } from '~/lib/follow-up-review'
 import type { SurahGrade } from '~/data/grades'
 import type { Surah } from '~/data/surahs'
+import { extractActionErrorMessage } from '~/lib/action-errors'
+import { followUpReviewInput } from '~/lib/follow-up-review'
 import { GRADE_COLORS, GRADE_LABELS, GRADE_ORDER } from '~/data/grades'
 import { formatArabicNumber } from '~/components/home/home-formatters'
 
@@ -10,7 +23,9 @@ export interface CloseAssignmentDialogProps {
   onClose: () => void
   surah: Surah | null
   currentGrade: SurahGrade | null
-  onSubmit: (input: { newGrade?: SurahGrade }) => void
+  onSubmit: (
+    input: { newGrade?: SurahGrade } & FollowUpReview,
+  ) => Promise<unknown> | void
 }
 
 type Selection = { kind: 'keep' } | { kind: 'change'; grade: SurahGrade }
@@ -24,30 +39,56 @@ export function CloseAssignmentDialog({
 }: CloseAssignmentDialogProps) {
   const [selection, setSelection] = useState<Selection>({ kind: 'keep' })
 
+  const [nextReview, setNextReview] = useState<string | null>(null)
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
   useEffect(() => {
     if (opened) {
       setSelection({ kind: 'keep' })
+      setNextReview(null)
+      setError(null)
     }
   }, [opened])
 
-  function handleSubmit() {
-    if (selection.kind === 'keep') {
-      onSubmit({})
-    } else {
-      onSubmit({ newGrade: selection.grade })
+  async function handleSubmit() {
+    if (pending || nextReview === '') return
+    setPending(true)
+    setError(null)
+    try {
+      await onSubmit({
+        ...(selection.kind === 'change' ? { newGrade: selection.grade } : {}),
+        ...followUpReviewInput(nextReview),
+      })
+      onClose()
+    } catch (cause) {
+      setError(
+        extractActionErrorMessage(cause, 'تعذر إغلاق المراجعة. حاول مرة أخرى.'),
+      )
+    } finally {
+      setPending(false)
     }
-    onClose()
   }
 
   return (
     <Modal
       opened={opened}
-      onClose={onClose}
+      onClose={() => {
+        if (!pending) onClose()
+      }}
+      withCloseButton={!pending}
+      closeOnEscape={!pending}
+      closeOnClickOutside={!pending}
       title="إغلاق المراجعة"
       centered
       radius="lg"
     >
       <Stack gap="md">
+        {error ? (
+          <Alert color="red" title="تعذر إغلاق المراجعة">
+            {error}
+          </Alert>
+        ) : null}
         {surah ? (
           <Stack gap={2}>
             <Text c="dimmed" size="sm">
@@ -84,6 +125,7 @@ export function CloseAssignmentDialog({
             عند الإغلاق
           </Text>
           <Chip
+            disabled={pending}
             checked={selection.kind === 'keep'}
             onChange={() => setSelection({ kind: 'keep' })}
             variant="light"
@@ -106,7 +148,13 @@ export function CloseAssignmentDialog({
           >
             <Group gap="xs">
               {GRADE_ORDER.map((g) => (
-                <Chip key={g} value={g} color={GRADE_COLORS[g]} variant="light">
+                <Chip
+                  disabled={pending}
+                  key={g}
+                  value={g}
+                  color={GRADE_COLORS[g]}
+                  variant="light"
+                >
                   {GRADE_LABELS[g]}
                 </Chip>
               ))}
@@ -114,11 +162,22 @@ export function CloseAssignmentDialog({
           </Chip.Group>
         </Stack>
 
+        <NextReviewField
+          value={nextReview}
+          onChange={setNextReview}
+          disabled={pending}
+        />
         <Group justify="space-between">
-          <Button variant="subtle" onClick={onClose}>
+          <Button variant="subtle" disabled={pending} onClick={onClose}>
             إلغاء
           </Button>
-          <Button onClick={handleSubmit}>تأكيد الإغلاق</Button>
+          <Button
+            loading={pending}
+            disabled={nextReview === ''}
+            onClick={() => void handleSubmit()}
+          >
+            تأكيد الإغلاق
+          </Button>
         </Group>
       </Stack>
     </Modal>

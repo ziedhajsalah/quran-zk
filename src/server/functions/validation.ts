@@ -58,7 +58,26 @@ export const gradeHistoryInput = studentInput.extend({
 export const memorizationInput = surahInput.extend({
   dueAt: batchReviewInput.shape.dueAt,
 })
-export const assessMemorizationInput = assignmentInput.extend({
+// Optional follow-ups must be an explicit UTC calendar day, today or later.
+const nextReviewDueAt = batchReviewInput.shape.dueAt
+  .unwrap()
+  .refine((value) => {
+    const now = new Date()
+    return (
+      value >=
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+    )
+  }, 'اختر اليوم أو تاريخاً لاحقاً للمراجعة التالية.')
+  .optional()
+export const closeReviewInput = assignmentInput.extend({
+  newGrade: gradeSchema.optional(),
+  nextReviewDueAt,
+})
+export const finishMemorizationInput = assignmentInput.extend({
+  grade: gradeSchema.optional(),
+  nextReviewDueAt,
+})
+export const assessMemorizationInput = finishMemorizationInput.extend({
   grade: gradeSchema,
 })
 

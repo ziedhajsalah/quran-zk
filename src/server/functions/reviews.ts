@@ -7,7 +7,7 @@ import {
   assignmentDeadlineInput,
   assignmentInput,
   batchReviewInput,
-  gradeSchema,
+  closeReviewInput,
   reviewHistoryInput,
   studentInput,
   surahInput,
@@ -40,7 +40,7 @@ export const assignBatch = createServerFn({ method: 'POST' })
     withRuntime(({ db, actor }) => service.assignReviews(db, actor, data)),
   )
 export const close = createServerFn({ method: 'POST' })
-  .validator(assignmentInput.extend({ newGrade: gradeSchema.optional() }))
+  .validator(closeReviewInput)
   .handler(({ data }) =>
     withRuntime(({ db, actor }) => service.finishReview(db, actor, data)),
   )

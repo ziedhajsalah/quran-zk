@@ -7,7 +7,8 @@ import {
   requireStudent,
 } from '../auth-guards.server'
 import { fail } from '../errors'
-import { batchReviewInput } from '../functions/validation'
+import { batchReviewInput, closeReviewInput } from '../functions/validation'
+import { scheduleFollowUpReview } from './follow-up-review.server'
 import { recordGradeChange } from './grade-history.server'
 import type {
   BatchReviewInput,
@@ -193,10 +194,13 @@ export async function assignReviews(
 export async function finishReview(
   db: Database,
   actor: Actor | null,
-  input: { assignmentId: string; newGrade?: Grade },
+  input: { assignmentId: string; newGrade?: Grade; nextReviewDueAt?: number },
   cancel = false,
 ) {
   const staff = requireStaff(actor)
+  closeReviewInput.parse(input)
+  if (cancel && input.nextReviewDueAt !== undefined)
+    fail('لا يمكن إسناد مراجعة تالية عند إلغاء الواجب.')
   await db.transaction(async (tx) => {
     const candidate = (
       await tx.select().from(reviews).where(eq(reviews.id, input.assignmentId))
@@ -283,5 +287,13 @@ export async function finishReview(
         closedAt: now,
       })
       .where(eq(reviews.id, row.id))
+    if (input.nextReviewDueAt !== undefined)
+      await scheduleFollowUpReview(
+        tx,
+        staff.id,
+        row.studentId,
+        row.surahNumber,
+        input.nextReviewDueAt,
+      )
   })
 }

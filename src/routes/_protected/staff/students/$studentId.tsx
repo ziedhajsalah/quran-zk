@@ -101,9 +101,12 @@ function StaffStudentGradingPage() {
   const [assignDrawerOpen, setAssignDrawerOpen] = useState(false)
   const [assignmentResult, setAssignmentResult] =
     useState<BatchReviewResult | null>(null)
-  const [closingAssignmentId, setClosingAssignmentId] = useState<string | null>(
-    null,
-  )
+  const [closingAssignment, setClosingAssignment] = useState<{
+    id: string
+    surahNumber: number
+    currentGrade: (typeof rows)[number]['grade'] | null
+  } | null>(null)
+  const closingAssignmentId = closingAssignment?.id ?? null
   const [noteDrawerOpen, setNoteDrawerOpen] = useState(false)
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null)
@@ -116,20 +119,10 @@ function StaffStudentGradingPage() {
 
   const student = students.find((s) => s.id === studentId)
 
-  const closingAssignment = useMemo(
-    () =>
-      closingAssignmentId
-        ? (openAssignments.find((a) => a._id === closingAssignmentId) ?? null)
-        : null,
-    [closingAssignmentId, openAssignments],
-  )
   const closingSurah = closingAssignment
     ? getSurah(closingAssignment.surahNumber)
     : null
-  const closingCurrentGrade = closingAssignment
-    ? (rows.find((r) => r.surahNumber === closingAssignment.surahNumber)
-        ?.grade ?? null)
-    : null
+  const closingCurrentGrade = closingAssignment?.currentGrade ?? null
 
   const editingNote = useMemo(
     () =>
@@ -173,17 +166,11 @@ function StaffStudentGradingPage() {
 
   async function handleCloseAssignment(input: {
     newGrade?: 'good' | 'medium' | 'forgotten'
+    nextReviewDueAt?: number
   }) {
-    if (!closingAssignmentId) return
-    setErrorMessage(null)
-    try {
-      await closeReview({
-        assignmentId: closingAssignmentId,
-        ...(input.newGrade !== undefined ? { newGrade: input.newGrade } : {}),
-      })
-    } catch (error) {
-      setErrorMessage(extractActionErrorMessage(error, 'تعذر إغلاق المراجعة.'))
-    }
+    if (!closingAssignmentId)
+      throw new Error('حدّث القائمة وأعد اختيار المراجعة.')
+    await closeReview({ assignmentId: closingAssignmentId, ...input })
   }
 
   async function handleCancelAssignment(assignmentId: string) {
@@ -348,9 +335,20 @@ function StaffStudentGradingPage() {
                     assignedAt: a.assignedAt,
                     dueAt: a.dueAt,
                   }))}
-                  onClose={(assignmentId) =>
-                    setClosingAssignmentId(assignmentId)
-                  }
+                  onClose={(assignmentId) => {
+                    const assignment = openAssignments.find(
+                      (row) => row._id === assignmentId,
+                    )
+                    if (assignment)
+                      setClosingAssignment({
+                        id: assignmentId,
+                        surahNumber: assignment.surahNumber,
+                        currentGrade:
+                          rows.find(
+                            (row) => row.surahNumber === assignment.surahNumber,
+                          )?.grade ?? null,
+                      })
+                  }}
                   onCancel={handleCancelAssignment}
                 />
               </Stack>
@@ -427,8 +425,9 @@ function StaffStudentGradingPage() {
       />
 
       <CloseAssignmentDialog
+        key={closingAssignmentId ?? 'closed'}
         opened={closingAssignmentId !== null}
-        onClose={() => setClosingAssignmentId(null)}
+        onClose={() => setClosingAssignment(null)}
         surah={closingSurah}
         currentGrade={closingCurrentGrade}
         onSubmit={handleCloseAssignment}
