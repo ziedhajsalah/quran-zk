@@ -9,7 +9,8 @@ import {
   Title,
 } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useHydrated, useLocation } from '@tanstack/react-router'
+import { useEffect, useRef, useState } from 'react'
 import { AssignmentDeadlineDialog } from '../AssignmentDeadlineDialog'
 import { AssignMemorizationDrawer } from './AssignMemorizationDrawer'
 import { AssessMemorizationDialog } from './AssessMemorizationDialog'
@@ -31,7 +32,25 @@ export function MemorizationPanel({
   recordedSurahNumbers: ReadonlyArray<number>
   editable?: boolean
 }) {
-  const query = useQuery(memorizationQuery(studentId))
+  const hydrated = useHydrated()
+  const hash = useLocation({ select: (location) => location.hash })
+  const scrolledHash = useRef('')
+  const query = useQuery({ ...memorizationQuery(studentId), enabled: hydrated })
+  useEffect(() => {
+    if (!hash) scrolledHash.current = ''
+    if (
+      !hydrated ||
+      !query.isSuccess ||
+      !hash.startsWith('memorization-') ||
+      scrolledHash.current === hash
+    )
+      return
+    const target = document.getElementById(hash)
+    if (target) {
+      target.scrollIntoView({ block: 'start' })
+      scrolledHash.current = hash
+    }
+  }, [hash, hydrated, query.isSuccess, query.data])
   const [rescheduling, setRescheduling] = useState<AssignmentDeadline | null>(
     null,
   )
@@ -70,7 +89,7 @@ export function MemorizationPanel({
         {editable ? (
           <Button
             variant="light"
-            disabled={!query.isSuccess || query.isFetching}
+            disabled={!hydrated || !query.isSuccess || query.isFetching}
             onClick={() => setAssigning(true)}
           >
             إسناد حفظ جديد
@@ -81,7 +100,7 @@ export function MemorizationPanel({
         سور جديدة للحفظ، منفصلة عن مراجعة السور المسجّلة. لا تُحتسب ضمن تقدّم
         الحفظ قبل تسجيل تقييم المعلم.
       </Text>
-      {query.isPending ? (
+      {!hydrated || query.isPending ? (
         <Group role="status">
           <Loader size="sm" />
           <Text>جارٍ تحميل واجبات الحفظ…</Text>
@@ -99,7 +118,7 @@ export function MemorizationPanel({
         <MemorizationQueue
           rows={query.data}
           editable={editable}
-          busy={pending}
+          busy={pending || !hydrated}
           onAssess={setAssessing}
           onReschedule={(row) =>
             setRescheduling({

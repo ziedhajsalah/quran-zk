@@ -1,5 +1,5 @@
 // src/routes/_protected/staff/students/index.tsx
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   Box,
   Button,
@@ -13,6 +13,7 @@ import {
 import { IconPlus } from '@tabler/icons-react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
+import { defaultWorkFilters } from '~/lib/work-queue'
 import * as accounts from '~/server/functions/accounts'
 import { studentsQuery, useAppMutation } from '~/lib/queries'
 import { currentUserQuery } from '~/lib/auth-queries'
@@ -91,6 +92,13 @@ function StaffStudentsPage() {
             </Button>
           </Group>
 
+          <Link
+            to="/staff/work"
+            search={defaultWorkFilters}
+            style={{ color: 'var(--app-accent-text)' }}
+          >
+            قائمة الواجبات
+          </Link>
           <StudentsPicker
             students={students.map((s) => ({
               id: s.id,

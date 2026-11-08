@@ -18,6 +18,7 @@ import { Route as ProtectedProfileRouteImport } from './routes/_protected/profil
 import { Route as ProtectedStaffRouteRouteImport } from './routes/_protected/staff/route'
 import { Route as ProtectedSurahsRouteImport } from './routes/_protected/surahs'
 import { Route as ProtectedAdminResetPasswordRouteImport } from './routes/_protected/admin/reset-password'
+import { Route as ProtectedStaffWorkRouteImport } from './routes/_protected/staff/work'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ProtectedStaffStudentsIndexRouteImport } from './routes/_protected/staff/students/index'
 import { Route as ProtectedStaffStudentsStudentIdRouteImport } from './routes/_protected/staff/students/$studentId'
@@ -67,6 +68,11 @@ const ProtectedAdminResetPasswordRoute =
     path: '/reset-password',
     getParentRoute: () => ProtectedAdminRouteRoute,
   } as any)
+const ProtectedStaffWorkRoute = ProtectedStaffWorkRouteImport.update({
+  id: '/work',
+  path: '/work',
+  getParentRoute: () => ProtectedStaffRouteRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProtectedProfileRoute
   '/surahs': typeof ProtectedSurahsRoute
   '/admin/reset-password': typeof ProtectedAdminResetPasswordRoute
+  '/staff/work': typeof ProtectedStaffWorkRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/staff/students/$studentId': typeof ProtectedStaffStudentsStudentIdRoute
   '/staff/students/': typeof ProtectedStaffStudentsIndexRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByTo {
   '/surahs': typeof ProtectedSurahsRoute
   '/': typeof ProtectedIndexRoute
   '/admin/reset-password': typeof ProtectedAdminResetPasswordRoute
+  '/staff/work': typeof ProtectedStaffWorkRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/staff/students/$studentId': typeof ProtectedStaffStudentsStudentIdRoute
   '/staff/students': typeof ProtectedStaffStudentsIndexRoute
@@ -122,6 +130,7 @@ export interface FileRoutesById {
   '/_protected/surahs': typeof ProtectedSurahsRoute
   '/_protected/': typeof ProtectedIndexRoute
   '/_protected/admin/reset-password': typeof ProtectedAdminResetPasswordRoute
+  '/_protected/staff/work': typeof ProtectedStaffWorkRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_protected/staff/students/$studentId': typeof ProtectedStaffStudentsStudentIdRoute
   '/_protected/staff/students/': typeof ProtectedStaffStudentsIndexRoute
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/surahs'
     | '/admin/reset-password'
+    | '/staff/work'
     | '/api/auth/$'
     | '/staff/students/$studentId'
     | '/staff/students/'
@@ -150,6 +160,7 @@ export interface FileRouteTypes {
     | '/surahs'
     | '/'
     | '/admin/reset-password'
+    | '/staff/work'
     | '/api/auth/$'
     | '/staff/students/$studentId'
     | '/staff/students'
@@ -164,6 +175,7 @@ export interface FileRouteTypes {
     | '/_protected/surahs'
     | '/_protected/'
     | '/_protected/admin/reset-password'
+    | '/_protected/staff/work'
     | '/api/auth/$'
     | '/_protected/staff/students/$studentId'
     | '/_protected/staff/students/'
@@ -241,6 +253,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedAdminResetPasswordRouteImport
       parentRoute: typeof ProtectedAdminRouteRoute
     }
+    '/_protected/staff/work': {
+      id: '/_protected/staff/work'
+      path: '/work'
+      fullPath: '/staff/work'
+      preLoaderRoute: typeof ProtectedStaffWorkRouteImport
+      parentRoute: typeof ProtectedStaffRouteRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -277,11 +296,13 @@ const ProtectedAdminRouteRouteWithChildren =
   ProtectedAdminRouteRoute._addFileChildren(ProtectedAdminRouteRouteChildren)
 
 interface ProtectedStaffRouteRouteChildren {
+  ProtectedStaffWorkRoute: typeof ProtectedStaffWorkRoute
   ProtectedStaffStudentsStudentIdRoute: typeof ProtectedStaffStudentsStudentIdRoute
   ProtectedStaffStudentsIndexRoute: typeof ProtectedStaffStudentsIndexRoute
 }
 
 const ProtectedStaffRouteRouteChildren: ProtectedStaffRouteRouteChildren = {
+  ProtectedStaffWorkRoute: ProtectedStaffWorkRoute,
   ProtectedStaffStudentsStudentIdRoute: ProtectedStaffStudentsStudentIdRoute,
   ProtectedStaffStudentsIndexRoute: ProtectedStaffStudentsIndexRoute,
 }

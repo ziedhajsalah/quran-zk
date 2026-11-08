@@ -16,6 +16,7 @@ import { HomeTopBar } from './HomeTopBar'
 import { createHomeDashboardData } from './home-dashboard.fixtures'
 import { formatArabicNumber as number } from './home-formatters'
 import type { TeacherDashboardData } from '~/lib/teacher-dashboard'
+import { defaultWorkFilters } from '~/lib/work-queue'
 
 const date = new Intl.DateTimeFormat('ar', {
   dateStyle: 'medium',
@@ -71,9 +72,18 @@ export function TeacherDashboard({
               نظرة على جميع الطلاب النشطين في المدرسة، لمساعدتك على تحديد من
               يحتاج إلى دعم اليوم.
             </Text>
-            <Link to="/staff/students" style={linkStyle}>
-              عرض جميع الطلاب
-            </Link>
+            <Group gap="lg">
+              <Link
+                to="/staff/work"
+                search={defaultWorkFilters}
+                style={linkStyle}
+              >
+                قائمة الواجبات
+              </Link>
+              <Link to="/staff/students" style={linkStyle}>
+                عرض جميع الطلاب
+              </Link>
+            </Group>
           </Stack>
           <Grid gutter="md">
             {stats.map((stat) => (

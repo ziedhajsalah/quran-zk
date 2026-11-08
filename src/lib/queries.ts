@@ -3,16 +3,28 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query'
+import { mutationInvalidationKeys } from './mutation-keys'
 import type {
   MemorizationHistoryCursor,
   MemorizationHistoryStatus,
 } from './memorization'
 import type { ReviewHistoryCursor, ReviewHistoryStatus } from './review-history'
+import type { WorkCursor, WorkFilters } from './work-queue'
 import * as memorization from '~/server/functions/memorization'
 import * as grades from '~/server/functions/grades'
 import * as reviews from '~/server/functions/reviews'
 import * as notes from '~/server/functions/notes'
+import * as workQueue from '~/server/functions/work-queue'
 import * as teacherDashboard from '~/server/functions/teacher-dashboard'
+
+export const workQueueQuery = (
+  filters: WorkFilters,
+  cursor: WorkCursor | null,
+) =>
+  queryOptions({
+    queryKey: ['work-queue', filters, cursor],
+    queryFn: () => workQueue.list({ data: { ...filters, cursor } }),
+  })
 
 export const teacherDashboardQuery = () =>
   queryOptions({
@@ -90,18 +102,7 @@ export function useAppMutation<TInput, TOutput>(
   return useMutation({
     mutationFn: (data: TInput) => fn({ data }),
     onSuccess: async () => {
-      const affectsDashboard = keys.some((key) =>
-        ['grades', 'reviews', 'memorization', 'students', 'users'].includes(
-          key,
-        ),
-      )
-      const affectedKeys = [
-        ...new Set([
-          ...keys,
-          ...(affectsDashboard ? ['teacher-dashboard'] : []),
-          ...(keys.includes('grades') ? ['memorization'] : []),
-        ]),
-      ]
+      const affectedKeys = mutationInvalidationKeys(keys)
       await Promise.all(
         affectedKeys.map((key) =>
           client.invalidateQueries({ queryKey: [key] }),
