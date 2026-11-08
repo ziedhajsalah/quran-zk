@@ -56,7 +56,11 @@ export function MemorizationPanel({
   )
   const reschedule = useAppMutation(functions.reschedule, ['memorization'])
   const assign = useAppMutation(functions.assign, ['memorization'])
-  const assess = useAppMutation(functions.assess, ['memorization', 'grades'])
+  const assess = useAppMutation(functions.assess, [
+    'memorization',
+    'grades',
+    'reviews',
+  ])
   const cancel = useAppMutation(functions.cancel, ['memorization'])
   const [showHistory, setShowHistory] = useState(false)
   const [assigning, setAssigning] = useState(false)
@@ -175,8 +179,8 @@ export function MemorizationPanel({
               key={assessing._id}
               assignment={assessing}
               onClose={() => setAssessing(null)}
-              onSubmit={(grade) =>
-                assess({ assignmentId: assessing._id, grade })
+              onSubmit={(grade, followUp) =>
+                assess({ assignmentId: assessing._id, grade, ...followUp })
               }
             />
           ) : null}
