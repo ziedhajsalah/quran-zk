@@ -337,6 +337,24 @@ test('server-rendered search preserves filters without JavaScript and inactive c
     )
     await expect(native.getByRole('article').first()).toBeVisible()
     await expect(
+      native
+        .getByRole('article')
+        .first()
+        .getByRole('button', { name: 'تقييم الحفظ', exact: true }),
+    ).toBeDisabled()
+    await expect(
+      native
+        .getByRole('article')
+        .first()
+        .getByRole('button', { name: 'تعديل الموعد', exact: true }),
+    ).toBeDisabled()
+    await expect(
+      native
+        .getByRole('article')
+        .first()
+        .getByRole('button', { name: 'إلغاء الواجب', exact: true }),
+    ).toBeDisabled()
+    await expect(
       native.getByRole('textbox', { name: 'نوع الواجب', exact: true }),
     ).toBeDisabled()
     await native.getByLabel('البحث عن طالب').fill('no-matching-native-search')
