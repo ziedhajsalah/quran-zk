@@ -221,7 +221,12 @@ test('staff see fresh review and manual grade transitions, and student navigatio
     latest.getByText('عند إغلاق مراجعة', { exact: true }),
   ).toBeVisible()
   await page.getByRole('tab', { name: 'السور', exact: true }).click()
-  await page.getByText('حفظ متوسط', { exact: true }).first().click()
+  // Tab navigation can leave the history badges visible until the new panel mounts.
+  const gradePanel = page.getByRole('tabpanel', { name: 'السور', exact: true })
+  await gradePanel.getByText('حفظ متوسط', { exact: true }).first().click()
+  await expect(
+    gradePanel.getByRole('radio', { name: 'حفظ متوسط', exact: true }).first(),
+  ).toBeChecked()
   await page.getByRole('tab', { name: 'التقدّم', exact: true }).click()
   await expect(page.getByRole('article')).toHaveCount(4)
   await expect(latest.getByText('حفظ متوسط', { exact: true })).toBeVisible()
