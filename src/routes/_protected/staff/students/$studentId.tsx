@@ -334,6 +334,7 @@ function StaffStudentGradingPage() {
                     surahNumber: a.surahNumber,
                     assignedAt: a.assignedAt,
                     dueAt: a.dueAt,
+                    readyAt: a.readyAt,
                   }))}
                   onClose={(assignmentId) => {
                     const assignment = openAssignments.find(

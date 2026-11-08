@@ -1,4 +1,5 @@
 import { Badge, Button, Card, Group, Stack, Text, Title } from '@mantine/core'
+import { AssignmentReadiness, ReadinessBadge } from '../AssignmentReadiness'
 import type { MemorizationRow } from '~/lib/memorization'
 import { getSurah } from '~/data/surahs'
 
@@ -9,6 +10,8 @@ const date = new Intl.DateTimeFormat('ar', {
 export function MemorizationQueue({
   rows,
   editable = false,
+  onReadinessChange,
+  onReadinessRefresh,
   busy = false,
   onReschedule,
   onAssess,
@@ -16,6 +19,8 @@ export function MemorizationQueue({
 }: {
   rows: ReadonlyArray<MemorizationRow>
   editable?: boolean
+  onReadinessChange?: (assignmentId: string, ready: boolean) => Promise<void>
+  onReadinessRefresh?: () => Promise<unknown>
   busy?: boolean
   onReschedule?: (row: MemorizationRow) => void
   onAssess?: (row: MemorizationRow) => void
@@ -44,6 +49,7 @@ export function MemorizationQueue({
               <Title order={3}>{getSurah(row.surahNumber).nameAr}</Title>
               <Badge variant="light">حفظ جديد</Badge>
             </Group>
+            <ReadinessBadge readyAt={row.readyAt} />
             <Text size="sm" c="dimmed">
               {row.dueAt === null
                 ? 'دون موعد محدد'
@@ -52,6 +58,13 @@ export function MemorizationQueue({
             <Text size="sm" c="dimmed">
               أُسند في: {date.format(row.assignedAt)}
             </Text>
+            {onReadinessChange && onReadinessRefresh ? (
+              <AssignmentReadiness
+                onSubmit={(ready) => onReadinessChange(row._id, ready)}
+                onRefresh={onReadinessRefresh}
+                readyAt={row.readyAt}
+              />
+            ) : null}
             {editable ? (
               <Group wrap="wrap">
                 {onReschedule ? (

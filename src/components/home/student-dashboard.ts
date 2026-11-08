@@ -6,6 +6,7 @@ export interface DashboardGrade {
   grade: SurahGrade
 }
 export interface DashboardReview {
+  readyAt?: number | null
   _id: string
   surahNumber: number
   dueAt: number | null

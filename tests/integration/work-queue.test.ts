@@ -133,6 +133,7 @@ describe('staff work queue', () => {
       expect(Object.keys(page.rows[0]).sort()).toEqual(
         [
           'currentGrade',
+          'readyAt',
           'displayName',
           'dueAt',
           'id',

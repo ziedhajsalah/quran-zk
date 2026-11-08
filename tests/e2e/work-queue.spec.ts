@@ -333,7 +333,7 @@ test('server-rendered search preserves filters without JavaScript and inactive c
     const native = await context.newPage()
     const student = fixtures.get(1280)!
     await native.goto(
-      `/staff/work?q=${student.username}&kind=memorization&deadline=all`,
+      `/staff/work?q=${student.username}&kind=memorization&deadline=all&readiness=not-ready`,
     )
     await expect(native.getByRole('article').first()).toBeVisible()
     await expect(
@@ -363,6 +363,7 @@ test('server-rendered search preserves filters without JavaScript and inactive c
     expect(address.searchParams.get('q')).toBe('no-matching-native-search')
     expect(address.searchParams.get('kind')).toBe('memorization')
     expect(address.searchParams.get('deadline')).toBe('all')
+    expect(address.searchParams.get('readiness')).toBe('not-ready')
     await expect(
       native.getByText('لا توجد واجبات تطابق البحث والفلاتر.'),
     ).toBeVisible()

@@ -127,3 +127,11 @@ Actions retain the queue's URL filters and current cursor page. Completed/cancel
 Staff can optionally enable **إسناد المراجعة التالية** when completing a review or assessing memorization, both on a student page and in the staff queue. Choose today or a later UTC date. The assessment, grade/history changes and new review save together. Follow-up is off by default and resets between assignments; cancelling work creates no follow-up.
 
 If an open review already exists, the save reports a conflict and leaves the assessment and existing review unchanged. Refresh the list or turn off the next-review option before retrying. Failed submissions retain choices; pending submissions block dismissal and duplicate saves. The new assignment appears through the existing student dashboard, review list and staff queue. No migration, background job or new paid service is required.
+
+## Student readiness for assessment
+
+Apply reviewed migration `0004_assignment_readiness.sql` to the intended database before deploying this version. It adds nullable readiness timestamps and open-only constraints to review/memorization assignments; existing work starts unmarked and no data is backfilled.
+
+On **المراجعات** and **حفظ جديد**, students choose **أنا جاهز للتقييم** after practising, or **التراجع عن الجاهزية** to undo it. The signal keeps the task open and does not change grades, progress or deadlines. Staff see **جاهز للتقييم** on student tasks and can filter **جاهزية الطالب** in **قائمة الواجبات**, combined with the existing type/deadline/search filters. Select **كل المواعيد** to include ready work regardless of deadline. Assessment/cancellation, including ordinary grading or grade-removal side effects, clears the signal; changing a deadline retains it. New follow-up assignments start unmarked.
+
+The operation is limited to the signed-in student’s own open assignments. Failed requests retain the current state and offer retry/refresh. Other browsers see changes on navigation/focus/reload or the queue’s refresh button; there is no polling, notification delivery or extra service. Additional service cost: **$0**, within the existing Workers Free/Neon Free allowances.

@@ -29,6 +29,13 @@
       "when": 1793999215144,
       "tag": "0003_memorization_assignments",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794163402002,
+      "tag": "0004_assignment_readiness",
+      "breakpoints": true
     }
   ]
 }

@@ -26,6 +26,7 @@ export const ReadOnly: Story = {
     rows: [
       {
         assignmentId: 'a1',
+        readyAt: now,
         surahNumber: 2,
         assignedAt: now - oneDay * 2,
         dueAt: now - oneDay,

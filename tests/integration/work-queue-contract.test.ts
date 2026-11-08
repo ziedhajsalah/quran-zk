@@ -5,6 +5,7 @@ import {
   workDeadlineOptions,
   workFilterSchema,
   workKindOptions,
+  workReadinessOptions,
 } from '../../src/lib/work-queue'
 import { workQueueInput } from '../../src/server/functions/validation'
 import { mutationInvalidationKeys } from '../../src/lib/mutation-keys'
@@ -18,20 +19,29 @@ describe('work queue contracts', () => {
       cursor: null,
     })
     for (const { value: kind } of workKindOptions)
-      for (const { value: deadline } of workDeadlineOptions) {
-        const filters = { q: '  طالب  ', kind, deadline }
-        expect(parseWorkFilters(filters)).toEqual(
-          workFilterSchema.parse(filters),
-        )
-        expect(workQueueInput.parse(filters)).toEqual({
-          ...parseWorkFilters(filters),
-          cursor: null,
-        })
-      }
+      for (const { value: deadline } of workDeadlineOptions)
+        for (const { value: readiness } of workReadinessOptions) {
+          const filters = { q: '  طالب  ', kind, deadline, readiness }
+          expect(parseWorkFilters(filters)).toEqual(
+            workFilterSchema.parse(filters),
+          )
+          expect(workQueueInput.parse(filters)).toEqual({
+            ...parseWorkFilters(filters),
+            cursor: null,
+          })
+        }
     expect(
-      parseWorkFilters({ kind: 'invalid', deadline: 'invalid', q: 7 }),
+      parseWorkFilters({
+        kind: 'invalid',
+        deadline: 'invalid',
+        readiness: 'invalid',
+        q: 7,
+      }),
     ).toEqual(defaultWorkFilters)
     expect(workQueueInput.safeParse({ kind: 'invalid' }).success).toBe(false)
+    expect(workQueueInput.safeParse({ readiness: 'invalid' }).success).toBe(
+      false,
+    )
   })
   it('skips unrelated invalidations but retains grade side effects and account changes', () => {
     expect(mutationInvalidationKeys(['students'])).not.toContain('work-queue')

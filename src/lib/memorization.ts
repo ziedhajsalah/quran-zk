@@ -4,6 +4,7 @@ export interface MemorizationRow {
   _id: string
   surahNumber: number
   assignedAt: number
+  readyAt?: number | null
   dueAt: number | null
 }
 export interface MemorizationInput {

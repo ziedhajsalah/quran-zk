@@ -14,7 +14,7 @@ export async function listWorkQueue(
   now = new Date(),
 ): Promise<WorkPage> {
   requireStaff(actor)
-  const { q, kind, deadline, cursor } = workQueueInput.parse(input)
+  const { q, kind, deadline, readiness, cursor } = workQueueInput.parse(input)
   const today = Date.UTC(
     now.getUTCFullYear(),
     now.getUTCMonth(),
@@ -30,6 +30,11 @@ export async function listWorkQueue(
     upcoming: sql`w.due_at >= ${tomorrow}::timestamptz`,
     undated: sql`w.due_at is null`,
   }[deadline]
+  const readinessWhere = {
+    all: sql`true`,
+    ready: sql`w.ready_at is not null`,
+    'not-ready': sql`w.ready_at is null`,
+  }[readiness]
   const tie = cursor
     ? sql`(w.kind, w.id) > (${cursor.kind}::text, ${cursor.id}::text)`
     : sql`true`
@@ -43,22 +48,23 @@ export async function listWorkQueue(
   // Normalize the ORDER BY and cursor comparison too, not only the JSON projection.
   const result = await db.execute<WorkRow & Record<string, unknown>>(sql`
     with work as (
-      select id, student_id, surah_number, date_trunc('milliseconds', due_at) as due_at, 'review'::text as kind
+      select id, student_id, surah_number, date_trunc('milliseconds', due_at) as due_at, ready_at, 'review'::text as kind
       from ${reviews} where status = 'open'
       union all
-      select id, student_id, surah_number, date_trunc('milliseconds', due_at) as due_at, 'memorization'::text as kind
+      select id, student_id, surah_number, date_trunc('milliseconds', due_at) as due_at, ready_at, 'memorization'::text as kind
       from ${memorizationAssignments} where status = 'open'
     )
     select w.id, w.kind, w.student_id as "studentId", w.surah_number as "surahNumber",
       (extract(epoch from w.due_at) * 1000)::float8 as "dueAt",
       u.name as "displayName", coalesce(u.username, '') as username,
-      g.grade as "currentGrade"
+      g.grade as "currentGrade",
+      (floor(extract(epoch from w.ready_at) * 1000))::float8 as "readyAt"
     from work w join ${user} u on u.id = w.student_id
     left join ${grades} g on g.student_id = w.student_id and g.surah_number = w.surah_number
     where u.banned = false and 'student' = any(string_to_array(u.role, ','))
       and (${kind} = 'all' or w.kind = ${kind})
       and (u.name ilike ${pattern} or coalesce(u.username, '') ilike ${pattern})
-      and (${deadlineWhere}) and (${after})
+      and (${deadlineWhere}) and (${readinessWhere}) and (${after})
     order by w.due_at asc nulls last, w.kind asc, w.id asc
     limit 21
   `)

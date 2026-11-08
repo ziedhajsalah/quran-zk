@@ -36,6 +36,7 @@ export async function listMemorization(
       surahNumber: memorizationAssignments.surahNumber,
       assignedAt: memorizationAssignments.assignedAt,
       dueAt: memorizationAssignments.dueAt,
+      readyAt: memorizationAssignments.readyAt,
     })
     .from(memorizationAssignments)
     .where(
@@ -54,6 +55,7 @@ export async function listMemorization(
     ...row,
     assignedAt: row.assignedAt.getTime(),
     dueAt: row.dueAt?.getTime() ?? null,
+    readyAt: row.readyAt?.getTime() ?? null,
   }))
 }
 
@@ -170,7 +172,12 @@ export async function finishMemorization(
     } else {
       await tx
         .update(memorizationAssignments)
-        .set({ status: 'cancelled', closedBy: staff.id, closedAt: new Date() })
+        .set({
+          status: 'cancelled',
+          readyAt: null,
+          closedBy: staff.id,
+          closedAt: new Date(),
+        })
         .where(eq(memorizationAssignments.id, row.id))
     }
   })
