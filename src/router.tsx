@@ -1,45 +1,24 @@
 import { createRouter } from '@tanstack/react-router'
 import { QueryClient } from '@tanstack/react-query'
-import { routerWithQueryClient } from '@tanstack/react-router-with-query'
-import { ConvexQueryClient } from '@convex-dev/react-query'
-import { ConvexReactClient } from 'convex/react'
+import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
 import { routeTree } from './routeTree.gen'
 
 export function getRouter() {
-  const CONVEX_URL = (import.meta as any).env.VITE_CONVEX_URL!
-  if (!CONVEX_URL) {
-    console.error('missing envar CONVEX_URL')
-  }
-  const convexClient = new ConvexReactClient(CONVEX_URL, {
-    expectAuth: true,
-    unsavedChangesWarning: false,
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { staleTime: 30_000, gcTime: 5 * 60_000 } },
   })
-  const convexQueryClient = new ConvexQueryClient(convexClient)
 
-  const queryClient: QueryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        queryKeyHashFn: convexQueryClient.hashFn(),
-        queryFn: convexQueryClient.queryFn(),
-        staleTime: 30_000,
-        gcTime: 5 * 60_000,
-      },
-    },
+  const router = createRouter({
+    routeTree,
+    defaultPreload: 'intent',
+    context: { queryClient },
+    scrollRestoration: true,
+    defaultPreloadStaleTime: 30_000,
+    defaultErrorComponent: () => <p>تعذر تحميل الصفحة. حاول مرة أخرى.</p>,
+    defaultNotFoundComponent: () => <p>الصفحة غير موجودة</p>,
   })
-  convexQueryClient.connect(queryClient)
 
-  const router = routerWithQueryClient(
-    createRouter({
-      routeTree,
-      defaultPreload: 'intent',
-      context: { queryClient, convexClient, convexQueryClient },
-      scrollRestoration: true,
-      defaultPreloadStaleTime: 30_000,
-      defaultErrorComponent: (err) => <p>{err.error.stack}</p>,
-      defaultNotFoundComponent: () => <p>الصفحة غير موجودة</p>,
-    }),
-    queryClient,
-  )
+  setupRouterSsrQueryIntegration({ router, queryClient })
 
   return router
 }

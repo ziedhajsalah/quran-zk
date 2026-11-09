@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Serif:wght@400;700;900&display=swap');
 @import '@mantine/core/styles.css';
+@import '@mantine/dates/styles.css';
 
 html,
 body {

@@ -3,6 +3,7 @@ node_modules
 !.env
 .env
 .env.local
+.env.neon.local
 .DS_Store
 .cache
 .vercel
@@ -34,3 +35,4 @@ storybook-static
 .dev.vars*
 !.dev.vars.example
 !.env.example
+.env.*.local

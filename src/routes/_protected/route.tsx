@@ -18,9 +18,8 @@ export const Route = createFileRoute('/_protected')({
     } catch (error) {
       const message = error instanceof Error ? error.message : ''
       const isAuthFailure =
-        message === 'Not authenticated' ||
-        message === 'Account disabled' ||
-        message === 'Unauthorized'
+        message === 'يلزم تسجيل الدخول.' ||
+        message === 'غير مصرح لك بهذه العملية.'
       if (!isAuthFailure) {
         throw error
       }

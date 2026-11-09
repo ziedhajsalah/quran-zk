@@ -1,0 +1,4 @@
+ALTER TABLE "memorization_assignments" ADD COLUMN "assessment_feedback" text;--> statement-breakpoint
+ALTER TABLE "surah_review_assignments" ADD COLUMN "assessment_feedback" text;--> statement-breakpoint
+ALTER TABLE "memorization_assignments" ADD CONSTRAINT "memorization_assessment_feedback" CHECK ("memorization_assignments"."assessment_feedback" is null or ("memorization_assignments"."status" = 'closed' and char_length(btrim("memorization_assignments"."assessment_feedback")) > 0 and char_length("memorization_assignments"."assessment_feedback") <= 2000));--> statement-breakpoint
+ALTER TABLE "surah_review_assignments" ADD CONSTRAINT "review_assessment_feedback" CHECK ("surah_review_assignments"."assessment_feedback" is null or ("surah_review_assignments"."status" = 'closed' and char_length(btrim("surah_review_assignments"."assessment_feedback")) > 0 and char_length("surah_review_assignments"."assessment_feedback") <= 2000));

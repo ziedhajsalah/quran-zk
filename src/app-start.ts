@@ -1,3 +1,13 @@
-import { createStart } from '@tanstack/react-start'
+import { createMiddleware, createStart } from '@tanstack/react-start'
 
-export const startInstance = createStart(() => ({}))
+const canonicalOrigin = createMiddleware().server(async ({ request, next }) => {
+  const { env } = await import('cloudflare:workers')
+  const { canonicalOriginRedirect } =
+    await import('./server/canonical-origin.server')
+  const redirect = canonicalOriginRedirect(request, env.SITE_URL)
+  return redirect ?? next()
+})
+
+export const startInstance = createStart(() => ({
+  requestMiddleware: [canonicalOrigin],
+}))

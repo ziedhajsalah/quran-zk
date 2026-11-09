@@ -5,9 +5,6 @@ import tsConfigPaths from 'vite-tsconfig-paths'
 import viteReact from '@vitejs/plugin-react'
 
 export default defineConfig({
-  ssr: {
-    noExternal: ['@convex-dev/better-auth'],
-  },
   server: {
     port: 3000,
     watch: {

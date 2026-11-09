@@ -1,7 +1,8 @@
-import { convexQuery } from '@convex-dev/react-query'
-import { api } from '../../convex/_generated/api'
+import { queryOptions } from '@tanstack/react-query'
+import { currentUser } from '~/server/functions/session'
 
-export const currentUserQuery = {
-  ...convexQuery(api.auth.users.current, {}),
+export const currentUserQuery = queryOptions({
+  queryKey: ['session'],
+  queryFn: () => currentUser(),
   staleTime: 0,
-}
+})

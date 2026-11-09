@@ -1,0 +1,128 @@
+// src/routes/_protected/staff/students/index.tsx
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import {
+  Box,
+  Button,
+  Container,
+  Group,
+  Stack,
+  Text,
+  Title,
+  useMantineTheme,
+} from '@mantine/core'
+import { IconPlus } from '@tabler/icons-react'
+import { useSuspenseQuery } from '@tanstack/react-query'
+import { useMemo, useState } from 'react'
+import { defaultWorkFilters } from '~/lib/work-queue'
+import * as accounts from '~/server/functions/accounts'
+import { studentsQuery, useAppMutation } from '~/lib/queries'
+import { currentUserQuery } from '~/lib/auth-queries'
+import {
+  BottomNav,
+  HomeTopBar,
+  createHomeDashboardData,
+} from '~/components/home'
+import { StudentsPicker } from '~/components/surahs/StudentsPicker'
+import { CreateStudentDrawer } from '~/components/staff/CreateStudentDrawer'
+
+export const Route = createFileRoute('/_protected/staff/students/')({
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData(studentsQuery())
+  },
+  component: StaffStudentsPage,
+})
+
+function StaffStudentsPage() {
+  const theme = useMantineTheme()
+  const navigate = useNavigate()
+  const { data: me } = useSuspenseQuery(currentUserQuery)
+  const { data: students } = useSuspenseQuery(studentsQuery())
+  const createStudent = useAppMutation(accounts.staffCreateStudent, [
+    'students',
+  ])
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  const homeDashboardData = useMemo(
+    () => createHomeDashboardData(me.displayName),
+    [me.displayName],
+  )
+
+  async function handleCreateStudent(input: {
+    username: string
+    displayName: string
+    email: string | null
+    password: string
+  }) {
+    await createStudent(input)
+  }
+
+  return (
+    <Box
+      style={{
+        backgroundColor: theme.other.semanticColors.background,
+        minHeight: '100vh',
+      }}
+    >
+      <HomeTopBar
+        brandMarkText={homeDashboardData.brandMarkText}
+        brandName={homeDashboardData.brandName}
+        notificationLabel={homeDashboardData.notificationLabel}
+      />
+
+      <Container
+        size="xl"
+        px={{ base: 'lg', sm: 'xl' }}
+        py={{ base: 'lg', sm: 'xl' }}
+        style={{ paddingBottom: '9rem' }}
+      >
+        <Stack gap="xl">
+          <Group justify="space-between" align="flex-end" wrap="nowrap">
+            <Stack gap="xs" style={{ minWidth: 0 }}>
+              <Text c="var(--app-accent-text)" fw={700} size="sm">
+                إدارة الطلاب
+              </Text>
+              <Title order={1}>طلابك</Title>
+              <Text c="dimmed">اختر طالبًا لعرض السور التي حفظها وتقييمه.</Text>
+            </Stack>
+            <Button
+              leftSection={<IconPlus size={16} />}
+              onClick={() => setDrawerOpen(true)}
+            >
+              طالب جديد
+            </Button>
+          </Group>
+
+          <Link
+            to="/staff/work"
+            search={defaultWorkFilters}
+            style={{ color: 'var(--app-accent-text)' }}
+          >
+            قائمة الواجبات
+          </Link>
+          <StudentsPicker
+            students={students.map((s) => ({
+              id: s.id,
+              displayName: s.displayName,
+              username: s.username,
+            }))}
+            emptyMessage="لا يوجد طلاب مسجّلون بعد."
+            onSelect={(studentId) =>
+              navigate({
+                to: '/staff/students/$studentId',
+                params: { studentId },
+              })
+            }
+          />
+        </Stack>
+      </Container>
+
+      <CreateStudentDrawer
+        opened={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        onSubmit={handleCreateStudent}
+      />
+
+      <BottomNav activeItemId="home" items={homeDashboardData.bottomNavItems} />
+    </Box>
+  )
+}

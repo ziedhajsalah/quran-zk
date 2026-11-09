@@ -1,4 +1,9 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import {
+  Link,
+  createFileRoute,
+  redirect,
+  useHydrated,
+} from '@tanstack/react-router'
 import {
   Alert,
   Anchor,
@@ -17,17 +22,22 @@ import { fetchAppSession } from '~/lib/auth'
 
 type LoginSearch = {
   redirect?: string
-  reason?: 'auth' | 'unauthorized'
+  reason?: 'auth' | 'unauthorized' | 'passwordReset'
 }
 
 export const Route = createFileRoute('/login')({
   validateSearch: (search): LoginSearch => ({
     redirect:
-      typeof search.redirect === 'string' && search.redirect.startsWith('/')
+      typeof search.redirect === 'string' &&
+      search.redirect.startsWith('/') &&
+      !search.redirect.startsWith('//') &&
+      !search.redirect.includes('\\')
         ? search.redirect
         : undefined,
     reason:
-      search.reason === 'auth' || search.reason === 'unauthorized'
+      search.reason === 'auth' ||
+      search.reason === 'unauthorized' ||
+      search.reason === 'passwordReset'
         ? search.reason
         : undefined,
   }),
@@ -43,6 +53,7 @@ export const Route = createFileRoute('/login')({
 })
 
 function LoginPage() {
+  const hydrated = useHydrated()
   const search = Route.useSearch()
   const [identifier, setIdentifier] = React.useState('')
   const [password, setPassword] = React.useState('')
@@ -68,13 +79,19 @@ function LoginPage() {
           })
 
       if (result.error) {
-        setErrorMessage(result.error.message ?? 'فشل تسجيل الدخول. تحقق من البيانات.')
+        setErrorMessage(
+          result.error.message ?? 'فشل تسجيل الدخول. تحقق من البيانات.',
+        )
         return
       }
 
       window.location.assign(search.redirect ?? '/')
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'فشل تسجيل الدخول. تحقق من البيانات.')
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'فشل تسجيل الدخول. تحقق من البيانات.',
+      )
     } finally {
       setLoading(false)
     }
@@ -105,6 +122,12 @@ function LoginPage() {
             </Alert>
           ) : null}
 
+          {search.reason === 'passwordReset' ? (
+            <Alert color="teal" title="تم تحديث كلمة المرور">
+              تم تغيير كلمة المرور بنجاح. سجّل الدخول بكلمة المرور الجديدة.
+            </Alert>
+          ) : null}
+
           {errorMessage ? (
             <Alert color="red" title="تعذر تسجيل الدخول">
               {errorMessage}
@@ -114,6 +137,7 @@ function LoginPage() {
           <form onSubmit={handleSubmit}>
             <Stack gap="md">
               <TextInput
+                disabled={!hydrated}
                 label="البريد الإلكتروني أو اسم المستخدم"
                 placeholder="name@example.com أو username"
                 value={identifier}
@@ -122,6 +146,7 @@ function LoginPage() {
               />
 
               <PasswordInput
+                disabled={!hydrated}
                 label="كلمة المرور"
                 placeholder="أدخل كلمة المرور"
                 value={password}
@@ -129,21 +154,19 @@ function LoginPage() {
                 required
               />
 
-              <Button type="submit" loading={loading} fullWidth>
+              <Button
+                disabled={!hydrated}
+                type="submit"
+                loading={loading}
+                fullWidth
+              >
                 تسجيل الدخول
               </Button>
             </Stack>
           </form>
 
-          <Anchor
-            component="button"
-            type="button"
-            onClick={async () => {
-              await authClient.signOut()
-            }}
-            size="sm"
-          >
-            تسجيل الخروج من الجلسة الحالية
+          <Anchor component={Link} to="/reset-password" size="sm">
+            نسيت كلمة المرور؟
           </Anchor>
         </Stack>
       </Paper>

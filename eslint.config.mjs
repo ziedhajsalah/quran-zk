@@ -3,11 +3,9 @@ import storybook from 'eslint-plugin-storybook'
 
 import { defineConfig, globalIgnores } from 'eslint/config'
 import { tanstackConfig } from '@tanstack/eslint-config'
-import convexPlugin from '@convex-dev/eslint-plugin'
 
 export default defineConfig([
   ...tanstackConfig,
-  ...convexPlugin.configs.recommended,
-  globalIgnores(['convex/_generated', 'storybook-static']),
+  globalIgnores(['storybook-static', 'dist', 'worker-configuration.d.ts', 'src/routeTree.gen.ts']),
   ...storybook.configs['flat/recommended'],
 ])

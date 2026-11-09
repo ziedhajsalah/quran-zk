@@ -1,0 +1,203 @@
+import { createFileRoute } from '@tanstack/react-router'
+import {
+  Box,
+  Container,
+  Stack,
+  Tabs,
+  Text,
+  Title,
+  useMantineTheme,
+} from '@mantine/core'
+import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
+import { MemorizationPanel } from '~/components/surahs/Memorization/MemorizationPanel'
+import { GradeHistoryPanel } from '~/components/surahs/GradeHistory/GradeHistoryPanel'
+import { ReviewHistoryPanel } from '~/components/surahs/ReviewHistory/ReviewHistoryPanel'
+import {
+  gradesQuery,
+  notesQuery,
+  reviewsQuery,
+  useAppMutation,
+} from '~/lib/queries'
+import { setReady } from '~/server/functions/assignment-readiness'
+import { currentUserQuery } from '~/lib/auth-queries'
+import {
+  BottomNav,
+  HomeTopBar,
+  createHomeDashboardData,
+} from '~/components/home'
+import { SurahGradeList } from '~/components/surahs/SurahGradeList'
+import { SurahReviewQueue } from '~/components/surahs/SurahReviewQueue'
+import { StudentNotesList } from '~/components/staff/StudentNotesList'
+
+export const Route = createFileRoute('/_protected/surahs')({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): {
+    tab?:
+      'reviews' | 'grades' | 'notes' | 'history' | 'progress' | 'memorization'
+  } => ({
+    tab:
+      search.tab === 'grades' ||
+      search.tab === 'notes' ||
+      search.tab === 'history' ||
+      search.tab === 'progress' ||
+      search.tab === 'memorization'
+        ? search.tab
+        : 'reviews',
+  }),
+  loader: async ({ context }) => {
+    const me = await context.queryClient.ensureQueryData(currentUserQuery)
+    await Promise.all([
+      context.queryClient.ensureQueryData(gradesQuery(me.id)),
+      context.queryClient.ensureQueryData(reviewsQuery(me.id)),
+      context.queryClient.ensureQueryData(notesQuery(me.id)),
+    ])
+  },
+  component: StudentSurahsPage,
+})
+
+function StudentSurahsPage() {
+  const theme = useMantineTheme()
+  const client = useQueryClient()
+  const markReady = useAppMutation(setReady, ['reviews'])
+  const { tab } = Route.useSearch()
+  const navigate = Route.useNavigate()
+  const { data: me } = useSuspenseQuery(currentUserQuery)
+  const { data: rows } = useSuspenseQuery(gradesQuery(me.id))
+  const { data: openAssignments } = useSuspenseQuery(reviewsQuery(me.id))
+  const { data: notes } = useSuspenseQuery(notesQuery(me.id))
+  const homeDashboardData = useMemo(
+    () => createHomeDashboardData(me.displayName),
+    [me.displayName],
+  )
+
+  return (
+    <Box
+      style={{
+        backgroundColor: theme.other.semanticColors.background,
+        minHeight: '100vh',
+      }}
+    >
+      <HomeTopBar
+        brandMarkText={homeDashboardData.brandMarkText}
+        brandName={homeDashboardData.brandName}
+        notificationLabel={homeDashboardData.notificationLabel}
+      />
+
+      <Container
+        size="xl"
+        px={{ base: 'lg', sm: 'xl' }}
+        py={{ base: 'lg', sm: 'xl' }}
+        pb="9rem"
+      >
+        <Stack gap="xl">
+          <Stack gap="xs">
+            <Text c="var(--app-accent-text)" fw={700} size="sm">
+              حفظي
+            </Text>
+            <Title order={1}>السور التي حفظتها</Title>
+            <Text c="dimmed">
+              قائمة السور التي درستها مع آخر تقييم سجّله معلمك.
+            </Text>
+          </Stack>
+
+          <Tabs
+            value={tab}
+            keepMounted={false}
+            onChange={(value) => {
+              if (
+                value === 'reviews' ||
+                value === 'grades' ||
+                value === 'notes' ||
+                value === 'history' ||
+                value === 'progress' ||
+                value === 'memorization'
+              )
+                void navigate({
+                  search: { tab: value },
+                  hash: '',
+                  replace: true,
+                })
+            }}
+          >
+            <Tabs.List>
+              <Tabs.Tab value="memorization">حفظ جديد</Tabs.Tab>
+              <Tabs.Tab value="reviews">المراجعات</Tabs.Tab>
+              <Tabs.Tab value="grades">السور</Tabs.Tab>
+              <Tabs.Tab value="notes">الملاحظات</Tabs.Tab>
+              <Tabs.Tab value="history">السجل</Tabs.Tab>
+              <Tabs.Tab value="progress">التقدّم</Tabs.Tab>
+            </Tabs.List>
+
+            <Tabs.Panel value="reviews" pt="md">
+              <SurahReviewQueue
+                onReadinessChange={
+                  me.isStudent
+                    ? (assignmentId, ready) =>
+                        markReady({ kind: 'review', assignmentId, ready })
+                    : undefined
+                }
+                onReadinessRefresh={() =>
+                  client.invalidateQueries({ queryKey: ['reviews', me.id] })
+                }
+                rows={openAssignments.map((a) => ({
+                  assignmentId: String(a._id),
+                  surahNumber: a.surahNumber,
+                  assignedAt: a.assignedAt,
+                  dueAt: a.dueAt,
+                  readyAt: a.readyAt,
+                }))}
+              />
+            </Tabs.Panel>
+
+            <Tabs.Panel value="grades" pt="md">
+              <SurahGradeList
+                rows={rows.map((row) => ({
+                  surahNumber: row.surahNumber,
+                  grade: row.grade,
+                  updatedAt: row.updatedAt,
+                }))}
+                emptyMessage="لم تبدأ في حفظ أي سورة بعد. تواصل مع معلمك."
+              />
+            </Tabs.Panel>
+
+            <Tabs.Panel value="notes" pt="md">
+              <StudentNotesList
+                rows={notes.map((n) => ({
+                  noteId: String(n._id),
+                  authorDisplayName: n.authorDisplayName,
+                  authorId: n.authorId,
+                  createdAt: n.createdAt,
+                  editedAt: n.editedAt,
+                  body: n.body,
+                }))}
+                currentUserId={String(me.id)}
+                emptyMessage="لا توجد ملاحظات من معلمك بعد"
+              />
+            </Tabs.Panel>
+            <Tabs.Panel value="memorization" pt="md">
+              <MemorizationPanel
+                key={me.id}
+                studentId={me.id}
+                canMarkReady={me.isStudent}
+                recordedSurahNumbers={rows.map((row) => row.surahNumber)}
+              />
+            </Tabs.Panel>
+            <Tabs.Panel value="progress" pt="md">
+              <GradeHistoryPanel key={me.id} studentId={me.id} />
+            </Tabs.Panel>
+            <Tabs.Panel value="history" pt="md">
+              <ReviewHistoryPanel key={me.id} studentId={me.id} />
+            </Tabs.Panel>
+          </Tabs>
+        </Stack>
+      </Container>
+
+      <BottomNav
+        activeItemId="surahs"
+        items={homeDashboardData.bottomNavItems}
+      />
+    </Box>
+  )
+}

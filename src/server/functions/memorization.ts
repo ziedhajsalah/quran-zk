@@ -1,0 +1,51 @@
+import { createServerFn } from '@tanstack/react-start'
+import { rescheduleAssignment } from '../services/assignment-deadline.server'
+import { withRuntime } from '../runtime.server'
+import * as service from '../services/memorization.server'
+import {
+  assessMemorizationInput,
+  assignmentDeadlineInput,
+  assignmentInput,
+  memorizationHistoryInput,
+  memorizationInput,
+  studentInput,
+} from './validation'
+
+export const listOpenForStudent = createServerFn({ method: 'GET' })
+  .validator(studentInput)
+  .handler(({ data }) =>
+    withRuntime(({ db, actor }) =>
+      service.listMemorization(db, actor, data.studentId),
+    ),
+  )
+export const assign = createServerFn({ method: 'POST' })
+  .validator(memorizationInput)
+  .handler(({ data }) =>
+    withRuntime(({ db, actor }) => service.assignMemorization(db, actor, data)),
+  )
+export const assess = createServerFn({ method: 'POST' })
+  .validator(assessMemorizationInput)
+  .handler(({ data }) =>
+    withRuntime(({ db, actor }) => service.finishMemorization(db, actor, data)),
+  )
+export const cancel = createServerFn({ method: 'POST' })
+  .validator(assignmentInput)
+  .handler(({ data }) =>
+    withRuntime(({ db, actor }) => service.finishMemorization(db, actor, data)),
+  )
+
+export const listHistoryForStudent = createServerFn({ method: 'GET' })
+  .validator(memorizationHistoryInput)
+  .handler(({ data }) =>
+    withRuntime(({ db, actor }) =>
+      service.listMemorizationHistory(db, actor, data),
+    ),
+  )
+
+export const reschedule = createServerFn({ method: 'POST' })
+  .validator(assignmentDeadlineInput)
+  .handler(({ data }) =>
+    withRuntime(({ db, actor }) =>
+      rescheduleAssignment(db, actor, 'memorization', data),
+    ),
+  )

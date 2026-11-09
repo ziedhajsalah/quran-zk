@@ -1,59 +1,21 @@
-# Better Auth + Convex auth setup
+# Better Auth setup
 
-## 1. Required Convex env vars
+Better Auth 1.7.7 runs in the application with the PostgreSQL Drizzle adapter, username and admin plugins. Public signup is disabled. Set `BETTER_AUTH_SECRET` and exact-origin `SITE_URL` in `.dev.vars` locally, or as Worker secrets remotely. Database setup is in [SETUP.md](SETUP.md).
 
-Set these on the Convex deployment before you bootstrap the first admin:
+Cookie sessions live in SQL. Cookie caching is disabled; backend authorization reads the current user and status. Multi-role users retain admin/teacher/student flags. Teachers create students with a fixed server-side role; all other account administration is app-admin-only. The plugin's public `/admin/*` routes are disabled so they cannot bypass the app's transactional last-admin checks.
 
-```bash
-npx convex env set BETTER_AUTH_SECRET "$(openssl rand -base64 32)"
-npx convex env set SITE_URL http://localhost:3000
-```
+Create the first admin by running `npm run bootstrap:admin` in a terminal. The interactive wizard asks for the environment, username, display name, optional email, and a hidden password/confirmation. Review the selected database and type `create <environment>` to proceed. Bootstrap refuses any database that already contains users. There is no separate super-admin role.
 
-For production, set `SITE_URL` to the real app origin.
+For automation, run `npm run bootstrap:admin -- --non-interactive` with `DATABASE_URL`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_NAME` and optional `ADMIN_EMAIL` explicitly exported. These `ADMIN_*` variables do not prefill the interactive wizard.
 
-## 2. Local app env vars
+For recovery, run `npm run rescue:password` in a terminal. Select the environment, enter the existing username or email and a hidden new password/confirmation, then type `reset <environment>` after reviewing the target. The CLI requires DB access; there is no public rescue endpoint. It hashes with Better Auth's pinned password contract and revokes all target sessions transactionally, preserving roles and account status.
 
-`.env.local` should contain:
+For automation, run `npm run rescue:password -- --non-interactive` with `DATABASE_URL`, `RESET_IDENTIFIER` and `RESET_PASSWORD` explicitly exported. These `RESET_*` variables do not prefill the interactive wizard.
 
-```dotenv
-CONVEX_DEPLOYMENT=
-VITE_CONVEX_URL=
-VITE_CONVEX_SITE_URL=
-VITE_SITE_URL=http://localhost:3000
-```
+Both wizards offer local, production and custom targets. Only local mode loads a configuration file (`.env.local`); the retired hosted-development target is no longer available. Production requires an explicitly entered direct PostgreSQL URL; production files are never read automatically. Custom mode can use an explicitly exported `DATABASE_URL`. Non-interactive mode skips prompts/confirmation and does not automatically load `.env.local`. Neither command saves passwords to files. Cancellation before confirmation opens no database connection. See [the CLI setup and recovery instructions](SETUP.md#password-recovery) for details; either command accepts `--help` without connecting.
 
-`VITE_CONVEX_SITE_URL` must end in `.convex.site`.
+Admins issue six-digit password reset codes in the existing UI. Codes expire after 30 minutes, allow five failed attempts, and are stored as secret-keyed hashes. Issuing a new code invalidates earlier ones. Redemption atomically updates credentials, consumes the code and revokes sessions. Codes never carry plaintext Better Auth reset tokens.
 
-## 3. Push the Convex config
+Core self-service profile/account mutation endpoints are also disabled, keeping username/display-name/email changes inside the admin-managed service.
 
-Run:
-
-```bash
-npx convex dev --once
-```
-
-This updates generated files and pushes the Better Auth component/auth config.
-
-## 4. Bootstrap the first admin
-
-Run:
-
-```bash
-npm run bootstrap:admin -- --username admin --password 'strong-password' --display-name 'Admin Name' [--email admin@example.com]
-```
-
-The bootstrap command:
-
-1. Verifies the Better Auth user store is empty.
-2. Creates the first user.
-3. Promotes that user to the `admin` role.
-
-After the first admin exists, bootstrap is blocked and all further account creation must go through the app's admin APIs.
-
-## 5. Auth model
-
-- Public sign-up is disabled.
-- Login supports email/password and username/password.
-- Password resets are admin-only.
-- User roles are `admin`, `teacher`, and `student`.
-- Disabled users are implemented with Better Auth bans plus session revocation.
+Direct auth-table writes are limited to the account/credential services and are covered by schema/login compatibility tests. Re-run these tests and review the generated schema when upgrading Better Auth. Do not weaken hashing to fit a hosting plan.
