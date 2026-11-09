@@ -13,6 +13,7 @@ export interface ReviewHistoryRow {
   dueAt: number | null
   closedAt: number | null
   closingGrade: SurahGrade | null
+  assessmentFeedback?: string | null
 }
 export interface ReviewHistoryPage {
   rows: Array<ReviewHistoryRow>

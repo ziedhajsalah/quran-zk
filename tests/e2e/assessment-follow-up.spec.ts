@@ -23,6 +23,11 @@ if (!['localhost', '127.0.0.1'].includes(new URL(url).hostname))
   throw new Error('Follow-up browser fixtures require local PostgreSQL.')
 const password = env.DEV_SEED_PASSWORD ?? ''
 if (!password) throw new Error('Set DEV_SEED_PASSWORD for local fixtures.')
+const feedbackLabel = 'ملاحظات التقييم (اختياري)'
+const queueReviewFeedback = 'أحسنت المراجعة.\nانتبه لأحكام المدّ <b>نص فقط</b>.'
+const queueMemorizationFeedback = 'حفظ متقن، تابع تثبيت السورة.'
+const detailMemorizationFeedback = 'راجع بدايات الآيات المتشابهة.'
+const detailReviewFeedback = 'تحسن واضح في المراجعة التالية.'
 const ids: Array<string> = []
 const students = new Map<number, Actor>()
 let teacher: Actor
@@ -66,6 +71,7 @@ async function chooseFollowUp(page: Page, dialog: Locator) {
       .getByRole('button', { name: 'الشهر التالي', exact: true })
       .click()
   await day.click()
+  await expect(calendar).not.toBeVisible()
   await expect(
     dialog.getByRole('button', { name: 'موعد المراجعة التالية', exact: true }),
   ).toHaveText(arabicDate)
@@ -164,6 +170,12 @@ for (const width of [390, 1280]) {
       .getByRole('checkbox', { name: 'إسناد المراجعة التالية', exact: true })
       .uncheck()
     await chooseFollowUp(page, dialog)
+    await expect(
+      dialog.getByRole('textbox', { name: feedbackLabel, exact: true }),
+    ).toHaveAttribute('maxlength', '2000')
+    await dialog
+      .getByRole('textbox', { name: feedbackLabel, exact: true })
+      .fill(queueReviewFeedback)
     // A failed request retains both the grade choice and the next-review date.
     await page.route('**/_serverFn/**', async (route) => {
       const fn = definition(route.request().url())
@@ -188,11 +200,17 @@ for (const width of [390, 1280]) {
         exact: true,
       }),
     ).toBeChecked()
+    await expect(
+      dialog.getByRole('textbox', { name: feedbackLabel, exact: true }),
+    ).toHaveValue(queueReviewFeedback)
     await page.unroute('**/_serverFn/**')
     await dialog
       .getByRole('button', { name: 'حفظ والتالي', exact: true })
       .click()
     await expect(dialog).toContainText('البقرة')
+    await expect(
+      dialog.getByRole('textbox', { name: feedbackLabel, exact: true }),
+    ).toHaveValue('')
     await expect(
       dialog.getByRole('checkbox', {
         name: 'إسناد المراجعة التالية',
@@ -215,9 +233,15 @@ for (const width of [390, 1280]) {
       .filter({ hasText: 'آل عمران' })
       .getByRole('button', { name: 'تقييم الحفظ', exact: true })
       .click()
-    dialog = page.getByRole('dialog', { name: 'تقييم واجب الحفظ', exact: true })
+    dialog = page.getByRole('dialog', {
+      name: 'تقييم واجب الحفظ',
+      exact: true,
+    })
     await dialog.getByRole('radio', { name: 'حفظ متقن', exact: true }).check()
     await chooseFollowUp(page, dialog)
+    await dialog
+      .getByRole('textbox', { name: feedbackLabel, exact: true })
+      .fill(queueMemorizationFeedback)
     await dialog
       .getByRole('button', { name: 'حفظ التقييم', exact: true })
       .click()
@@ -226,9 +250,15 @@ for (const width of [390, 1280]) {
     // The dedicated memorization dialog offers the same optional follow-up.
     await gotoApp(page, `/staff/students/${student.id}?tab=memorization`)
     await page.getByRole('button', { name: 'تقييم الحفظ', exact: true }).click()
-    dialog = page.getByRole('dialog', { name: 'تقييم واجب الحفظ', exact: true })
+    dialog = page.getByRole('dialog', {
+      name: 'تقييم واجب الحفظ',
+      exact: true,
+    })
     await dialog.getByRole('radio', { name: 'حفظ متوسط', exact: true }).check()
     await chooseFollowUp(page, dialog)
+    await dialog
+      .getByRole('textbox', { name: feedbackLabel, exact: true })
+      .fill(detailMemorizationFeedback)
     await page.screenshot({
       path: testInfo.outputPath(`follow-up-${width}.png`),
     })
@@ -248,6 +278,9 @@ for (const width of [390, 1280]) {
       .click()
     dialog = page.getByRole('dialog', { name: 'إغلاق المراجعة', exact: true })
     await chooseFollowUp(page, dialog)
+    await dialog
+      .getByRole('textbox', { name: feedbackLabel, exact: true })
+      .fill(detailReviewFeedback)
     // This older dialog now waits for the server and retains its choices on failure.
     await page.route('**/_serverFn/**', async (route) => {
       const fn = definition(route.request().url())
@@ -264,6 +297,9 @@ for (const width of [390, 1280]) {
         exact: true,
       }),
     ).toHaveText(arabicDate)
+    await expect(
+      dialog.getByRole('textbox', { name: feedbackLabel, exact: true }),
+    ).toHaveValue(detailReviewFeedback)
     await page.unroute('**/_serverFn/**')
     await dialog
       .getByRole('button', { name: 'تأكيد الإغلاق', exact: true })
@@ -278,7 +314,11 @@ for (const width of [390, 1280]) {
     const [closed] = await withDatabase(url, (db) =>
       db.select().from(reviews).where(eq(reviews.id, first.id)),
     )
-    expect(closed).toMatchObject({ status: 'closed', closingGrade: 'medium' })
+    expect(closed).toMatchObject({
+      status: 'closed',
+      closingGrade: 'medium',
+      assessmentFeedback: detailReviewFeedback,
+    })
     await page.getByRole('tab', { name: 'المراجعات', exact: true }).click()
     const another = saved.find((row) => row.surahNumber === 3)!
     await page
@@ -293,6 +333,7 @@ for (const width of [390, 1280]) {
       }),
     ).not.toBeChecked()
     await dialog.getByRole('button', { name: 'إلغاء', exact: true }).click()
+    await checkFeedbackHistory(page, `/staff/students/${student.id}`)
     await page.context().clearCookies()
     await loginAs(page, student.username, password)
     await expect(page.locator('a[href*="tab=reviews#review-"]')).toHaveCount(3)
@@ -305,10 +346,39 @@ for (const width of [390, 1280]) {
         task.getByRole('button', { name: 'إغلاق', exact: true }),
       ).toHaveCount(0)
     }
+    await checkFeedbackHistory(page, '/surahs')
+    await page.screenshot({
+      path: testInfo.outputPath(`feedback-history-${width}.png`),
+      fullPage: true,
+    })
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true)
   })
+}
+
+async function checkFeedbackHistory(page: Page, base: string) {
+  await gotoApp(page, `${base}?tab=history`)
+  const reviewHistory = page.getByRole('tabpanel', {
+    name: 'السجل',
+    exact: true,
+  })
+  await expect(
+    reviewHistory.getByText(queueReviewFeedback, { exact: true }),
+  ).toBeVisible()
+  await expect(
+    reviewHistory.getByText(detailReviewFeedback, { exact: true }),
+  ).toBeVisible()
+  // Feedback remains plain text, including strings resembling markup.
+  await expect(reviewHistory.locator('b')).toHaveCount(0)
+  await gotoApp(page, `${base}?tab=memorization`)
+  await page.getByRole('button', { name: 'عرض سجل الحفظ', exact: true }).click()
+  await expect(
+    page.getByText(queueMemorizationFeedback, { exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByText(detailMemorizationFeedback, { exact: true }),
+  ).toBeVisible()
 }

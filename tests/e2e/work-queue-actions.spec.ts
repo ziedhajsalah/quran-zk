@@ -163,6 +163,12 @@ for (const width of [390, 1280]) {
     try {
       await expect.poll(() => requested).toBe(1)
       await expect(
+        dialog.getByRole('textbox', {
+          name: 'ملاحظات التقييم (اختياري)',
+          exact: true,
+        }),
+      ).toBeDisabled()
+      await expect(
         dialog.getByRole('radio', { name: 'حفظ متوسط', exact: true }),
       ).toBeDisabled()
       await expect(

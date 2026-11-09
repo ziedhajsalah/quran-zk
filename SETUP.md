@@ -135,3 +135,11 @@ Apply reviewed migration `0004_assignment_readiness.sql` to the intended databas
 On **المراجعات** and **حفظ جديد**, students choose **أنا جاهز للتقييم** after practising, or **التراجع عن الجاهزية** to undo it. The signal keeps the task open and does not change grades, progress or deadlines. Staff see **جاهز للتقييم** on student tasks and can filter **جاهزية الطالب** in **قائمة الواجبات**, combined with the existing type/deadline/search filters. Select **كل المواعيد** to include ready work regardless of deadline. Assessment/cancellation, including ordinary grading or grade-removal side effects, clears the signal; changing a deadline retains it. New follow-up assignments start unmarked.
 
 The operation is limited to the signed-in student’s own open assignments. Failed requests retain the current state and offer retry/refresh. Other browsers see changes on navigation/focus/reload or the queue’s refresh button; there is no polling, notification delivery or extra service. Additional service cost: **$0**, within the existing Workers Free/Neon Free allowances.
+
+## Assessment feedback
+
+Apply reviewed migration `0005_assessment_feedback.sql` to the intended database before deploying this version. It adds nullable feedback columns and completed-only text constraints to review and memorization assignments; existing records remain empty, without a backfill.
+
+Teachers can enter **ملاحظات التقييم (اختياري)** when completing a review or assessing memorization, both on the student page and in the staff queue. Feedback is visible to the student, limited to 2,000 characters, and saved with the assessment and any next review in one transaction. Blank input saves no feedback. Failed saves retain input; **حفظ والتالي** starts the next assignment with empty feedback.
+
+Students and staff read **ملاحظات المعلم** alongside the saved result in **السجل** for reviews and **عرض سجل الحفظ** for memorization. Later grade changes/removal do not rewrite completed-assignment feedback. Cancellation has no assessment feedback, and ordinary grade entry continues to work without it. No polling or new service is added. Additional service cost: **$0**, within the existing Workers Free/Neon Free allowances.

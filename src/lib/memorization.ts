@@ -12,6 +12,7 @@ export interface MemorizationInput {
   dueAt?: number
 }
 export interface MemorizationAssessment {
+  feedback?: string
   nextReviewDueAt?: number
   assignmentId: string
   grade: SurahGrade
@@ -30,6 +31,7 @@ export interface MemorizationHistoryRow {
   dueAt: number | null
   closedAt: number
   closingGrade: SurahGrade | null
+  assessmentFeedback?: string | null
 }
 export interface MemorizationHistoryPage {
   rows: Array<MemorizationHistoryRow>

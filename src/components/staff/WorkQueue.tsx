@@ -91,6 +91,7 @@ export function WorkQueue({
             assignmentId,
             newGrade: input.grade,
             nextReviewDueAt: input.nextReviewDueAt,
+            feedback: input.feedback,
           })
         else {
           if (!input.grade) throw new Error('اختر تقييماً للحفظ قبل الحفظ.')
@@ -98,6 +99,7 @@ export function WorkQueue({
             assignmentId,
             grade: input.grade,
             nextReviewDueAt: input.nextReviewDueAt,
+            feedback: input.feedback,
           })
         }
       } else if (input.action === 'cancel') {

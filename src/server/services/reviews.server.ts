@@ -75,6 +75,7 @@ export async function listReviewHistory(
       dueAt: reviews.dueAt,
       closedAt: reviews.closedAt,
       closingGrade: reviews.closingGrade,
+      assessmentFeedback: reviews.assessmentFeedback,
     })
     .from(reviews)
     .where(
@@ -195,11 +196,18 @@ export async function assignReviews(
 export async function finishReview(
   db: Database,
   actor: Actor | null,
-  input: { assignmentId: string; newGrade?: Grade; nextReviewDueAt?: number },
+  input: {
+    assignmentId: string
+    newGrade?: Grade
+    nextReviewDueAt?: number
+    feedback?: string
+  },
   cancel = false,
 ) {
   const staff = requireStaff(actor)
-  closeReviewInput.parse(input)
+  const data = closeReviewInput.parse(input)
+  if (cancel && data.feedback?.length)
+    fail('لا يمكن حفظ ملاحظات تقييم عند إلغاء الواجب.')
   if (cancel && input.nextReviewDueAt !== undefined)
     fail('لا يمكن إسناد مراجعة تالية عند إلغاء الواجب.')
   await db.transaction(async (tx) => {
@@ -285,6 +293,7 @@ export async function finishReview(
         status: cancel ? 'cancelled' : 'closed',
         readyAt: null,
         closingGrade,
+        assessmentFeedback: cancel ? null : data.feedback || null,
         closedBy: staff.id,
         closedAt: now,
       })

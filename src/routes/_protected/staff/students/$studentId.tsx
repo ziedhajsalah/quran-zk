@@ -167,6 +167,7 @@ function StaffStudentGradingPage() {
   async function handleCloseAssignment(input: {
     newGrade?: 'good' | 'medium' | 'forgotten'
     nextReviewDueAt?: number
+    feedback?: string
   }) {
     if (!closingAssignmentId)
       throw new Error('حدّث القائمة وأعد اختيار المراجعة.')
