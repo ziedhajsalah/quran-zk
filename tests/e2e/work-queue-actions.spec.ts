@@ -103,7 +103,7 @@ for (const width of [390, 1280]) {
     await page.setViewportSize({ width, height: 844 })
     await page.emulateMedia({ colorScheme: width === 1280 ? 'dark' : 'light' })
     await loginAs(page, teacher.username, password)
-    const path = `/staff/work?q=${student.username}&kind=review&deadline=overdue`
+    const path = `/staff/work?q=${student.username}&kind=review&deadline=overdue&readiness=all`
     await gotoApp(page, path)
     const rows = page.getByRole('article')
     await expect(rows).toHaveCount(20)

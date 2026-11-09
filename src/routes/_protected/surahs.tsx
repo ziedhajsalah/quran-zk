@@ -8,12 +8,18 @@ import {
   Title,
   useMantineTheme,
 } from '@mantine/core'
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { MemorizationPanel } from '~/components/surahs/Memorization/MemorizationPanel'
 import { GradeHistoryPanel } from '~/components/surahs/GradeHistory/GradeHistoryPanel'
 import { ReviewHistoryPanel } from '~/components/surahs/ReviewHistory/ReviewHistoryPanel'
-import { gradesQuery, notesQuery, reviewsQuery } from '~/lib/queries'
+import {
+  gradesQuery,
+  notesQuery,
+  reviewsQuery,
+  useAppMutation,
+} from '~/lib/queries'
+import { setReady } from '~/server/functions/assignment-readiness'
 import { currentUserQuery } from '~/lib/auth-queries'
 import {
   BottomNav,
@@ -53,6 +59,8 @@ export const Route = createFileRoute('/_protected/surahs')({
 
 function StudentSurahsPage() {
   const theme = useMantineTheme()
+  const client = useQueryClient()
+  const markReady = useAppMutation(setReady, ['reviews'])
   const { tab } = Route.useSearch()
   const navigate = Route.useNavigate()
   const { data: me } = useSuspenseQuery(currentUserQuery)
@@ -124,11 +132,21 @@ function StudentSurahsPage() {
 
             <Tabs.Panel value="reviews" pt="md">
               <SurahReviewQueue
+                onReadinessChange={
+                  me.isStudent
+                    ? (assignmentId, ready) =>
+                        markReady({ kind: 'review', assignmentId, ready })
+                    : undefined
+                }
+                onReadinessRefresh={() =>
+                  client.invalidateQueries({ queryKey: ['reviews', me.id] })
+                }
                 rows={openAssignments.map((a) => ({
                   assignmentId: String(a._id),
                   surahNumber: a.surahNumber,
                   assignedAt: a.assignedAt,
                   dueAt: a.dueAt,
+                  readyAt: a.readyAt,
                 }))}
               />
             </Tabs.Panel>
@@ -162,6 +180,7 @@ function StudentSurahsPage() {
               <MemorizationPanel
                 key={me.id}
                 studentId={me.id}
+                canMarkReady={me.isStudent}
                 recordedSurahNumbers={rows.map((row) => row.surahNumber)}
               />
             </Tabs.Panel>

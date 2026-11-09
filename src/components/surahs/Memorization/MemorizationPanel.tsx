@@ -19,6 +19,7 @@ import { MemorizationQueue } from './MemorizationQueue'
 import type { AssignmentDeadline } from '~/lib/assignment-deadline'
 import type { MemorizationRow } from '~/lib/memorization'
 import { memorizationQuery, useAppMutation } from '~/lib/queries'
+import { setReady } from '~/server/functions/assignment-readiness'
 import * as functions from '~/server/functions/memorization'
 import { extractActionErrorMessage } from '~/lib/action-errors'
 import { getSurah } from '~/data/surahs'
@@ -27,15 +28,20 @@ export function MemorizationPanel({
   studentId,
   recordedSurahNumbers,
   editable = false,
+  canMarkReady = false,
 }: {
   studentId: string
   recordedSurahNumbers: ReadonlyArray<number>
   editable?: boolean
+  canMarkReady?: boolean
 }) {
   const hydrated = useHydrated()
   const hash = useLocation({ select: (location) => location.hash })
   const scrolledHash = useRef('')
-  const query = useQuery({ ...memorizationQuery(studentId), enabled: hydrated })
+  const query = useQuery({
+    ...memorizationQuery(studentId),
+    enabled: hydrated,
+  })
   useEffect(() => {
     if (!hash) scrolledHash.current = ''
     if (
@@ -55,6 +61,7 @@ export function MemorizationPanel({
     null,
   )
   const reschedule = useAppMutation(functions.reschedule, ['memorization'])
+  const markReady = useAppMutation(setReady, ['memorization'])
   const assign = useAppMutation(functions.assign, ['memorization'])
   const assess = useAppMutation(functions.assess, [
     'memorization',
@@ -122,6 +129,13 @@ export function MemorizationPanel({
         <MemorizationQueue
           rows={query.data}
           editable={editable}
+          onReadinessChange={
+            canMarkReady
+              ? (assignmentId, ready) =>
+                  markReady({ kind: 'memorization', assignmentId, ready })
+              : undefined
+          }
+          onReadinessRefresh={() => query.refetch()}
           busy={pending || !hydrated}
           onAssess={setAssessing}
           onReschedule={(row) =>
@@ -198,8 +212,8 @@ export function MemorizationPanel({
             <Stack gap="md">
               <Text>
                 هل تريد إلغاء واجب حفظ{' '}
-                {cancelling ? getSurah(cancelling.surahNumber).nameAr : ''}؟ لن
-                يُسجّل تقييم لهذه العملية.
+                {cancelling ? getSurah(cancelling.surahNumber).nameAr : ''}؟
+                لن يُسجّل تقييم لهذه العملية.
               </Text>
               {error ? <Alert color="red">{error}</Alert> : null}
               <Group justify="space-between">

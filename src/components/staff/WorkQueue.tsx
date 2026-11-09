@@ -20,6 +20,7 @@ import {
   workDeadlineOptions,
   workFilterSchema,
   workKindOptions,
+  workReadinessOptions,
 } from '~/lib/work-queue'
 import * as reviews from '~/server/functions/reviews'
 import * as memorization from '~/server/functions/memorization'
@@ -161,6 +162,7 @@ export function WorkQueue({
       >
         <input type="hidden" name="kind" value={filters.kind} />
         <input type="hidden" name="deadline" value={filters.deadline} />
+        <input type="hidden" name="readiness" value={filters.readiness} />
         <Group align="flex-end">
           <TextInput
             name="q"
@@ -207,6 +209,19 @@ export function WorkQueue({
           }}
         />
       </Group>
+      <Select
+        label="جاهزية الطالب"
+        description="تُطبّق مع فلاتر نوع الواجب وموعد الاستحقاق."
+        value={filters.readiness}
+        allowDeselect={false}
+        disabled={busy}
+        data={workReadinessOptions}
+        onChange={(value) => {
+          const parsed = workFilterSchema.shape.readiness.safeParse(value)
+          if (parsed.success)
+            void changeFilters({ ...filters, readiness: parsed.data })
+        }}
+      />
       {notice ? (
         <Alert color="teal" role="status">
           {notice}
@@ -224,7 +239,9 @@ export function WorkQueue({
         <Alert color="red" title="تعذر تحميل الواجبات">
           <Stack>
             <Text>حاول مرة أخرى لتحميل قائمة الواجبات.</Text>
-            <Button onClick={() => void query.refetch()}>إعادة المحاولة</Button>
+            <Button onClick={() => void query.refetch()}>
+              إعادة المحاولة
+            </Button>
           </Stack>
         </Alert>
       ) : (
@@ -258,7 +275,10 @@ export function WorkQueue({
         <Button
           variant="light"
           disabled={
-            busy || !query.data?.nextCursor || query.isFetching || query.isError
+            busy ||
+            !query.data?.nextCursor ||
+            query.isFetching ||
+            query.isError
           }
           onClick={() => {
             if (query.data?.nextCursor) {

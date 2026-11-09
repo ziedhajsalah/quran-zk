@@ -1,5 +1,6 @@
 import { Badge, Button, Card, Group, Stack, Text, Title } from '@mantine/core'
 import { Link } from '@tanstack/react-router'
+import { ReadinessBadge } from '../surahs/AssignmentReadiness'
 import type { WorkAction } from './WorkQueueActionDialog'
 import type { WorkRow } from '~/lib/work-queue'
 import { GRADE_LABELS } from '~/data/grades'
@@ -49,6 +50,7 @@ export function WorkQueueList({
                   {row.kind === 'review' ? 'مراجعة' : 'حفظ جديد'}
                 </Badge>
               </Group>
+              <ReadinessBadge readyAt={row.readyAt} />
               <Text dir="ltr" size="sm" c="dimmed">
                 @{row.username}
               </Text>

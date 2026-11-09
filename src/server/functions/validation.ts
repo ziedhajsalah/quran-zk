@@ -1,7 +1,9 @@
 import { z } from 'zod'
 import { workFilterSchema, workKindSchema } from '~/lib/work-queue'
 
-export const studentInput = z.object({ studentId: z.string().min(1).max(128) })
+export const studentInput = z.object({
+  studentId: z.string().min(1).max(128),
+})
 export const surahInput = studentInput.extend({
   surahNumber: z.number().int().min(1).max(114),
 })
@@ -107,4 +109,9 @@ export const workQueueInput = workFilterSchema.extend({
     })
     .nullable()
     .default(null),
+})
+
+export const assignmentReadinessInput = assignmentInput.extend({
+  kind: workKindSchema,
+  ready: z.boolean(),
 })

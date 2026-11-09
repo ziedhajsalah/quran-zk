@@ -40,6 +40,7 @@ export async function listReviews(
     assignedAt: row.assignedAt.getTime(),
     dueAt: row.dueAt?.getTime() ?? null,
     closedAt: row.closedAt?.getTime() ?? null,
+    readyAt: row.readyAt?.getTime() ?? null,
   }))
 }
 export async function listReviewHistory(
@@ -282,6 +283,7 @@ export async function finishReview(
       .update(reviews)
       .set({
         status: cancel ? 'cancelled' : 'closed',
+        readyAt: null,
         closingGrade,
         closedBy: staff.id,
         closedAt: now,

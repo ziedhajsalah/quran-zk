@@ -1,0 +1,4 @@
+ALTER TABLE "memorization_assignments" ADD COLUMN "ready_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "surah_review_assignments" ADD COLUMN "ready_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "memorization_assignments" ADD CONSTRAINT "memorization_readiness_open" CHECK ("memorization_assignments"."ready_at" is null or "memorization_assignments"."status" = 'open');--> statement-breakpoint
+ALTER TABLE "surah_review_assignments" ADD CONSTRAINT "review_readiness_open" CHECK ("surah_review_assignments"."ready_at" is null or "surah_review_assignments"."status" = 'open');

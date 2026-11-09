@@ -88,6 +88,7 @@ export async function writeStudentGrade(
     .update(memorizationAssignments)
     .set({
       status: 'closed',
+      readyAt: null,
       closingGrade: input.grade,
       closedBy: staffId,
       closedAt: now,
@@ -114,7 +115,12 @@ export async function removeGrade(
       .for('update')
     await tx
       .update(reviews)
-      .set({ status: 'cancelled', closedBy: admin.id, closedAt: new Date() })
+      .set({
+        status: 'cancelled',
+        readyAt: null,
+        closedBy: admin.id,
+        closedAt: new Date(),
+      })
       .where(
         and(
           eq(reviews.studentId, input.studentId),

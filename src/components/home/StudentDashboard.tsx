@@ -12,6 +12,7 @@ import {
   useMantineTheme,
 } from '@mantine/core'
 import { Link } from '@tanstack/react-router'
+import { ReadinessBadge } from '../surahs/AssignmentReadiness'
 import { BottomNav } from './BottomNav'
 import { HomeHero } from './HomeHero'
 import { HomeTopBar } from './HomeTopBar'
@@ -125,6 +126,7 @@ export function StudentDashboard({
                           >
                             {getSurah(assignment.surahNumber).nameAr}
                           </Link>
+                          <ReadinessBadge readyAt={assignment.readyAt} />
                           <Text size="sm" c="dimmed">
                             {assignment.dueAt === null
                               ? 'دون موعد محدد'
@@ -170,6 +172,7 @@ export function StudentDashboard({
                             >
                               {getSurah(review.surahNumber).nameAr}
                             </Link>
+                            <ReadinessBadge readyAt={review.readyAt} />
                             <Text size="sm" c="dimmed">
                               {review.dueAt === null
                                 ? 'دون موعد محدد'
