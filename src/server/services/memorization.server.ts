@@ -110,10 +110,13 @@ export async function finishMemorization(
     assignmentId: string
     grade?: 'good' | 'medium' | 'forgotten'
     nextReviewDueAt?: number
+    feedback?: string
   },
 ) {
   const staff = requireStaff(actor)
-  finishMemorizationInput.parse(input)
+  const data = finishMemorizationInput.parse(input)
+  if (input.grade === undefined && data.feedback?.length)
+    fail('لا يمكن حفظ ملاحظات تقييم عند إلغاء الواجب.')
   if (input.grade === undefined && input.nextReviewDueAt !== undefined)
     fail('لا يمكن إسناد مراجعة تالية عند إلغاء الواجب.')
   await db.transaction(async (tx) => {
@@ -161,6 +164,10 @@ export async function finishMemorization(
         surahNumber: row.surahNumber,
         grade: input.grade,
       })
+      await tx
+        .update(memorizationAssignments)
+        .set({ assessmentFeedback: data.feedback || null })
+        .where(eq(memorizationAssignments.id, row.id))
       if (input.nextReviewDueAt !== undefined)
         await scheduleFollowUpReview(
           tx,
@@ -205,6 +212,7 @@ export async function listMemorizationHistory(
       dueAt: table.dueAt,
       closedAt: table.closedAt,
       closingGrade: table.closingGrade,
+      assessmentFeedback: table.assessmentFeedback,
     })
     .from(table)
     .where(

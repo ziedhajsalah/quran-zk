@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { ASSESSMENT_FEEDBACK_LIMIT } from '~/lib/assessment-feedback'
 import { workFilterSchema, workKindSchema } from '~/lib/work-queue'
 
 export const studentInput = z.object({
@@ -60,6 +61,11 @@ export const gradeHistoryInput = studentInput.extend({
 export const memorizationInput = surahInput.extend({
   dueAt: batchReviewInput.shape.dueAt,
 })
+const assessmentFeedback = z
+  .string()
+  .trim()
+  .max(ASSESSMENT_FEEDBACK_LIMIT, 'ملاحظات التقييم يجب ألا تتجاوز ٢٠٠٠ حرف.')
+  .optional()
 // Optional follow-ups must be an explicit UTC calendar day, today or later.
 const nextReviewDueAt = batchReviewInput.shape.dueAt
   .unwrap()
@@ -73,10 +79,12 @@ const nextReviewDueAt = batchReviewInput.shape.dueAt
   .optional()
 export const closeReviewInput = assignmentInput.extend({
   newGrade: gradeSchema.optional(),
+  feedback: assessmentFeedback,
   nextReviewDueAt,
 })
 export const finishMemorizationInput = assignmentInput.extend({
   grade: gradeSchema.optional(),
+  feedback: assessmentFeedback,
   nextReviewDueAt,
 })
 export const assessMemorizationInput = finishMemorizationInput.extend({

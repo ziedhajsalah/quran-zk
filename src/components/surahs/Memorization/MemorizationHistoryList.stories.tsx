@@ -16,6 +16,8 @@ const meta = {
         dueAt: now,
         closedAt: now,
         closingGrade: 'good',
+        assessmentFeedback:
+          'أحسنت الحفظ.\nراجع أحكام المدّ قبل المراجعة التالية.',
       },
       {
         id: 'cancelled',

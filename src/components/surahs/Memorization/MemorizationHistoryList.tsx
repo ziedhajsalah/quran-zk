@@ -1,4 +1,5 @@
 import { Badge, Card, Group, Stack, Text, Title } from '@mantine/core'
+import { AssessmentFeedbackText } from '../AssessmentFeedback'
 import type { MemorizationHistoryRow } from '~/lib/memorization'
 import { GRADE_COLORS, GRADE_LABELS } from '~/data/grades'
 import { getSurah } from '~/data/surahs'
@@ -63,6 +64,9 @@ export function MemorizationHistoryList({
                   </Badge>
                 )}
               </Group>
+            ) : null}
+            {row.status === 'closed' ? (
+              <AssessmentFeedbackText feedback={row.assessmentFeedback} />
             ) : null}
           </Stack>
         </Card>

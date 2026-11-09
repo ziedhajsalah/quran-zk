@@ -1,4 +1,5 @@
 import { Badge, Card, Group, Stack, Text, Title } from '@mantine/core'
+import { AssessmentFeedbackText } from '../AssessmentFeedback'
 import type { ReviewHistoryRow } from '~/lib/review-history'
 import { GRADE_COLORS, GRADE_LABELS } from '~/data/grades'
 import { getSurah } from '~/data/surahs'
@@ -59,6 +60,9 @@ export function ReviewHistoryList({
                   </Badge>
                 )}
               </Group>
+            ) : null}
+            {row.status === 'closed' ? (
+              <AssessmentFeedbackText feedback={row.assessmentFeedback} />
             ) : null}
           </Stack>
         </Card>

@@ -1,9 +1,11 @@
 import { Alert, Button, Group, Modal, Radio, Stack, Text } from '@mantine/core'
 import { useState } from 'react'
+import type { AssessmentFeedbackInput } from '~/lib/assessment-feedback'
 import type { AssignmentDeadlineChange } from '~/lib/assignment-deadline'
 import type { WorkRow } from '~/lib/work-queue'
 import type { SurahGrade } from '~/data/grades'
 import type { FollowUpReview } from '~/lib/follow-up-review'
+import { AssessmentFeedbackField } from '~/components/surahs/AssessmentFeedback'
 import { NextReviewField } from '~/components/surahs/NextReviewField'
 import { followUpReviewInput } from '~/lib/follow-up-review'
 import { AssignmentDeadlineDialog } from '~/components/surahs/AssignmentDeadlineDialog'
@@ -13,7 +15,8 @@ import { extractActionErrorMessage } from '~/lib/action-errors'
 
 export type WorkAction = 'assess' | 'reschedule' | 'cancel'
 export type WorkActionInput =
-  | ({ action: 'assess'; grade?: SurahGrade; next: boolean } & FollowUpReview)
+  | ({ action: 'assess'; grade?: SurahGrade; next: boolean } & FollowUpReview &
+      AssessmentFeedbackInput)
   | { action: 'reschedule'; change: AssignmentDeadlineChange }
   | { action: 'cancel' }
 
@@ -31,6 +34,7 @@ export function WorkQueueActionDialog({
   onSubmit: (input: WorkActionInput) => Promise<unknown>
 }) {
   const [selection, setSelection] = useState('')
+  const [feedback, setFeedback] = useState('')
   const [nextReview, setNextReview] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -71,6 +75,7 @@ export function WorkQueueActionDialog({
               grade,
               next,
               ...followUpReviewInput(nextReview),
+              feedback,
             },
       )
     } catch (cause) {
@@ -143,6 +148,11 @@ export function WorkQueueActionDialog({
                 ))}
               </Stack>
             </Radio.Group>
+            <AssessmentFeedbackField
+              value={feedback}
+              onChange={setFeedback}
+              disabled={pending}
+            />
             <NextReviewField
               value={nextReview}
               onChange={setNextReview}

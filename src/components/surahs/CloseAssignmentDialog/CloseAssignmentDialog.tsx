@@ -10,9 +10,11 @@ import {
 } from '@mantine/core'
 import { useEffect, useState } from 'react'
 import { NextReviewField } from '../NextReviewField'
+import type { AssessmentFeedbackInput } from '~/lib/assessment-feedback'
 import type { FollowUpReview } from '~/lib/follow-up-review'
 import type { SurahGrade } from '~/data/grades'
 import type { Surah } from '~/data/surahs'
+import { AssessmentFeedbackField } from '~/components/surahs/AssessmentFeedback'
 import { extractActionErrorMessage } from '~/lib/action-errors'
 import { followUpReviewInput } from '~/lib/follow-up-review'
 import { GRADE_COLORS, GRADE_LABELS, GRADE_ORDER } from '~/data/grades'
@@ -24,7 +26,7 @@ export interface CloseAssignmentDialogProps {
   surah: Surah | null
   currentGrade: SurahGrade | null
   onSubmit: (
-    input: { newGrade?: SurahGrade } & FollowUpReview,
+    input: { newGrade?: SurahGrade } & FollowUpReview & AssessmentFeedbackInput,
   ) => Promise<unknown> | void
 }
 
@@ -39,6 +41,7 @@ export function CloseAssignmentDialog({
 }: CloseAssignmentDialogProps) {
   const [selection, setSelection] = useState<Selection>({ kind: 'keep' })
 
+  const [feedback, setFeedback] = useState('')
   const [nextReview, setNextReview] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -47,6 +50,7 @@ export function CloseAssignmentDialog({
     if (opened) {
       setSelection({ kind: 'keep' })
       setNextReview(null)
+      setFeedback('')
       setError(null)
     }
   }, [opened])
@@ -59,6 +63,7 @@ export function CloseAssignmentDialog({
       await onSubmit({
         ...(selection.kind === 'change' ? { newGrade: selection.grade } : {}),
         ...followUpReviewInput(nextReview),
+        feedback,
       })
       onClose()
     } catch (cause) {
@@ -162,6 +167,11 @@ export function CloseAssignmentDialog({
           </Chip.Group>
         </Stack>
 
+        <AssessmentFeedbackField
+          value={feedback}
+          onChange={setFeedback}
+          disabled={pending}
+        />
         <NextReviewField
           value={nextReview}
           onChange={setNextReview}

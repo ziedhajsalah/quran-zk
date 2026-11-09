@@ -80,12 +80,17 @@ export const reviews = pgTable(
     closedBy: actor('closed_by'),
     closedAt: time('closed_at'),
     closingGrade: gradeEnum('closing_grade'),
+    assessmentFeedback: text('assessment_feedback'),
   },
   (t) => [
     uniqueIndex('review_open_unique')
       .on(t.studentId, t.surahNumber)
       .where(sql`${t.status} = 'open'`),
     index('review_student_status_due_idx').on(t.studentId, t.status, t.dueAt),
+    check(
+      'review_assessment_feedback',
+      sql`${t.assessmentFeedback} is null or (${t.status} = 'closed' and char_length(btrim(${t.assessmentFeedback})) between 1 and 2000)`,
+    ),
     check('review_readiness_open', sql`${t.readyAt} is null or ${t.status} = 'open'`),
     check('review_surah_range', sql`${t.surahNumber} between 1 and 114`),
   ],
@@ -104,11 +109,16 @@ export const memorizationAssignments = pgTable(
     closedBy: actor('closed_by'),
     closedAt: time('closed_at'),
     closingGrade: gradeEnum('closing_grade'),
+    assessmentFeedback: text('assessment_feedback'),
   },
   (t) => [
     uniqueIndex('memorization_open_unique').on(t.studentId, t.surahNumber)
       .where(sql`${t.status} = 'open'`),
     index('memorization_student_status_due_idx').on(t.studentId, t.status, t.dueAt),
+    check(
+      'memorization_assessment_feedback',
+      sql`${t.assessmentFeedback} is null or (${t.status} = 'closed' and char_length(btrim(${t.assessmentFeedback})) between 1 and 2000)`,
+    ),
     check('memorization_readiness_open', sql`${t.readyAt} is null or ${t.status} = 'open'`),
     check('memorization_surah_range', sql`${t.surahNumber} between 1 and 114`),
     check('memorization_closure', sql`(
