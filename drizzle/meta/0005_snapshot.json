@@ -491,7 +491,7 @@
       "checkConstraints": {
         "memorization_assessment_feedback": {
           "name": "memorization_assessment_feedback",
-          "value": "\"memorization_assignments\".\"assessment_feedback\" is null or (\"memorization_assignments\".\"status\" = 'closed' and char_length(btrim(\"memorization_assignments\".\"assessment_feedback\")) between 1 and 2000)"
+          "value": "\"memorization_assignments\".\"assessment_feedback\" is null or (\"memorization_assignments\".\"status\" = 'closed' and char_length(btrim(\"memorization_assignments\".\"assessment_feedback\")) > 0 and char_length(\"memorization_assignments\".\"assessment_feedback\") <= 2000)"
         },
         "memorization_readiness_open": {
           "name": "memorization_readiness_open",
@@ -894,7 +894,7 @@
       "checkConstraints": {
         "review_assessment_feedback": {
           "name": "review_assessment_feedback",
-          "value": "\"surah_review_assignments\".\"assessment_feedback\" is null or (\"surah_review_assignments\".\"status\" = 'closed' and char_length(btrim(\"surah_review_assignments\".\"assessment_feedback\")) between 1 and 2000)"
+          "value": "\"surah_review_assignments\".\"assessment_feedback\" is null or (\"surah_review_assignments\".\"status\" = 'closed' and char_length(btrim(\"surah_review_assignments\".\"assessment_feedback\")) > 0 and char_length(\"surah_review_assignments\".\"assessment_feedback\") <= 2000)"
         },
         "review_readiness_open": {
           "name": "review_readiness_open",

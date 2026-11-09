@@ -89,7 +89,7 @@ export const reviews = pgTable(
     index('review_student_status_due_idx').on(t.studentId, t.status, t.dueAt),
     check(
       'review_assessment_feedback',
-      sql`${t.assessmentFeedback} is null or (${t.status} = 'closed' and char_length(btrim(${t.assessmentFeedback})) between 1 and 2000)`,
+      sql`${t.assessmentFeedback} is null or (${t.status} = 'closed' and char_length(btrim(${t.assessmentFeedback})) > 0 and char_length(${t.assessmentFeedback}) <= 2000)`,
     ),
     check('review_readiness_open', sql`${t.readyAt} is null or ${t.status} = 'open'`),
     check('review_surah_range', sql`${t.surahNumber} between 1 and 114`),
@@ -117,7 +117,7 @@ export const memorizationAssignments = pgTable(
     index('memorization_student_status_due_idx').on(t.studentId, t.status, t.dueAt),
     check(
       'memorization_assessment_feedback',
-      sql`${t.assessmentFeedback} is null or (${t.status} = 'closed' and char_length(btrim(${t.assessmentFeedback})) between 1 and 2000)`,
+      sql`${t.assessmentFeedback} is null or (${t.status} = 'closed' and char_length(btrim(${t.assessmentFeedback})) > 0 and char_length(${t.assessmentFeedback}) <= 2000)`,
     ),
     check('memorization_readiness_open', sql`${t.readyAt} is null or ${t.status} = 'open'`),
     check('memorization_surah_range', sql`${t.surahNumber} between 1 and 114`),

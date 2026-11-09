@@ -248,7 +248,13 @@ for (const kind of ['review', 'memorization'] as const) {
             .where(eq(table.id, assignmentId)),
         ).rejects.toThrow()
         await finish(db)
-        for (const value of ['', '   ', 'a'.repeat(2001)])
+        for (const value of [
+          '',
+          '   ',
+          'a'.repeat(2001),
+          ' ' + 'a'.repeat(2000),
+          'a'.repeat(2000) + ' ',
+        ])
           await expect(
             db
               .update(table)
