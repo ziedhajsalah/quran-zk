@@ -38,22 +38,20 @@ function wizard(answers: Array<string>, database = url) {
 const password = 'Recovery-password-canary-2026!'
 
 describe('password recovery wizard', () => {
-  it('selects development, normalizes email and confirms session revocation', async () => {
+  it('selects local, normalizes email and confirms session revocation', async () => {
     const options = wizard([
-      '2',
+      '1',
       ' Person@Example.com ',
       password,
       password,
-      'reset development',
+      'reset local',
     ])
     expect(await collectPasswordReset(options)).toEqual({
       connectionString: url,
       identifier: 'person@example.com',
       password,
     })
-    expect(options.readDatabaseUrl.mock.calls).toEqual([
-      ['.env.neon-development.local'],
-    ])
+    expect(options.readDatabaseUrl.mock.calls).toEqual([['.env.local']])
     expect(options.write.mock.calls.flat().join('\n')).toContain(
       'revokes all existing sessions',
     )
@@ -65,7 +63,7 @@ describe('password recovery wizard', () => {
   })
   it('never reads production files or inherits the process database URL', async () => {
     const options = wizard([
-      '3',
+      '2',
       url,
       'user.name',
       password,
@@ -169,16 +167,14 @@ describe('password recovery CLI against isolated local PostgreSQL', () => {
           .update(user)
           .set({ banned: true })
           .where(eq(user.id, target.id))
-        await db
-          .insert(session)
-          .values(
-            [target, other].map((person) => ({
-              id: crypto.randomUUID(),
-              userId: person.id,
-              token: crypto.randomUUID(),
-              expiresAt: new Date(Date.now() + 60000),
-            })),
-          )
+        await db.insert(session).values(
+          [target, other].map((person) => ({
+            id: crypto.randomUUID(),
+            userId: person.id,
+            token: crypto.randomUUID(),
+            expiresAt: new Date(Date.now() + 60000),
+          })),
+        )
       })
       const result = await rescue(identifier)
       expect(result.stdout).toContain('all existing sessions revoked')
@@ -230,14 +226,12 @@ describe('password recovery CLI against isolated local PostgreSQL', () => {
     )
     await run(async (db) => {
       await db.delete(account).where(eq(account.userId, person.id))
-      await db
-        .insert(session)
-        .values({
-          id: crypto.randomUUID(),
-          userId: person.id,
-          token: crypto.randomUUID(),
-          expiresAt: new Date(Date.now() + 60000),
-        })
+      await db.insert(session).values({
+        id: crypto.randomUUID(),
+        userId: person.id,
+        token: crypto.randomUUID(),
+        expiresAt: new Date(Date.now() + 60000),
+      })
     })
     await expect(rescue('no.credential')).rejects.toMatchObject({
       code: 1,

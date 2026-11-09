@@ -41,20 +41,9 @@ describe('interactive first-admin configuration', () => {
       'private-password',
     )
   })
-  it('loads the development file rather than a generic process database URL', async () => {
-    const options = wizard(
-      ['2', ...details, 'create development'],
-      remote,
-      'postgresql://prod.example/production',
-    )
-    expect((await collectAdminSetup(options))?.connectionString).toBe(remote)
-    expect(options.readDatabaseUrl.mock.calls).toEqual([
-      ['.env.neon-development.local'],
-    ])
-  })
   it('never loads a configuration file or inherits DATABASE_URL for production', async () => {
     const options = wizard(
-      ['3', remote, ...details, 'create production'],
+      ['2', remote, ...details, 'create production'],
       local,
       local,
     )
@@ -66,13 +55,14 @@ describe('interactive first-admin configuration', () => {
     ])
   })
   it('allows explicit process configuration only for a custom target', async () => {
-    const options = wizard(['4', ...details, 'create custom'], local, remote)
+    const options = wizard(['3', ...details, 'create custom'], local, remote)
     expect((await collectAdminSetup(options))?.connectionString).toBe(remote)
     expect(options.readDatabaseUrl).not.toHaveBeenCalled()
   })
-  it('prompts privately for a missing development URL', async () => {
-    const options = wizard(['2', remote, ...details, 'create development'], '')
-    expect((await collectAdminSetup(options))?.connectionString).toBe(remote)
+  it('prompts privately for a missing local URL', async () => {
+    const options = wizard(['1', local, ...details, 'create local'], '')
+    expect((await collectAdminSetup(options))?.connectionString).toBe(local)
+    expect(options.readDatabaseUrl.mock.calls).toEqual([['.env.local']])
     expect(options.ask.mock.calls).toContainEqual([
       'PostgreSQL connection URL (input hidden): ',
       true,
@@ -111,7 +101,7 @@ describe('interactive first-admin configuration', () => {
   })
   it('rejects non-PostgreSQL targets and invalid menu choices', async () => {
     await expect(
-      collectAdminSetup(wizard(['4', 'https://example.com/db'], '')),
+      collectAdminSetup(wizard(['3', 'https://example.com/db'], '')),
     ).rejects.toThrow('PostgreSQL connection URL')
     const options = wizard(['5'])
     await expect(collectAdminSetup(options)).rejects.toThrow(

@@ -41,25 +41,17 @@ export async function selectDatabase({
 }: SetupOptions) {
   const selection =
     (
-      await ask(
-        'Environment: 1) Local  2) Hosted development  3) Production  4) Custom [1]: ',
-      )
+      await ask('Environment: 1) Local  2) Production  3) Custom [1]: ')
     ).trim() || '1'
   const environment = {
     '1': 'local',
-    '2': 'development',
-    '3': 'production',
-    '4': 'custom',
+    '2': 'production',
+    '3': 'custom',
   }[selection]
   if (!environment)
-    throw new AdminSetupError('Choose an environment from 1 to 4.')
+    throw new AdminSetupError('Choose an environment from 1 to 3.')
 
-  const file =
-    environment === 'local'
-      ? '.env.local'
-      : environment === 'development'
-        ? '.env.neon-development.local'
-        : undefined
+  const file = environment === 'local' ? '.env.local' : undefined
   let connectionString = file
     ? await readDatabaseUrl(file)
     : environment === 'custom'

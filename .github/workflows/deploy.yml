@@ -3,11 +3,13 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [develop, main]
+    branches: [main]
   workflow_dispatch:
+permissions:
+  contents: read
 concurrency:
-  group: deploy-prod
-  cancel-in-progress: false
+  group: ${{ github.event_name == 'pull_request' && format('ci-pr-{0}', github.event.pull_request.number) || 'deploy-production' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   ci:
     runs-on: ubuntu-latest
@@ -54,12 +56,26 @@ jobs:
           name: browser-test-results
           path: test-results
   deploy:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     name: Migrate PostgreSQL and deploy Worker
     needs: ci
     runs-on: ubuntu-latest
     environment: production
     steps:
+      - name: Validate production configuration
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          missing=0
+          for name in DATABASE_URL CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing production environment secret: $name"
+              missing=1
+            fi
+          done
+          exit "$missing"
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:

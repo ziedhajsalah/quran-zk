@@ -16,24 +16,6 @@
       "localConnectionString": "postgresql://quran_dev:quran_local@127.0.0.1:55432/quran_dev"
     }
   ],
-  "env": {
-    "development": {
-      "name": "quran-zk-dev",
-      "vars": {
-        "SITE_URL": "https://quran-zk-dev.ziedhajsalah.workers.dev"
-      },
-      "hyperdrive": [
-        {
-          "binding": "HYPERDRIVE",
-          "id": "d428e5b5be924fa9bb143d379c38a94d",
-          "localConnectionString": "postgresql://quran_dev:quran_local@127.0.0.1:55432/quran_dev"
-        }
-      ],
-      "routes": [],
-      "workers_dev": true,
-      "preview_urls": false
-    }
-  },
   "vars": {
     "SITE_URL": "https://quran-zk.tn"
   },
